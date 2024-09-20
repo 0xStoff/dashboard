@@ -21,5 +21,7 @@ more convenient to track different tokens for me.
 - implement own db (postgres)
 - unify data structure
 
+<br>
+
 https://github.com/user-attachments/assets/21e53751-f2c7-4341-b907-fe85c0a871aa
 
