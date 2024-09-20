@@ -1,24 +1,8 @@
-import {Connection, PublicKey, ParsedAccountData} from '@solana/web3.js';
+import {Connection, ParsedAccountData, PublicKey} from '@solana/web3.js';
 import {Raydium} from "@raydium-io/raydium-sdk-v2";
 import {TOKEN_PROGRAM_ID} from '@solana/spl-token';
-import axios from "axios";
 import {SolToken} from "../App";
-
-export const fetchTokenPrice = async (coingeckoId: string): Promise<{ usd: number } | null> => {
-    try {
-        if (!coingeckoId) return null;
-        const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?x_cg_demo_api_key=${process.env.REACT_APP_COINGECKO_API_KEY}`, {
-            params: {
-                ids: coingeckoId, // Token name in CoinGecko's format
-                vs_currencies: 'usd'
-            }
-        });
-        return response.data[coingeckoId]?.usd ? {usd: response.data[coingeckoId].usd} : null;
-    } catch (error) {
-        console.error(`Error fetching price for ${coingeckoId}:`, error);
-        return null;
-    }
-};
+import {fetchTokenPrice} from "./fetchTokenPriceCoingecko";
 
 // Fetch token balances and metadata
 export const fetchRaydiumData = async (): Promise<SolToken[]> => {

@@ -5,10 +5,11 @@ import WalletTable from './components/wallet/WalletTable';
 import ProtocolTable from './components/protocol/ProtocolTable';
 import {Account} from './interfaces/account';
 import {mergeAndAggregateChains, mergeAndAggregateTokens, mergeProtocols} from './utils/data-transform';
-import {chains, fetchAllAccountsData, fetchNode} from "./api/fetch";
+import {fetchAllAccountsData, fetchNode} from "./api/fetch";
 import {theme} from "./utils/theme";
 import wallets from './data/wallets.json';
-import {fetchRaydiumData} from "./api/fetchSolanaTokens";
+import {fetchRaydiumData} from "./api/fetchRaydiumSolanaTokens";
+import {chains} from "./interfaces/cosmos";
 
 
 type ChainIdState = [string, React.Dispatch<React.SetStateAction<string>>];
