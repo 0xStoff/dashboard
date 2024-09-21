@@ -19,6 +19,7 @@ module.exports = {
             "http": require.resolve("stream-http"),
             "https": require.resolve("https-browserify"),
             "os": require.resolve("os-browserify/browser"),
+            "vm": false,
             "url": require.resolve("url/"),
             "buffer": require.resolve("buffer/"), // Add Buffer polyfill
         },
