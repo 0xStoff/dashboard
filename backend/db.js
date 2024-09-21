@@ -1,5 +1,6 @@
 // db.js
-import {Pool} from 'pg';
+import pkg from 'pg';
+const { Pool } = pkg;
 
 // Replace these values with your actual DB configuration
 const pool = new Pool({
@@ -10,6 +11,6 @@ const pool = new Pool({
     port: 5432,
 });
 
-export function query(text, params) {
+export const query = (text, params) => {
     return pool.query(text, params);
-}
+};

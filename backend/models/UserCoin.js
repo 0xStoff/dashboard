@@ -1,8 +1,8 @@
 // src/models/UserCoin.js
-const { DataTypes } = require('sequelize');
-const sequelize = require('../sequelize');
-const User = require('./User');
-const Coin = require('./Coin');
+import { DataTypes } from 'sequelize';
+import sequelize from '../sequelize.js';
+import User from './User.js';
+import Coin from './Coin.js';
 
 const UserCoin = sequelize.define('UserCoin', {
     amount: {
@@ -15,4 +15,4 @@ const UserCoin = sequelize.define('UserCoin', {
 UserCoin.belongsTo(User);
 UserCoin.belongsTo(Coin);
 
-module.exports = UserCoin;
+export default UserCoin;

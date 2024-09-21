@@ -69,6 +69,7 @@ INSERT INTO users (id, wallet, tag, chain) VALUES (3, '0x9c4da1823855d1a69dc73da
 INSERT INTO users (id, wallet, tag, chain) VALUES (5, '0xc9d4d50f8c9e51ca4416aab42e612a886f0d52e8', 'L 1.1', 'evm');
 INSERT INTO users (id, wallet, tag, chain) VALUES (1, '0x853a1A66d0D2b760154e9921176aBdB330b40a9e', 'Friend', 'evm');
 INSERT INTO users (id, wallet, tag, chain) VALUES (14, '0xCB23eE7496193AEC8587B4fFE886B6AEAE265D75', 'Safe', 'evm');
+INSERT INTO users (id, wallet, tag, chain) VALUES (15, 'BnEzyR69UfNAaSi45KB5rkXjXekE7ErHEnVWNgYqFPzq', 'Sol', 'sol');
 
 
 

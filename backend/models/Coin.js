@@ -1,6 +1,6 @@
 // src/models/Coin.js
-const { DataTypes } = require('sequelize');
-const sequelize = require('../sequelize');
+import { DataTypes } from 'sequelize';
+import sequelize from '../sequelize.js';
 
 const Coin = sequelize.define('Coin', {
     name: {
@@ -21,4 +21,4 @@ const Coin = sequelize.define('Coin', {
     },
 });
 
-module.exports = Coin;
+export default Coin;

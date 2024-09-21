@@ -1,9 +1,9 @@
 // src/sequelize.js
-const { Sequelize } = require('sequelize');
+import { Sequelize } from 'sequelize';
 
 const sequelize = new Sequelize('crypto_dashboard', 'stoff', '', {
     host: 'localhost',
     dialect: 'postgres',
 });
 
-module.exports = sequelize;
+export default sequelize;

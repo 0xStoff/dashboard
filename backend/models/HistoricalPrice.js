@@ -1,7 +1,7 @@
 // src/models/HistoricalPrice.js
-const { DataTypes } = require('sequelize');
-const sequelize = require('../sequelize');
-const Coin = require('./Coin');
+import { DataTypes } from 'sequelize';
+import sequelize from '../sequelize.js';
+import Coin from './Coin.js';
 
 const HistoricalPrice = sequelize.define('HistoricalPrice', {
     date: {
@@ -17,4 +17,4 @@ const HistoricalPrice = sequelize.define('HistoricalPrice', {
 // Define relationship
 HistoricalPrice.belongsTo(Coin);
 
-module.exports = HistoricalPrice;
+export default HistoricalPrice;

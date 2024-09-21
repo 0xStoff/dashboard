@@ -1,6 +1,6 @@
 // src/models/User.js
-const { DataTypes } = require('sequelize');
-const sequelize = require('../sequelize');
+import { DataTypes } from 'sequelize';
+import sequelize from '../sequelize.js';
 
 const User = sequelize.define('User', {
     wallet: {
@@ -13,4 +13,4 @@ const User = sequelize.define('User', {
     },
 });
 
-module.exports = User;
+export default User;
