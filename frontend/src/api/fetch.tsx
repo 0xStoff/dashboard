@@ -12,6 +12,7 @@ import {
 import {fetchTokenPrice} from "./fetchTokenPriceCoingecko";
 
 
+
 // Improved fetchDataForAccount function
 async function fetchDataForAccount(id: string): Promise<any> {
     const storedData = localStorage.getItem(id);
@@ -72,6 +73,7 @@ export const fetchAllAccountsData = async (accounts: Account[] | null) => {
 
 const fetchBalances = async (chain: Chain): Promise<FetchResult[]> => {
         const balanceResults: FetchResult[] = [];
+
         for (const wallet of chain.wallets) {
             const balanceUrl = `${chain.endpoint}/cosmos/bank/v1beta1/balances/${wallet}`;
             try {
@@ -120,8 +122,9 @@ const fetchBalances = async (chain: Chain): Promise<FetchResult[]> => {
     };
 
     export const fetchNode = async (): Promise<FetchResult[]> => {
-
-        const promises = chains.flatMap(chain => [
+        const cosmosChains = await chains();
+        console.log(cosmosChains)
+        const promises = cosmosChains.flatMap(chain => [
             fetchBalances(chain),
             fetchStakings(chain)
         ]);

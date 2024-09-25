@@ -25,10 +25,12 @@ const aggregateChainData = (chainName: string, result: any[]) => {
 export const fetchCosmosTokens = async () => {
     try {
 
+        const cosmosChains = await chains()
+
         // Fetch Cosmos data
         const result = await fetchNode();
         let total = 0;
-        const chainMetadata = chains.map(chain => {
+        const chainMetadata = cosmosChains.map(chain => {
             const {totalValue, amount, price} = aggregateChainData(chain.name, result);
             total += totalValue;
             return {
