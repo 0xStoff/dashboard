@@ -39,10 +39,8 @@ const ProtocolTable: React.FC<{ data: Account, chainIdState: ChainIdState, hideS
         walletAmount: number | undefined
     ) => {
 
-        // const validTokens = !walletTag  ? tokens.filter(token => token.amount * token.price > hideSmallBalances) :tokens.filter(token => token.amount * token.price > hideSmallBalances);
-        const validTokens = tokens.filter(token => token.amount * token.price > 0);
+        const validTokens = tokens.filter(token => token.amount * token.price > 0 && selectedChainId === 'all' || token.chain === selectedChainId);
 
-        // console.log(validTokens)
         if (validTokens.length === 0) return;
 
         const tokenNames = validTokens.map(t => t.name).join(" + ");
@@ -108,6 +106,7 @@ const ProtocolTable: React.FC<{ data: Account, chainIdState: ChainIdState, hideS
                 {position.wallets.map((wallet, i) => (
                     // <ChipWithÒTooltip key={i} item={position} wallet={wallet} />
                     <ColoredChip      label={wallet.tag}
+                                      key={i}
                                       variant="outlined"
                                       size="small"
                                       fillPercentage='100'
@@ -133,6 +132,7 @@ const ProtocolTable: React.FC<{ data: Account, chainIdState: ChainIdState, hideS
             </Grid>
         </Grid>
     );
+
 
 
     return (
