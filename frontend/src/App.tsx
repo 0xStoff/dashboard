@@ -82,17 +82,6 @@ function App() {
         }
     }, [wallets]);
 
-    // Filter protocols for selected chain ID and tag (if relevant)
-    const getFilteredProtocols = () => {
-        if (!selectedItem) return [];
-
-        // If a specific chain is selected, filter protocols by chain
-        const filteredProtocols = selectedItem.protocols?.filter(protocol => {
-            return selectedChainId === 'all' || protocol.chain === selectedChainId;
-        }) || [];
-
-        return filteredProtocols;
-    };
 
     const clearCache = () => {
         localStorage.clear();
@@ -147,7 +136,6 @@ function App() {
                 )}
             </Container>
 
-            {/* Settings Dialog */}
             <Dialog open={openSettings} onClose={handleCloseSettings} maxWidth="sm" fullWidth>
                 <DialogTitle>Settings</DialogTitle>
                 <DialogContent>
