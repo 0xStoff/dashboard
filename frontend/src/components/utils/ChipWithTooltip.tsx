@@ -7,7 +7,7 @@ interface ColoredChipProps extends ChipProps {
     fillPercentage: number;
 }
 
-const ColoredChip = styled(({label, fillPercentage, ...other}: ColoredChipProps) => {
+export const ColoredChip = styled(({label, fillPercentage, ...other}: ColoredChipProps) => {
     const backgroundColor = 'transparent';
     const gradientColor = 'rgba(255, 255, 255, 0.16)';
     const gradient = `linear-gradient(90deg, ${gradientColor} ${fillPercentage}%, ${backgroundColor} ${fillPercentage}%)`;

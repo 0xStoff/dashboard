@@ -3,7 +3,7 @@ import { Avatar, Typography, Container, Grid, Card, CardContent, Chip } from '@m
 import { Box } from "@mui/system";
 import { Account } from "../../interfaces/account";
 import { SupplyTokenList } from '../../interfaces/protocol';
-import { ChipWithTooltip } from '../utils/ChipWithTooltip';
+import {ChipWithTooltip, ColoredChip} from '../utils/ChipWithTooltip';
 
 interface GroupedProtocols {
     [protocolName: string]: {
@@ -38,8 +38,11 @@ const ProtocolTable: React.FC<{ data: Account, chainIdState: ChainIdState, hideS
         walletTag: string | undefined,
         walletAmount: number | undefined
     ) => {
-        const validTokens = tokens.filter(token => (selectedChainId === 'all' || token.chain === selectedChainId) && token.amount * token.price > hideSmallBalances);
 
+        // const validTokens = !walletTag  ? tokens.filter(token => token.amount * token.price > hideSmallBalances) :tokens.filter(token => token.amount * token.price > hideSmallBalances);
+        const validTokens = tokens.filter(token => token.amount * token.price > 0);
+
+        // console.log(validTokens)
         if (validTokens.length === 0) return;
 
         const tokenNames = validTokens.map(t => t.name).join(" + ");
@@ -78,12 +81,19 @@ const ProtocolTable: React.FC<{ data: Account, chainIdState: ChainIdState, hideS
             acc[protocol.name] = { name: protocol.name, positions: [], totalUSD: 0 };
         }
 
-        protocol.wallets?.forEach(wallet => {
-            wallet.portfolio_items.forEach(item => {
-                const walletAmount = item.detail.supply_token_list?.[0]?.amount || 0;
-                addPosition(protocol.name, acc, item.detail.supply_token_list || [], item.name, wallet.tag, walletAmount);
+        if(protocol.wallets) {
+            protocol.wallets?.forEach(wallet => {
+                wallet.portfolio_items.forEach(item => {
+                    const walletAmount = item.detail.supply_token_list?.[0]?.amount || 0;
+                    addPosition(protocol.name, acc, item.detail.supply_token_list || [], item.name, wallet.tag, walletAmount);
+                });
             });
-        });
+        } else {
+            protocol.portfolio_item_list.forEach(item => {
+                const walletAmount = item.detail.supply_token_list?.[0]?.amount || 0;
+                addPosition(protocol.name, acc, item.detail.supply_token_list || [], item.name, '', walletAmount);
+            });
+        }
 
         return acc;
     }, {}) || {};
@@ -91,12 +101,17 @@ const ProtocolTable: React.FC<{ data: Account, chainIdState: ChainIdState, hideS
     const sortedGroupedProtocols = Object.values(groupedByProtocol).sort((a, b) => b.totalUSD - a.totalUSD);
 
     // Rendering function for positions
-    const renderPosition = (position: Position, index: number) => (
+    const renderPosition = (position: Position, index: number) => position.usdValue > hideSmallBalances && (
         <Grid item xs={12} key={index}>
             <Box sx={{ marginTop: 3, marginBottom: 2 }}>
                 <Chip sx={{ marginRight: 1 }} label={position.type} variant="filled" />
                 {position.wallets.map((wallet, i) => (
-                    <ChipWithTooltip key={i} item={position} wallet={wallet} />
+                    // <ChipWithÒTooltip key={i} item={position} wallet={wallet} />
+                    <ColoredChip      label={wallet.tag}
+                                      variant="outlined"
+                                      size="small"
+                                      fillPercentage='100'
+                    />
                 ))}
             </Box>
             <Grid container spacing={1}>
