@@ -1,19 +1,23 @@
-import {Connection, ParsedAccountData, PublicKey} from '@solana/web3.js';
-import {Raydium} from "@raydium-io/raydium-sdk-v2";
-import {TOKEN_PROGRAM_ID} from '@solana/spl-token';
-import {fetchTokenPrice} from "./fetchTokenPriceCoingecko";
-import {SolToken} from "../interfaces/solana";
-import {Account} from "../interfaces/account";
+import { Connection, ParsedAccountData, PublicKey } from '@solana/web3.js';
+import { Raydium } from "@raydium-io/raydium-sdk-v2";
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { fetchTokenPrice } from "./fetchTokenPriceCoingecko";
+import { SolToken } from "../interfaces/solana";
 
-// Fetch token balances and metadata
+// Fetch token balances and metadata with caching
 const fetchRaydiumData = async (): Promise<SolToken[]> => {
     try {
+        const cachedSolanaTokens = localStorage.getItem('solanaTokens');
+        if (cachedSolanaTokens) {
+            return JSON.parse(cachedSolanaTokens);
+        }
+
         const connection = new Connection('https://solana-rpc.publicnode.com/');
         const owner = new PublicKey('BnEzyR69UfNAaSi45KB5rkXjXekE7ErHEnVWNgYqFPzq');
 
         // Get token accounts owned by the user
         const tokenAccounts = await connection.getParsedTokenAccountsByOwner(owner, {
-            programId: TOKEN_PROGRAM_ID // SPL token program
+            programId: TOKEN_PROGRAM_ID
         });
 
         // Fetch the Raydium Token List
@@ -22,13 +26,12 @@ const fetchRaydiumData = async (): Promise<SolToken[]> => {
         });
 
         const balance = await connection.getBalance(owner);
-
         const solPrice = await fetchTokenPrice('solana') || { usd: 0 }
 
         let tokenData: SolToken[] = [{
             amount: balance / 10**9,
-            name: 'Solana', // Example name
-            logoURI: 'https://zapper.xyz/cdn-cgi/image/width=64/https://storage.googleapis.com/zapper-fi-assets/tokens/solana/So11111111111111111111111111111111111111111.png', // Example logo URL
+            name: 'Solana',
+            logoURI: 'https://zapper.xyz/cdn-cgi/image/width=64/https://storage.googleapis.com/zapper-fi-assets/tokens/solana/So11111111111111111111111111111111111111111.png',
             address: 'BnEzyR69UfNAaSi45KB5rkXjXekE7ErHEnVWNgYqFPzq',
             symbol: 'SOL',
             decimals: 9,
@@ -37,95 +40,36 @@ const fetchRaydiumData = async (): Promise<SolToken[]> => {
 
         for (const accountInfo of tokenAccounts.value) {
             const parsedAccountInfo = (accountInfo.account.data as ParsedAccountData).parsed.info;
-            const tokenAddress = parsedAccountInfo.mint; // Token mint address
+            const tokenAddress = parsedAccountInfo.mint;
             const tokenInfo = raydium.token.tokenList.find(token => token.address === tokenAddress);
 
             if (tokenInfo) {
                 const tokenPrice = await fetchTokenPrice(tokenInfo.extensions.coingeckoId || '');
                 if (tokenPrice) {
-                    tokenData.push({...tokenInfo, amount: parsedAccountInfo.tokenAmount.uiAmount, ...tokenPrice});
+                    tokenData.push({
+                        ...tokenInfo,
+                        amount: parsedAccountInfo.tokenAmount.uiAmount,
+                        usd: tokenPrice.usd
+                    });
                 }
             }
         }
 
-        return tokenData;
+        // Filter tokens with non-zero balances and save them in localStorage
+        const nonZeroTokenData = tokenData.filter(token => token.amount > 0);
+        localStorage.setItem('solanaTokens', JSON.stringify(nonZeroTokenData));
+
+        return nonZeroTokenData;
     } catch (error) {
         console.error('Error fetching token data:', error);
         return [];
     }
 };
 
-// Solana Token interface
-export interface SolanaToken {
-    id: string;
-    name: string;
-    symbol: string;
-    decimals: number;
-    logo_url: string;
-    price: number | null;
-    amount: number;
-    wallets: Array<{
-        tag: string;
-        id: number;
-        wallet: string;
-        amount: number;
-    }>;
-}
-
-// Function to fetch Solana tokens and return metadata
+// Function to fetch Solana tokens with metadata, utilizing caching
 export const fetchSolanaData = async (): Promise<null | {
     solTotalValue: number;
-    sol: {
-        wallet: string;
-        chains: {
-            total_usd_value: number;
-            chain_list: {
-                symbol: string;
-                address: string;
-                logo_url: string;
-                decimals: number;
-                name: string;
-                id: string;
-                usd_value: number
-            }[]
-        };
-        tokens: {
-            symbol: string;
-            is_core: boolean;
-            chain: string;
-            amount: number;
-            logo_url: string;
-            price: number | null;
-            decimals: number;
-            name: string;
-            wallets: { amount: number; wallet: string; tag: string; id: number }[];
-            id: string
-        }[];
-        id: number;
-        tag: string;
-        protocols: any[]
-    };
-    solMetadata: {
-        symbol: string;
-        address: string;
-        logo_url: string;
-        decimals: number;
-        name: string;
-        id: string;
-        usd_value: number
-    };
-    solTokens: {
-        symbol: string;
-        is_core: boolean;
-        chain: string;
-        amount: number;
-        logo_url: string;
-        price: number | null;
-        decimals: number;
-        name: string;
-        wallets: { amount: number; wallet: string; tag: string; id: number }[];
-        id: string
-    }[]
+    sol: any;
 }> => {
     try {
         const solanaTokens = await fetchRaydiumData();
@@ -135,7 +79,7 @@ export const fetchSolanaData = async (): Promise<null | {
             id: 'sol',
             name: 'Solana',
             logo_url: "https://zapper.xyz/cdn-cgi/image/width=64/https://storage.googleapis.com/zapper-fi-assets/tokens/solana/So11111111111111111111111111111111111111111.png",
-            usd_value: solTotalValue,
+            usd_value: solTotalValue || 0,
             address: 'BnEzyR69UfNAaSi45KB5rkXjXekE7ErHEnVWNgYqFPzq',
             symbol: 'SOL',
             decimals: 9
@@ -159,11 +103,11 @@ export const fetchSolanaData = async (): Promise<null | {
             id: 15,
             protocols: [],
             tag: "Sol",
-            tokens: solTokens, // Ensure Sol tokens are added
+            tokens: solTokens,
             wallet: "BnEzyR69UfNAaSi45KB5rkXjXekE7ErHEnVWNgYqFPzq",
         };
 
-        return { solTotalValue, solMetadata, solTokens, sol };
+        return { solTotalValue, solMetadata, sol };
     } catch (error) {
         console.error("Failed to fetch Solana data:", error);
         return null;
