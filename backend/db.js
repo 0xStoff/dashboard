@@ -7,9 +7,10 @@ const pool = new Pool({
     user: 'stoff',
     host: 'localhost',
     database: 'crypto_dashboard',
-    password: '',
+    password: 'abc123',
     port: 5432,
 });
+
 
 export const query = (text, params) => {
     return pool.query(text, params);
