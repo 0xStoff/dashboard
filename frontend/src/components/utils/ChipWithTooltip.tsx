@@ -24,10 +24,11 @@ export const ChipWithTooltip: React.FC<{ item: any, wallet: any }> = ({item, wal
     const fillPercentage = wallet.amount / item.amount * 100;
     const dollarAmount = item.price * wallet.amount;
 
+
     return (<Tooltip key={wallet.tag}
                      title={`
                      ${fillPercentage.toFixed(2)}% / 
-                     ${wallet.amount.toFixed(5)} ${item.symbol} / 
+                     ${wallet.amount.toFixed(5)} ${item.symbol || item.tokenNames} / 
                      ${dollarAmount.toFixed(2)} $ `}
                      placement="top"
     >

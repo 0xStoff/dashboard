@@ -1,104 +1,169 @@
-import React, {useEffect, useState} from 'react';
-import {AppBar, Button, Chip, Container, CssBaseline, ThemeProvider, Toolbar} from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { useFetchWallets } from './hooks/useFetchWallets';
+import { fetchEvmAccounts } from './api/fetchEvmAccounts';
 import ChainList from './components/chainlist/ChainList';
 import WalletTable from './components/wallet/WalletTable';
 import ProtocolTable from './components/protocol/ProtocolTable';
-import {Account} from './interfaces/account';
-import {mergeAndAggregateChains, mergeAndAggregateTokens, mergeProtocols} from './utils/data-transform';
-import {fetchAllAccountsData, fetchNode} from "./api/fetch";
-import {theme} from "./utils/theme";
-import {fetchWallets} from "./api/apiService";
-import {fetchSolanaData} from "./api/fetchRaydiumSolanaTokens";
-import {fetchCosmosTokens} from "./api/fetchCosmosTokens";
-
-type ChainIdState = [string, React.Dispatch<React.SetStateAction<string>>];
+import { Account } from './interfaces/account';
+import {
+    AppBar,
+    Box,
+    Button,
+    Chip,
+    CircularProgress,
+    Container,
+    CssBaseline,
+    IconButton,
+    ThemeProvider,
+    Toolbar,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+} from '@mui/material';
+import { Settings } from '@mui/icons-material';  // Settings icon
+import { theme } from './utils/theme';
+import { fetchSolanaData } from './api/fetchRaydiumSolanaTokens';
+import { fetchCosmosTokens } from './api/fetchCosmosTokens';
+import ThresholdSlider from "./utils/ThresholdSlider";
 
 function App() {
     const [selectedItem, setSelectedItem] = useState<Account | null>(null);
     const [selectedChainId, setSelectedChainId] = useState<string>('all');
-    const chainIdState: ChainIdState = [selectedChainId, setSelectedChainId];
+    const chainIdState = [selectedChainId, setSelectedChainId];
     const [list, setList] = useState<Account[] | null>(null);
-    const [wallets, setWallets] = useState([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [hideSmallBalances, setHideSmallBalances] = useState<number>(10); // Default value
+    const [openSettings, setOpenSettings] = useState(false);  // State for opening/closing settings popup
 
+    const wallets = useFetchWallets();
+
+    // Load hideSmallBalances from localStorage on initial mount
     useEffect(() => {
-        const loadWallets = async () => {
-            try {
-                const walletsData = await fetchWallets();
-                setWallets(walletsData);
-            } catch (error) {
-                console.error('Failed to load wallets:', error);
-            }
-        };
-
-        loadWallets();
+        const storedHideSmallBalances = localStorage.getItem('hideSmallBalances');
+        if (storedHideSmallBalances) {
+            setHideSmallBalances(JSON.parse(storedHideSmallBalances));
+        }
     }, []);
 
     useEffect(() => {
         if (wallets.length > 0) {
-            const fetchEvmAccounts = async () => {
+            const fetchAccountsData = async () => {
                 try {
-                    // Fetch EVM accounts
-                    const updated = await fetchAllAccountsData(wallets.filter(wallet => wallet.chain === 'evm'));
-                    const allChains = mergeAndAggregateChains(updated);
-                    const allTokens = mergeAndAggregateTokens(updated);
-                    const allProtocols = mergeProtocols(updated);
+                    setLoading(true);
+                    const { updated, allChains, allTokens, allProtocols } = await fetchEvmAccounts(wallets);
+                    const solData = await fetchSolanaData();
+                    const cosmosData = await fetchCosmosTokens();
 
-                    const {solMetadata, solTokens, sol} = await fetchSolanaData();
-                    const {chainMetadata, mergedCosmos, cosmos} = await fetchCosmosTokens()
+                    const chainsData = [...allChains, solData?.solMetadata, ...cosmosData?.chainMetadata || []].filter(chain => chain && chain.usd_value !== undefined); // Filter out any undefined or null chains
 
-                    const chainsData = [...allChains, solMetadata, ...chainMetadata];
-                    const totalUSDValue = chainsData.reduce((sum, chain) => sum + chain.usd_value, 0);
+                    const totalUSDValue = chainsData.reduce((sum, chain) => sum + (chain.usd_value || 0), 0); // Check for usd_value
 
-                    // Create all-in-one item
                     const allItem = {
                         id: 0,
                         tag: 'all',
                         wallet: '',
-                        chains: {total_usd_value: totalUSDValue, chain_list: chainsData},
-                        tokens: [...allTokens, ...solTokens, ...mergedCosmos],
+                        chains: { total_usd_value: totalUSDValue, chain_list: chainsData },
+                        tokens: [...allTokens, ...(solData?.solTokens || []), ...(cosmosData?.mergedCosmos || [])],
                         protocols: allProtocols,
                     };
 
-
-                    updated.push(sol);
-                    updated.push(cosmos);
+                    updated.push(solData?.sol);
+                    updated.push(cosmosData?.cosmos);
                     setList([allItem, ...updated]);
                     setSelectedItem(allItem);
                 } catch (error) {
-                    console.error("Failed to fetch account data:", error);
+                    console.error('Error fetching account data:', error);
+                } finally {
+                    setLoading(false);
                 }
             };
 
-            fetchEvmAccounts();
+            fetchAccountsData();
         }
     }, [wallets]);
 
+    // Filter protocols for selected chain ID and tag (if relevant)
+    const getFilteredProtocols = () => {
+        if (!selectedItem) return [];
 
-    return (<ThemeProvider theme={theme}>
-            <CssBaseline/>
+        // If a specific chain is selected, filter protocols by chain
+        const filteredProtocols = selectedItem.protocols?.filter(protocol => {
+            return selectedChainId === 'all' || protocol.chain === selectedChainId;
+        }) || [];
+
+        return filteredProtocols;
+    };
+
+    const clearCache = () => {
+        localStorage.clear();
+        window.location.reload();
+    };
+
+    const handleSliderChange = (event: Event, newValue: number | number[]) => {
+        localStorage.setItem('hideSmallBalances', JSON.stringify(newValue));
+        setHideSmallBalances(newValue as number);
+    };
+
+    const handleOpenSettings = () => {
+        setOpenSettings(true);
+    };
+
+    const handleCloseSettings = () => {
+        setOpenSettings(false);
+    };
+
+    return (
+        <ThemeProvider theme={theme}>
+            <CssBaseline />
             <AppBar position="fixed" color="default">
-                <Toolbar sx={{display: 'flex', overflowX: 'auto', '&::-webkit-scrollbar': {display: 'none'}}}>
-                    {list && list.map((acc) => (<Chip
+                <Toolbar sx={{ display: 'flex', overflowX: 'auto', '&::-webkit-scrollbar': { display: 'none' } }}>
+                    {list && list.map((acc) => (
+                        <Chip
                             key={acc.id}
-                            sx={{margin: 1}}
+                            sx={{ margin: 1 }}
                             onClick={() => setSelectedItem(acc)}
                             label={acc.tag}
                             variant={selectedItem === acc ? "outlined" : "filled"}
-                        />))}
-                    <Button onClick={() => {
-                        localStorage.clear();
-                        window.location.reload();
-                    }}>clear local storage</Button>
+                        />
+                    ))}
+
+                    {/* Settings Icon */}
+                    <IconButton color="primary" onClick={handleOpenSettings}>
+                        <Settings />
+                    </IconButton>
                 </Toolbar>
             </AppBar>
-            <Container sx={{marginY: 15}}>
-                {selectedItem ? (<>
-                        <ChainList chainIdState={chainIdState} data={selectedItem}/>
-                        <WalletTable chainIdState={chainIdState} data={selectedItem}/>
-                        <ProtocolTable chainIdState={chainIdState} data={selectedItem}/>
-                    </>) : (<div>Loading...</div>)}
+            <Container sx={{ marginY: 15 }}>
+                {loading ? (
+                    <CircularProgress />
+                ) : selectedItem ? (
+                    <>
+                        <ChainList chainIdState={chainIdState} data={selectedItem} hideSmallBalances={hideSmallBalances} />
+                        <WalletTable chainIdState={chainIdState} data={selectedItem} hideSmallBalances={hideSmallBalances} />
+                        <ProtocolTable chainIdState={chainIdState} data={selectedItem} hideSmallBalances={hideSmallBalances} />
+                    </>
+                ) : (
+                    <div>No data available</div>
+                )}
             </Container>
-        </ThemeProvider>);
+
+            {/* Settings Dialog */}
+            <Dialog open={openSettings} onClose={handleCloseSettings} maxWidth="sm" fullWidth>
+                <DialogTitle>Settings</DialogTitle>
+                <DialogContent>
+                    <ThresholdSlider
+                        value={hideSmallBalances}
+                        onChange={handleSliderChange}
+                        min={0}
+                        max={300}
+                        label="Hide Small Balances"
+                    />
+                    <Button onClick={clearCache}>Clear Local Storage</Button>
+
+                </DialogContent>
+            </Dialog>
+        </ThemeProvider>
+    );
 }
 
 export default App;
