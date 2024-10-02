@@ -1,40 +1,5 @@
-import {fileURLToPath} from "url";
-import path from "path";
-import fs from "fs";
-import axios from "axios";
 import {pool} from "../db.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const LOGO_DIR = path.join(__dirname, '../logos');
-
-if (!fs.existsSync(LOGO_DIR)) {
-    fs.mkdirSync(LOGO_DIR);
-}
-
-const downloadLogo = async (logoUrl, chainId) => {
-    const logoPath = path.join(LOGO_DIR, `${chainId}.png`);
-    const writer = fs.createWriteStream(logoPath);
-
-    try {
-        const response = await axios({
-            url: logoUrl,
-            method: 'GET',
-            responseType: 'stream',
-        });
-
-        response.data.pipe(writer);
-
-        return new Promise((resolve, reject) => {
-            writer.on('finish', () => resolve(logoPath));
-            writer.on('error', reject);
-        });
-    } catch (error) {
-        console.error(`Error downloading logo for chain ${chainId}: ${error.message}`);
-        return path.join(LOGO_DIR, 'default.png');
-    }
-};
+import {downloadLogo} from "./download_logo.js";
 
 const insertOrUpdateChain = async (table, columns, values) => {
     const query = `
