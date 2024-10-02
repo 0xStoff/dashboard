@@ -76,66 +76,117 @@ export const fetchAndSaveEvmTokenDataForAllWallets = async () => {
     }
 };
 
-
-export const fetchAndSaveSolTokenDataForAllWallets = async () => {
-
-    const wallet = 'BnEzyR69UfNAaSi45KB5rkXjXekE7ErHEnVWNgYqFPzq';
-
+// Fetch and save Solana token data
+export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
     const connection = new Connection('https://solana-rpc.publicnode.com/');
-    const owner = new PublicKey(wallet);
+    const owner = new PublicKey(walletAddress);
 
-
-    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(owner, {
-        programId: TOKEN_PROGRAM_ID
-    });
+    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(owner, { programId: TOKEN_PROGRAM_ID });
 
     const raydium = await Raydium.load({
-        connection, owner: owner, disableLoadToken: false
+        connection,
+        owner,
+        disableLoadToken: false
     });
 
     const balance = await connection.getBalance(owner);
-    const solPrice = await fetchTokenPrice('solana') || {usd: 0}
+    const solPrice = await fetchTokenPrice('solana') || { usd: 0 };
 
     let tokenData = [{
         amount: balance / 10 ** 9,
         name: 'Solana',
         logoURI: 'https://zapper.xyz/cdn-cgi/image/width=64/https://storage.googleapis.com/zapper-fi-assets/tokens/solana/So11111111111111111111111111111111111111111.png',
-        address: wallet,
         symbol: 'SOL',
         decimals: 9,
         usd: solPrice.usd
     }];
 
     for (const accountInfo of tokenAccounts.value) {
-        const parsedAccountInfo = (accountInfo.account.data).parsed.info;
+        const parsedAccountInfo = accountInfo.account.data.parsed.info;
         const tokenAddress = parsedAccountInfo.mint;
-        const tokenInfo = raydium.token.tokenList.find(token => token.address === tokenAddress);
 
+        const tokenInfo = raydium.token.tokenList.find(token => token.address === tokenAddress);
 
         if (tokenInfo) {
             const tokenPrice = await fetchTokenPrice(tokenInfo.extensions.coingeckoId || '');
             if (tokenPrice) {
                 tokenData.push({
-                    ...tokenInfo, amount: parsedAccountInfo.tokenAmount.uiAmount, usd: tokenPrice.usd
+                    ...tokenInfo,
+                    amount: parsedAccountInfo.tokenAmount.uiAmount,
+                    usd: tokenPrice.usd
                 });
             }
         }
     }
 
-    return tokenData.filter(token => token.amount > 0);
-}
+    // console.log(tokenData)
 
+
+    tokenData = tokenData.filter(token => token.amount > 0);
+
+    for (const token of tokenData) {
+        const {  name, symbol, decimals, logoURI, amount, usd } = token;
+
+        const queryText = `
+            INSERT INTO tokens (chain_id, name, symbol, decimals, logo_path, price)
+            VALUES ('sol', $1, $2, $3, $4, $5)
+            ON CONFLICT (chain_id, symbol)
+            DO UPDATE SET name = $1, decimals = $3, logo_path = $4, price = $5
+            RETURNING id;
+        `;
+
+        const logoPath = logoURI ? await downloadLogo(logoURI, symbol) : null;
+        const { rows } = await pool.query(queryText, [name, symbol, decimals, logoPath, usd]);
+
+        const tokenId = rows[0].id;
+
+        // Save wallet-token relationship in wallets_tokens table
+        const walletQuery = `
+            INSERT INTO wallets_tokens (wallet_id, token_id, amount, raw_amount)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (wallet_id, token_id)
+            DO UPDATE SET amount = $3, raw_amount = $4;
+        `;
+        const rawAmount = amount * 10 ** decimals; // Convert to raw amount
+        await pool.query(walletQuery, [walletId, tokenId, amount, rawAmount]);
+    }
+
+    console.log(`Token data successfully saved/updated for Solana wallet ID ${walletId}`);
+};
+
+// Fetch token price using Coingecko API
 export const fetchTokenPrice = async (coingeckoId) => {
     try {
         if (!coingeckoId) return null;
         const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?x_cg_demo_api_key=${process.env.COINGECKO_API_KEY}`, {
             params: {
-                ids: coingeckoId, vs_currencies: 'usd'
+                ids: coingeckoId,
+                vs_currencies: 'usd'
             }
         });
-        return response.data[coingeckoId]?.usd ? {usd: response.data[coingeckoId].usd} : null;
+        return response.data[coingeckoId]?.usd ? { usd: response.data[coingeckoId].usd } : null;
     } catch (error) {
         console.error(`Error fetching price for ${coingeckoId}:`, error);
         return null;
+    }
+};
+
+export const fetchAndSaveSolTokenDataForAllWallets = async () => {
+    try {
+        const walletQuery = `
+            SELECT id, wallet
+            FROM wallets
+            WHERE chain = 'sol'
+        `;
+        const { rows: wallets } = await pool.query(walletQuery);
+
+        for (const wallet of wallets) {
+            const { id: walletId, wallet: walletAddress } = wallet;
+            await fetchAndSaveSolTokenData(walletId, walletAddress);
+        }
+
+        console.log('Token data for all Solana wallets successfully updated');
+    } catch (error) {
+        console.error('Error fetching Solana token data for all wallets:', error.message);
     }
 };

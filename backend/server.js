@@ -44,13 +44,12 @@ initDb().then(() => {
     app.listen(port, async () => {
         console.log('Server running on port 3000');
 
-        // const test = await fetchAndSaveSolTokenDataForAllWallets();
-        // console.log(test)
     });
 }).catch(error => {
     console.error('Failed to sync database:', error);
 });
 
+         // await fetchAndSaveSolTokenDataForAllWallets();
 
         // updateNonEvmChainsData(nonEvmChains)
         //     .then(() => console.log('Non-EVM chains updated'))
