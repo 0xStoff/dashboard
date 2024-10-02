@@ -134,3 +134,27 @@ CREATE TABLE non_evm_chains
     logo_path VARCHAR(255)
 );
 
+
+CREATE TABLE tokens
+(
+    id               SERIAL PRIMARY KEY,
+    chain_id         VARCHAR(255) NOT NULL,
+    name             VARCHAR(255) NOT NULL,
+    symbol           VARCHAR(255)  NOT NULL,
+    decimals         INT          NOT NULL,
+    price            DECIMAL(20, 8),
+    price_24h_change DECIMAL(10, 8),
+    logo_path        VARCHAR(255),
+    UNIQUE (chain_id, symbol)
+);
+
+CREATE TABLE wallets_tokens
+(
+    id         SERIAL PRIMARY KEY,
+    wallet_id  INT REFERENCES wallets (id) ON DELETE CASCADE,
+    token_id   INT REFERENCES tokens (id) ON DELETE CASCADE,
+    amount     DECIMAL(20, 8),
+    raw_amount DECIMAL(40, 0),
+    UNIQUE (wallet_id, token_id)
+);
+
