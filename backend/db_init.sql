@@ -105,14 +105,14 @@ CREATE TABLE platforms
 
 CREATE TABLE coin_platforms
 (
-    coin_id      VARCHAR(100) REFERENCES coins(id),
-    platform_id  INT REFERENCES platforms(id),
+    coin_id     VARCHAR(100) REFERENCES coins (id),
+    platform_id INT REFERENCES platforms (id),
     PRIMARY KEY (coin_id, platform_id)
 );
 
 
 
-CREATE TABLE chains
+CREATE TABLE evm_chains
 (
     id               SERIAL PRIMARY KEY,
     chain_id         VARCHAR(255) UNIQUE NOT NULL,
@@ -121,3 +121,16 @@ CREATE TABLE chains
     wrapped_token_id VARCHAR(255),
     logo_path        VARCHAR(255)
 );
+
+
+CREATE TABLE non_evm_chains
+(
+    id        SERIAL PRIMARY KEY,
+    chain_id  VARCHAR(255) UNIQUE NOT NULL,
+    name      VARCHAR(255)        NOT NULL,
+    symbol    VARCHAR(10)         NOT NULL,
+    decimals  INT                 NOT NULL,
+    endpoint  VARCHAR(255),
+    logo_path VARCHAR(255)
+);
+
