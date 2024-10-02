@@ -1,31 +1,30 @@
 // server.js
 import express from 'express';
 import cors from 'cors';
-import walletRoutes from './api/wallets.js';
-import createChainsRouter from './api/chains.js';
 import dotenv from 'dotenv';
+import walletRoutes from "./api/wallets.js";
+import chainsRoutes, {updateChainsData} from "./api/chains.js";
 
-// Load environment variables from .env file
 dotenv.config();
 
 const app = express();
 
 const corsOptions = {
-    origin: 'http://localhost:8080', // Allow only this origin
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed methods
-    credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+    origin: 'http://localhost:8080',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
 };
 
-app.use(cors(corsOptions)); // Enable CORS with options
+app.use(cors(corsOptions));
 app.use(express.json());
 
+app.use('/api', chainsRoutes);
 app.use('/api', walletRoutes);
-
-// Pass ACCESS_KEY to chains.js
-const ACCESS_KEY = process.env.RABBY_ACCESS_KEY;
-app.use('/api', createChainsRouter(ACCESS_KEY)); // Chain routes with ACCESS_KEY
 
 const port = 3000;
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
+    // updateChainsData(process.env.RABBY_ACCESS_KEY)
+    //     .then(() => console.log('Initial chain data update complete'))
+    //     .catch((err) => console.error('Failed to update chains on startup:', err));
 });
