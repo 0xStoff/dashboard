@@ -9,7 +9,9 @@ import sequelize from "./sequelize.js";
 import Wallet from "./models/Wallet.js";
 import Token from "./models/Token.js";
 import WalletToken from "./models/WalletToken.js";
-import {fetchAndSaveSolTokenDataForAllWallets} from "./utils/token_data.js";
+import {updateChainsData, updateNonEvmChainsData} from "./utils/chain_data.js";
+import {evmChains, nonEvmChains} from "./utils/chainlist.js";
+import {fetchAndSaveEvmTokenDataForAllWallets, fetchAndSaveSolTokenDataForAllWallets} from "./utils/token_data.js";
 
 dotenv.config();
 
@@ -35,7 +37,7 @@ const setupAssociations = () => {
 };
 
 const initDb = async () => {
-    setupAssociations(); // Set up associations only after both models are initialized
+    setupAssociations();
     await sequelize.sync();
 };
 
@@ -43,14 +45,6 @@ initDb().then(() => {
     console.log('Database synced');
     app.listen(port, async () => {
         console.log('Server running on port 3000');
-
-    });
-}).catch(error => {
-    console.error('Failed to sync database:', error);
-});
-
-         // await fetchAndSaveSolTokenDataForAllWallets();
-
         // updateNonEvmChainsData(nonEvmChains)
         //     .then(() => console.log('Non-EVM chains updated'))
         //     .catch((error) => console.error('Error updating non-EVM chains:', error));
@@ -60,7 +54,16 @@ initDb().then(() => {
         //     .then(() => console.log('Initial chain data update complete'))
         //     .catch((err) => console.error('Failed to update chains on startup:', err));
         //
+        // fetchAndSaveSolTokenDataForAllWallets()
+        //     .then(() => console.log('Token Data for sol Wallets fetched'))
+        //     .catch((err) => console.error('Failed to fetch Tokens:', err));
+        //
         //
         // fetchAndSaveEvmTokenDataForAllWallets()
         //     .then(() => console.log('Token Data for all Wallets fetched'))
         //     .catch((err) => console.error('Failed to fetch Tokens:', err));
+    });
+}).catch(error => {
+    console.error('Failed to sync database:', error);
+});
+

@@ -73,7 +73,7 @@ export const nonEvmChains = [{
     logo_url: "https://cryptologos.cc/logos/injective-inj-logo.png?v=035",
     symbol: "INJ"
 }, {
-    id: "solana",
+    id: "sol",
     name: "Solana",
     endpoint: "https://solana-rpc.publicnode.com/",
     decimals: 9,
