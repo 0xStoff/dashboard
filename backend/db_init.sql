@@ -23,7 +23,7 @@ CREATE TABLE historical_prices
 );
 
 -- Create the users table
-CREATE TABLE users
+CREATE TABLE wallets
 (
     id     SERIAL PRIMARY KEY,
     wallet VARCHAR(255) NOT NULL UNIQUE,

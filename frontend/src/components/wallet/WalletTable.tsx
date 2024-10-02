@@ -22,12 +22,6 @@ type ChainIdState = [ChainId, React.Dispatch<React.SetStateAction<ChainId>>];
 const WalletTable: React.FC<{ data: Account, chainIdState: ChainIdState }> = ({ data, chainIdState, hideSmallBalances }) => {
     const [selectedChainId] = chainIdState;
 
-    // Add a state for small balance threshold
-    // const [hideSmallBalances, setHideSmallBalances] = useState<number>(20); // Default value
-
-    // const handleSliderChange = (event: Event, newValue: number | number[]) => {
-    //     setHideSmallBalances(newValue as number);
-    // };
 
     const filterAndSortData = useCallback((data: WalletList) => {
         return data

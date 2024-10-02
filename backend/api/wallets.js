@@ -1,34 +1,48 @@
 // api/wallets.js
 import express from 'express';
-import {query} from '../db.js'; // Import the query function
+import Wallet from "../models/Wallet.js";
 
 const router = express.Router();
 
 router.get('/wallets', async (req, res) => {
     try {
-        // Get chain type from query parameters (optional)
         const { chain } = req.query;
+        const whereClause = chain ? { chain } : undefined;
 
-        // SQL query that filters by chain type if provided
-        let queryText = 'SELECT id, wallet, tag, chain FROM wallets';
-        const queryParams = [];
+        const wallets = await Wallet.findAll({
+            where: whereClause,
+            order: [['id', 'ASC']],
+        });
 
-        // Append WHERE clause if chain filter is present
-        if (chain) {
-            queryText += ' WHERE chain = $1';
-            queryParams.push(chain);
-        }
-
-        queryText += ' ORDER BY id';
-
-        // Execute query with or without chain filter
-        const result = await query(queryText, queryParams);
-
-        res.json(result.rows);
+        res.json(wallets);
     } catch (err) {
-        console.error('Error fetching wallets', err);
+        console.error('Error fetching wallets:', err);
         res.status(500).json({ error: 'Failed to fetch wallets' });
     }
 });
 
 export default router;
+
+
+// router.get('/wallets', async (req, res) => {
+//     try {
+//         const { chain } = req.query;
+//
+//         let queryText = 'SELECT id, wallet, tag, chain FROM wallets';
+//         const queryParams = [];
+//
+//         if (chain) {
+//             queryText += ' WHERE chain = $1';
+//             queryParams.push(chain);
+//         }
+//
+//         queryText += ' ORDER BY id';
+//
+//         const result = await query(queryText, queryParams);
+//
+//         res.json(result.rows);
+//     } catch (err) {
+//         console.error('Error fetching wallets', err);
+//         res.status(500).json({ error: 'Failed to fetch wallets' });
+//     }
+// });
