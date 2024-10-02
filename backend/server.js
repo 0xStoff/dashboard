@@ -9,6 +9,7 @@ import sequelize from "./sequelize.js";
 import Wallet from "./models/Wallet.js";
 import Token from "./models/Token.js";
 import WalletToken from "./models/WalletToken.js";
+import {fetchAndSaveSolTokenDataForAllWallets} from "./utils/token_data.js";
 
 dotenv.config();
 
@@ -40,8 +41,11 @@ const initDb = async () => {
 
 initDb().then(() => {
     console.log('Database synced');
-    app.listen(port, () => {
+    app.listen(port, async () => {
         console.log('Server running on port 3000');
+
+        // const test = await fetchAndSaveSolTokenDataForAllWallets();
+        // console.log(test)
     });
 }).catch(error => {
     console.error('Failed to sync database:', error);
@@ -58,6 +62,6 @@ initDb().then(() => {
         //     .catch((err) => console.error('Failed to update chains on startup:', err));
         //
         //
-        // fetchAndSaveTokenDataForAllWallets()
+        // fetchAndSaveEvmTokenDataForAllWallets()
         //     .then(() => console.log('Token Data for all Wallets fetched'))
         //     .catch((err) => console.error('Failed to fetch Tokens:', err));
