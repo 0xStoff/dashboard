@@ -79,8 +79,8 @@ function App() {
                 try {
                     setLoading(true);
                     const { updated, allChains, allTokens, allProtocols } = await fetchEvmAccounts(wallets);
-                    const solData = await fetchSolanaData();
-                    const cosmosData = await fetchCosmosTokens();
+                    const solData = await fetchSolanaData(wallets.filter(w => w.chain === 'sol'));
+                    const cosmosData = await fetchCosmosTokens(wallets.filter(w => w.chain === 'cosmos'));
 
                     const chainsData = [...allChains, solData?.solMetadata, ...cosmosData?.chainMetadata || []].filter(chain => chain && chain.usd_value !== undefined); // Filter out any undefined or null chains
 
@@ -97,7 +97,7 @@ function App() {
 
                     updated.push(solData?.sol);
                     updated.push(cosmosData?.cosmos);
-                    setList([allItem, ...updated]);
+                    setList([allItem, ...updated].filter(Boolean));
                     setSelectedItem(allItem);
                 } catch (error) {
                     console.error('Error fetching account data:', error);
@@ -170,15 +170,17 @@ function App() {
             <CssBaseline />
             <AppBar position="fixed" color="default">
                 <Toolbar sx={{ display: 'flex', overflowX: 'auto', '&::-webkit-scrollbar': { display: 'none' } }}>
-                    {list && list.map((acc) => (
-                        <Chip
-                            key={acc.id}
-                            sx={{ margin: 1 }}
-                            onClick={() => setSelectedItem(acc)}
-                            label={acc.tag}
-                            variant={selectedItem === acc ? "outlined" : "filled"}
-                        />
-                    ))}
+                    {list && list
+                        .filter(Boolean) // This removes any undefined or null items
+                        .map((acc) => (
+                            <Chip
+                                key={acc.id} // This will now only be called for valid `acc` objects
+                                sx={{ margin: 1 }}
+                                onClick={() => setSelectedItem(acc)}
+                                label={acc.tag}
+                                variant={selectedItem === acc ? "outlined" : "filled"}
+                            />
+                        ))}
 
                     {/* Settings Icon */}
                     <IconButton color="primary" onClick={handleOpenSettings}>

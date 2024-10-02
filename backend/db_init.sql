@@ -109,3 +109,15 @@ CREATE TABLE coin_platforms
     platform_id  INT REFERENCES platforms(id),
     PRIMARY KEY (coin_id, platform_id)
 );
+
+
+
+CREATE TABLE chains
+(
+    id               SERIAL PRIMARY KEY,
+    chain_id         VARCHAR(255) UNIQUE NOT NULL,
+    name             VARCHAR(255)        NOT NULL,
+    native_token_id  VARCHAR(255),
+    wrapped_token_id VARCHAR(255),
+    logo_path        VARCHAR(255)
+);

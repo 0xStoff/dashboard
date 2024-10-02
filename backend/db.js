@@ -3,7 +3,7 @@ import pkg from 'pg';
 const { Pool } = pkg;
 
 // Replace these values with your actual DB configuration
-const pool = new Pool({
+export const pool = new Pool({
     user: 'stoff',
     host: 'localhost',
     database: 'crypto_dashboard',
