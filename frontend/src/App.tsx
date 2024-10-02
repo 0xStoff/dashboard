@@ -18,7 +18,7 @@ import {
     Toolbar,
     Dialog,
     DialogTitle,
-    DialogContent,
+    DialogContent, Typography,
 } from '@mui/material';
 import { Settings } from '@mui/icons-material';  // Settings icon
 import { theme } from './utils/theme';
@@ -34,16 +34,44 @@ function App() {
     const [loading, setLoading] = useState<boolean>(true);
     const [hideSmallBalances, setHideSmallBalances] = useState<number>(10); // Default value
     const [openSettings, setOpenSettings] = useState(false);  // State for opening/closing settings popup
+    const [nextClearTime, setNextClearTime] = useState<number | null>(null);
+    const [countdown, setCountdown] = useState<string>('');  // Timer for next cache clear
 
     const wallets = useFetchWallets();
 
-    // Load hideSmallBalances from localStorage on initial mount
     useEffect(() => {
         const storedHideSmallBalances = localStorage.getItem('hideSmallBalances');
+        const cacheClears = JSON.parse(localStorage.getItem('cacheClears') || '[]');
+        const now = Date.now();
+
         if (storedHideSmallBalances) {
             setHideSmallBalances(JSON.parse(storedHideSmallBalances));
         }
+
+        // Check if we need to show the countdown timer
+        if (cacheClears.length > 0) {
+            const lastClearTime = cacheClears[cacheClears.length - 1];
+            const nextClear = lastClearTime + 8 * 60 * 60 * 1000;
+            setNextClearTime(nextClear);
+
+            // Start countdown timer
+            if (nextClear > now) {
+                const remainingTime = nextClear - now;
+                setCountdown(formatTime(remainingTime));
+                const timer = setInterval(() => {
+                    const newRemainingTime = nextClear - Date.now();
+                    if (newRemainingTime <= 0) {
+                        clearInterval(timer);
+                        setCountdown('');
+                    } else {
+                        setCountdown(formatTime(newRemainingTime));
+                    }
+                }, 1000);
+                return () => clearInterval(timer);
+            }
+        }
     }, []);
+
 
     useEffect(() => {
         if (wallets.length > 0) {
@@ -83,9 +111,45 @@ function App() {
     }, [wallets]);
 
 
+
+    // Helper function to format the countdown time
+    const formatTime = (time: number) => {
+        const hours = Math.floor((time / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((time / (1000 * 60)) % 60);
+        const seconds = Math.floor((time / 1000) % 60);
+        return `${hours}h ${minutes}m ${seconds}s`;
+    };
+
     const clearCache = () => {
+        const now = Date.now();
+        const cacheClears = JSON.parse(localStorage.getItem('cacheClears') || '[]');
+
+        // Filter out clears older than 24 hours
+        const recentClears = cacheClears.filter((clearTime: number) => now - clearTime < 24 * 60 * 60 * 1000);
+
+        // Check if we've cleared the cache more than 3 times in the last 24 hours or in the last 8 hours
+        if (recentClears.length >= 3) {
+            alert("Cache can only be cleared 3 times in 24 hours.");
+            return;
+        }
+
+        if (recentClears.length > 0 && now - recentClears[recentClears.length - 1] < 8 * 60 * 60 * 1000) {
+            alert("Cache can only be cleared once every 8 hours.");
+            return;
+        }
+
+        // Clear the cache
         localStorage.clear();
         window.location.reload();
+
+        // Add current timestamp to cacheClears
+        recentClears.push(now);
+        localStorage.setItem('cacheClears', JSON.stringify(recentClears));
+
+        // Update nextClearTime
+        const nextClear = now + 8 * 60 * 60 * 1000;
+        setNextClearTime(nextClear);
+        setCountdown(formatTime(nextClear - now));
     };
 
     const handleSliderChange = (event: Event, newValue: number | number[]) => {
@@ -146,8 +210,12 @@ function App() {
                         max={300}
                         label="Hide Small Balances"
                     />
-                    <Button onClick={clearCache}>Clear Local Storage</Button>
-
+                    <Button onClick={clearCache} disabled={!!countdown}>Clear Local Storage</Button>
+                    {countdown && (
+                        <Typography variant="body2" color="textSecondary">
+                            Next clear available in: {countdown}
+                        </Typography>
+                    )}
                 </DialogContent>
             </Dialog>
         </ThemeProvider>
