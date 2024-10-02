@@ -6,6 +6,29 @@ import WalletToken from "../models/WalletToken.js";
 
 const router = express.Router();
 
+
+const flattenAmount = (tokens) => tokens.map(token => {
+    const {wallets_tokens, ...tokenData} = token.get();
+    return {
+        ...tokenData, amount: wallets_tokens.amount, raw_amount: wallets_tokens.raw_amount,
+    };
+});
+
+const flattenSingleWallet = (wallet) => {
+    const {id, wallet: walletAddress, tag, chain, tokens} = wallet.get(); // Extract wallet details
+    const modifiedTokens = flattenAmount(tokens)
+    return {
+        id, wallet: walletAddress, tag, chain, tokens: modifiedTokens,
+    };
+};
+
+const flattenAllWallets = (wallets) => wallets.map(wallet => {
+    const modifiedTokens = flattenAmount(wallet.tokens)
+    return {
+        ...wallet.get(), tokens: modifiedTokens,
+    };
+});
+
 router.get('/wallets', async (req, res) => {
     try {
         const {chain} = req.query;
@@ -14,17 +37,20 @@ router.get('/wallets', async (req, res) => {
         const wallets = await Wallet.findAll({
             where: whereClause, include: [{
                 model: Token, through: {
-                    model: WalletToken, attributes: ['amount', 'raw_amount'],
+                    model: WalletToken, attributes: ['amount', 'raw_amount'], // as: 'amount'
                 }, attributes: ['name', 'symbol', 'decimals', 'price', 'logo_path', 'chain_id'],
             }], order: [['id', 'ASC']],
         });
 
-        res.json(wallets);
+        const result = flattenAllWallets(wallets)
+
+        res.json(result);
     } catch (err) {
         console.error('Error fetching wallets:', err);
         res.status(500).json({error: 'Failed to fetch wallets'});
     }
 });
+
 router.get('/wallets/:walletId', async (req, res) => {
     const {walletId} = req.params;
 
@@ -33,7 +59,7 @@ router.get('/wallets/:walletId', async (req, res) => {
             where: {id: walletId}, include: [{
                 model: Token, through: {
                     model: WalletToken, attributes: ['amount', 'raw_amount'],
-                },
+                }, attributes: ['id', 'name', 'symbol', 'decimals', 'price', 'logo_path', 'chain_id'],
             }],
         });
 
@@ -41,7 +67,8 @@ router.get('/wallets/:walletId', async (req, res) => {
             return res.status(404).json({error: `Wallet with id ${walletId} not found`});
         }
 
-        res.json(wallet); // Return the tokens related to the wallet
+        const result = flattenSingleWallet(wallet);
+        res.json(result);
     } catch (err) {
         console.error(`Error fetching tokens for wallet ${walletId}:`, err);
         res.status(500).json({error: `Failed to fetch tokens for wallet ${walletId}`});
