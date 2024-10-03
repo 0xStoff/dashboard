@@ -36,8 +36,9 @@ const WalletTable: React.FC<{ data: Account, chainIdState: ChainIdState }> = ({ 
         return chain ? chain.logo_url : '';
     };
 
-    return (
-            <Card sx={{height: 'fit-content', width: 'fit-content' }}>
+    const widthClass = data.id ? 'max-content' : 'min-content'
+        return (
+            <Card sx={{height: 'fit-content', width: widthClass}}>
                 <Table>
                     <TableHead>
                         <TableRow>

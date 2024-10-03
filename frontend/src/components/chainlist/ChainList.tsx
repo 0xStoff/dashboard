@@ -29,7 +29,7 @@ const ChainList: React.FC<{ data: Account, chainIdState: ChainIdState, hideSmall
 
 
     return (
-            <Card sx={{ width: 'fit-content', height: 'fit-content' }}>
+            <Card sx={{ width: 'fit-content' , height: 'fit-content', marginRight: 5 }}>
                 <Table>
                     <TableHead>
                         <TableRow>
