@@ -5,7 +5,7 @@ export const fetchTokenPrice = async (coingeckoId: string): Promise<{ usd: numbe
         if (!coingeckoId) return null;
         const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?x_cg_demo_api_key=${process.env.REACT_APP_COINGECKO_API_KEY}`, {
             params: {
-                ids: coingeckoId, // Token name in CoinGecko's format
+                ids: coingeckoId, // TokenModel name in CoinGecko's format
                 vs_currencies: 'usd'
             }
         });

@@ -1,13 +1,7 @@
 import axios from "axios";
+import fetchDebankData from "./debank_api.js";
 
-export const evmChains = async () => {
-    const response = await axios.get('https://pro-openapi.debank.com/v1/chain/list', {
-        headers: {
-            accept: 'application/json', AccessKey: process.env.RABBY_ACCESS_KEY,
-        },
-    });
-    return response.data
-}
+export const evmChains = async () => fetchDebankData('/chain/list')
 
 export const nonEvmChains = [{
     id: "akash-network",

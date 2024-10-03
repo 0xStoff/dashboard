@@ -1,8 +1,8 @@
 // api/wallets.js
 import express from 'express';
-import Wallet from "../models/Wallet.js";
-import Token from "../models/Token.js";
-import WalletToken from "../models/WalletToken.js";
+import WalletModel from "../models/WalletModel.js";
+import TokenModel from "../models/TokenModel.js";
+import WalletTokenModel from "../models/WalletTokenModel.js";
 
 const router = express.Router();
 
@@ -34,10 +34,10 @@ router.get('/wallets', async (req, res) => {
         const {chain} = req.query;
         const whereClause = chain ? {chain} : undefined;
 
-        const wallets = await Wallet.findAll({
+        const wallets = await WalletModel.findAll({
             where: whereClause, include: [{
-                model: Token, through: {
-                    model: WalletToken, attributes: ['amount', 'raw_amount'], // as: 'amount'
+                model: TokenModel, through: {
+                    model: WalletTokenModel, attributes: ['amount', 'raw_amount'],
                 }, attributes: ['name', 'symbol', 'decimals', 'price', 'logo_path', 'chain_id'],
             }], order: [['id', 'ASC']],
         });
@@ -55,10 +55,10 @@ router.get('/wallets/:walletId', async (req, res) => {
     const {walletId} = req.params;
 
     try {
-        const wallet = await Wallet.findOne({
+        const wallet = await WalletModel.findOne({
             where: {id: walletId}, include: [{
-                model: Token, through: {
-                    model: WalletToken, attributes: ['amount', 'raw_amount'],
+                model: TokenModel, through: {
+                    model: WalletTokenModel, attributes: ['amount', 'raw_amount'],
                 }, attributes: ['id', 'name', 'symbol', 'decimals', 'price', 'logo_path', 'chain_id'],
             }],
         });

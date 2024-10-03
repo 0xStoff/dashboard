@@ -1,9 +1,9 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../sequelize.js';
-import Wallet from './Wallet.js';
-import WalletToken from './WalletToken.js';
+import WalletModel from './WalletModel.js';
+import WalletTokenModel from './WalletTokenModel.js';
 
-const Token = sequelize.define('tokens', {
+const TokenModel = sequelize.define('tokens', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -35,4 +35,4 @@ const Token = sequelize.define('tokens', {
     timestamps: false,
 });
 
-export default Token;
+export default TokenModel;

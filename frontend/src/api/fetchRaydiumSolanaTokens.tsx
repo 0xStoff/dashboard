@@ -20,7 +20,7 @@ const fetchRaydiumData = async (wallet): Promise<SolToken[]> => {
             programId: TOKEN_PROGRAM_ID
         });
 
-        // Fetch the Raydium Token List
+        // Fetch the Raydium TokenModel List
         const raydium = await Raydium.load({
             connection, owner: owner, disableLoadToken: false
         });

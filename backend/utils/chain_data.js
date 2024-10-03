@@ -1,41 +1,49 @@
-import {pool} from "../db.js";
 import {downloadLogo} from "./download_logo.js";
+import EvmChains from "../models/EvmChainsModel.js";
+import NonEvmChains from "../models/NonEvmChainsModel.js";
 
-const insertOrUpdateChain = async (table, columns, values) => {
-    const query = `
-        INSERT INTO ${table} (${columns.join(", ")})
-        VALUES (${values.map((_, i) => `$${i + 1}`).join(", ")})
-        ON CONFLICT (chain_id)
-        DO UPDATE SET ${columns.slice(1).map((col, i) => `${col} = $${i + 2}`).join(", ")}
-    `;
-
-    await pool.query(query, values);
-};
-
-const updateChainData = async (chains, tableName, columns) => {
+const insertOrUpdateChain = async (model, data) => {
     try {
-        const updatePromises = chains.map(async (chain) => {
-            let logoPath = null;
-            try {
-                logoPath = await downloadLogo(chain.logo_url, chain.id);
-            } catch (error) {
-                console.error(`Error downloading logo for chain ${chain.id}:`, error);
-            }
-
-            const values = tableName === 'evm_chains'
-                ? [chain.id, chain.name, chain.native_token_id, chain.wrapped_token_id, logoPath]
-                : [chain.id, chain.name, chain.symbol, chain.decimals, chain.endpoint, logoPath];
-
-            await insertOrUpdateChain(tableName, columns, values);
+        await model.upsert(data, {
+            conflictFields: ['chain_id'], returning: true,
         });
-
-        await Promise.all(updatePromises);
-        console.log(`${tableName} data updated successfully`);
     } catch (error) {
-        console.error(`Error updating ${tableName}:`, error);
-        throw new Error(`Failed to update ${tableName}`);
+        console.error('Error during upsert:', error);
+        throw new Error('Failed to upsert data');
     }
 };
 
-export const updateChainsData = (chains) => updateChainData(chains, 'evm_chains', ['chain_id', 'name', 'native_token_id', 'wrapped_token_id', 'logo_path']);
-export const updateNonEvmChainsData = (chains) => updateChainData(chains, 'non_evm_chains', ['chain_id', 'name', 'symbol', 'decimals', 'endpoint', 'logo_path']);
+const updateChainData = async (chains, model) => {
+    try {
+        const updatePromises = chains.map(async (chain) => {
+            const {id, name, native_token_id, wrapped_token_id, symbol, decimals, endpoint, logo_url} = chain;
+            const logo_path = await downloadLogo(logo_url, id);
+
+            const data = model.name === 'evm_chains' ? {
+                chain_id: id,
+                name,
+                native_token_id,
+                wrapped_token_id,
+                logo_path,
+            } : {
+                chain_id: id,
+                name,
+                symbol,
+                decimals,
+                endpoint,
+                logo_path,
+            };
+
+            await insertOrUpdateChain(model, data);
+        });
+
+        await Promise.all(updatePromises);
+        console.log(`${model.name} data updated successfully`);
+    } catch (error) {
+        console.error(`Error updating ${model.name}:`, error);
+        throw new Error(`Failed to update ${model.name}`);
+    }
+};
+
+export const updateChainsData = (chains) => updateChainData(chains, EvmChains);
+export const updateNonEvmChainsData = (chains) => updateChainData(chains, NonEvmChains);

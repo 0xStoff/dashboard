@@ -1,6 +1,6 @@
 // /api/evm_chains.js
 import express from "express";
-import EvmChains from "../models/EvmChains.js";
+import EvmChains from "../models/EvmChainsModel.js";
 
 const router = express.Router();
 

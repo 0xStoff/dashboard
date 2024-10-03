@@ -1,6 +1,6 @@
 // /api/non_evm_chains.js
 import express from 'express';
-import NonEvmChains from "../models/NonEvmChains.js";
+import NonEvmChains from "../models/NonEvmChainsModel.js";
 
 const router = express.Router();
 
