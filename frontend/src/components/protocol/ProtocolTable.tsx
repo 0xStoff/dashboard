@@ -2,34 +2,16 @@ import React from 'react';
 import { Avatar, Typography, Container, Grid, Card, CardContent, Chip } from '@mui/material';
 import { Box } from "@mui/system";
 import { Account } from "../../interfaces/account";
-import { SupplyTokenList } from '../../interfaces/protocol';
+import {GroupedProtocols, Position, SupplyTokenList} from '../../interfaces/protocol';
 import {ChipWithTooltip, ColoredChip} from '../utils/ChipWithTooltip';
+import {ChainIdState} from "../../interfaces/chain";
 
-interface GroupedProtocols {
-    [protocolName: string]: {
-        name: string;
-        positions: Position[];
-        totalUSD: number;
-    };
-}
 
-interface Position {
-    type: string;
-    chain: string;
-    tokenNames: string;
-    logoUrls: string[];
-    price: number;
-    amount: number;
-    usdValue: number;
-    wallets: { tag: string; amount: number }[];
-}
 
-type ChainIdState = [string, React.Dispatch<React.SetStateAction<string>>];
 
 const ProtocolTable: React.FC<{ data: Account, chainIdState: ChainIdState, hideSmallBalances: number }> = ({ data, chainIdState, hideSmallBalances }) => {
     const [selectedChainId] = chainIdState;
 
-    // Utility to add or update positions in a protocol
     const addPosition = (
         protocolName: string,
         acc: GroupedProtocols,

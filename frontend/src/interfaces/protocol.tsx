@@ -116,3 +116,22 @@ export interface Pool {
     index?: string | null
     time_at: number | null
 }
+
+export interface GroupedProtocols {
+    [protocolName: string]: {
+        name: string;
+        positions: Position[];
+        totalUSD: number;
+    };
+}
+
+export interface Position {
+    type: string;
+    chain: string;
+    tokenNames: string;
+    logoUrls: string[];
+    price: number;
+    amount: number;
+    usdValue: number;
+    wallets: { tag: string; amount: number }[];
+}

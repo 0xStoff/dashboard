@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { useFetchWallets } from './hooks/useFetchWallets';
-import { fetchEvmAccounts } from './api/fetchEvmAccounts';
+import React, {useEffect, useState} from 'react';
+import {useFetchWallets} from './hooks/useFetchWallets';
+import {fetchEvmAccounts} from './api/fetchEvmAccounts';
 import ChainList from './components/chainlist/ChainList';
 import WalletTable from './components/wallet/WalletTable';
 import ProtocolTable from './components/protocol/ProtocolTable';
-import { Account } from './interfaces/account';
+import {Account} from './interfaces/account';
 import {
     AppBar,
     Box,
@@ -18,13 +18,15 @@ import {
     Toolbar,
     Dialog,
     DialogTitle,
-    DialogContent, Typography,
+    DialogContent,
+    Typography,
 } from '@mui/material';
-import { Settings } from '@mui/icons-material';  // Settings icon
-import { theme } from './utils/theme';
-import { fetchSolanaData } from './api/fetchRaydiumSolanaTokens';
-import { fetchCosmosTokens } from './api/fetchCosmosTokens';
+import {Settings} from '@mui/icons-material';  // Settings icon
+import {theme} from './utils/theme';
+import {fetchSolanaData} from './api/fetchRaydiumSolanaTokens';
+import {fetchCosmosTokens} from './api/fetchCosmosTokens';
 import ThresholdSlider from "./utils/ThresholdSlider";
+import PieChartComponent from "./components/piechart/PieChart";
 
 function App() {
     const [selectedItem, setSelectedItem] = useState<Account | null>(null);
@@ -78,7 +80,7 @@ function App() {
             const fetchAccountsData = async () => {
                 try {
                     setLoading(true);
-                    const { updated, allChains, allTokens, allProtocols } = await fetchEvmAccounts(wallets);
+                    const {updated, allChains, allTokens, allProtocols} = await fetchEvmAccounts(wallets);
                     const solData = await fetchSolanaData(wallets.filter(w => w.chain === 'sol'));
                     const cosmosData = await fetchCosmosTokens(wallets.filter(w => w.chain === 'cosmos'));
 
@@ -90,7 +92,7 @@ function App() {
                         id: 0,
                         tag: 'all',
                         wallet: '',
-                        chains: { total_usd_value: totalUSDValue, chain_list: chainsData },
+                        chains: {total_usd_value: totalUSDValue, chain_list: chainsData},
                         tokens: [...allTokens, ...(solData?.solTokens || []), ...(cosmosData?.mergedCosmos || [])],
                         protocols: allProtocols,
                     };
@@ -109,7 +111,6 @@ function App() {
             fetchAccountsData();
         }
     }, [wallets]);
-
 
 
     // Helper function to format the countdown time
@@ -165,63 +166,69 @@ function App() {
         setOpenSettings(false);
     };
 
-    return (
-        <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <AppBar position="fixed" color="default">
-                <Toolbar sx={{ display: 'flex', overflowX: 'auto', '&::-webkit-scrollbar': { display: 'none' } }}>
-                    {list && list
-                        .filter(Boolean) // This removes any undefined or null items
-                        .map((acc) => (
-                            <Chip
-                                key={acc.id} // This will now only be called for valid `acc` objects
-                                sx={{ margin: 1 }}
-                                onClick={() => setSelectedItem(acc)}
-                                label={acc.tag}
-                                variant={selectedItem === acc ? "outlined" : "filled"}
-                            />
-                        ))}
+    return (<ThemeProvider theme={theme}>
+        <CssBaseline/>
+        <AppBar position="fixed" color="default">
+            <Toolbar sx={{display: 'flex', overflowX: 'auto', '&::-webkit-scrollbar': {display: 'none'}}}>
+                {list && list
+                    .filter(Boolean) // This removes any undefined or null items
+                    .map((acc) => (<Chip
+                        key={acc.id} // This will now only be called for valid `acc` objects
+                        sx={{margin: 1}}
+                        onClick={() => setSelectedItem(acc)}
+                        label={acc.tag}
+                        variant={selectedItem === acc ? "outlined" : "filled"}
+                    />))}
 
-                    {/* Settings Icon */}
-                    <IconButton color="primary" onClick={handleOpenSettings}>
-                        <Settings />
-                    </IconButton>
-                </Toolbar>
-            </AppBar>
-            <Container sx={{ marginY: 15 }}>
-                {loading ? (
-                    <CircularProgress />
-                ) : selectedItem ? (
-                    <>
-                        <ChainList chainIdState={chainIdState} data={selectedItem} hideSmallBalances={hideSmallBalances} />
-                        <WalletTable chainIdState={chainIdState} data={selectedItem} hideSmallBalances={hideSmallBalances} />
-                        <ProtocolTable chainIdState={chainIdState} data={selectedItem} hideSmallBalances={hideSmallBalances} />
-                    </>
-                ) : (
-                    <div>No data available</div>
-                )}
-            </Container>
-
-            <Dialog open={openSettings} onClose={handleCloseSettings} maxWidth="sm" fullWidth>
-                <DialogTitle>Settings</DialogTitle>
-                <DialogContent>
-                    <ThresholdSlider
-                        value={hideSmallBalances}
-                        onChange={handleSliderChange}
-                        min={0}
-                        max={300}
-                        label="Hide Small Balances"
+                {/* Settings Icon */}
+                <IconButton color="primary" onClick={handleOpenSettings}>
+                    <Settings/>
+                </IconButton>
+            </Toolbar>
+        </AppBar>
+        <Container sx={{marginY: 15}}>
+            {loading ? (<CircularProgress/>) : selectedItem ? (<>
+                <PieChartComponent
+                    chainIdState={chainIdState}
+                    data={selectedItem}
+                />
+                <Container sx={{display: 'flex', justifyContent: 'space-around', marginTop: 10}}>
+                    <ChainList
+                        chainIdState={chainIdState}
+                        data={selectedItem}
+                        hideSmallBalances={hideSmallBalances}
                     />
-                    <Button onClick={clearCache} disabled={!!countdown}>Clear Local Storage</Button>
-                    {countdown && (
-                        <Typography variant="body2" color="textSecondary">
-                            Next clear available in: {countdown}
-                        </Typography>
-                    )}
-                </DialogContent>
-            </Dialog>
-        </ThemeProvider>
-    );
+                    <WalletTable
+                        chainIdState={chainIdState}
+                        data={selectedItem}
+                        hideSmallBalances={hideSmallBalances}
+                    />
+                </Container>
+                <ProtocolTable
+                    chainIdState={chainIdState}
+                    data={selectedItem}
+                    hideSmallBalances={hideSmallBalances}
+                />
+            </>) : (<div>No data available</div>)}
+        </Container>
+
+        <Dialog open={openSettings} onClose={handleCloseSettings} maxWidth="sm" fullWidth>
+            <DialogTitle>Settings</DialogTitle>
+            <DialogContent>
+                <ThresholdSlider
+                    value={hideSmallBalances}
+                    onChange={handleSliderChange}
+                    min={0}
+                    max={300}
+                    label="Hide Small Balances"
+                />
+                <Button onClick={clearCache} disabled={!!countdown}>Clear Local Storage</Button>
+                {countdown && (<Typography variant="body2" color="textSecondary">
+                    Next clear available in: {countdown}
+                </Typography>)}
+            </DialogContent>
+        </Dialog>
+    </ThemeProvider>);
 }
 
 export default App;

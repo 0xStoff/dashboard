@@ -1,3 +1,5 @@
+import React from "react";
+
 export interface Chain {
     total_usd_value: number
     chain_list: ChainListInterface[]
@@ -13,3 +15,5 @@ export interface ChainListInterface {
     is_support_pre_exec: boolean
     usd_value: number
 }
+
+export type ChainIdState = [string, React.Dispatch<React.SetStateAction<string>>];

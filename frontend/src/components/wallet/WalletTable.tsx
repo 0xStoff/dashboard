@@ -15,9 +15,8 @@ import chainList from '../../data/chain_list.json';
 import { WalletList } from "../../interfaces/tokens";
 import { Account } from "../../interfaces/account";
 import { ChipWithTooltip } from "../utils/ChipWithTooltip";
+import {ChainIdState} from "../../interfaces/chain";
 
-type ChainId = string;
-type ChainIdState = [ChainId, React.Dispatch<React.SetStateAction<ChainId>>];
 
 const WalletTable: React.FC<{ data: Account, chainIdState: ChainIdState }> = ({ data, chainIdState, hideSmallBalances }) => {
     const [selectedChainId] = chainIdState;
@@ -38,8 +37,7 @@ const WalletTable: React.FC<{ data: Account, chainIdState: ChainIdState }> = ({ 
     };
 
     return (
-        <Container>
-            <Card sx={{ marginY: 10 }}>
+            <Card sx={{height: 'fit-content', width: 'fit-content' }}>
                 <Table>
                     <TableHead>
                         <TableRow>
@@ -83,7 +81,6 @@ const WalletTable: React.FC<{ data: Account, chainIdState: ChainIdState }> = ({ 
                     </TableBody>
                 </Table>
             </Card>
-        </Container>
     );
 };
 
