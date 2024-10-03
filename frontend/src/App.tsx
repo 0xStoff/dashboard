@@ -52,12 +52,13 @@ function App() {
                         tag: 'all',
                         wallet: '',
                         chains: {total_usd_value: totalUSDValue, chain_list: chainsData},
-                        tokens: [...allTokens, ...(solData?.solTokens || []), ...(cosmosData?.mergedCosmos || [])],
+                        tokens: [...allTokens, ...(solData?.sol.tokens || []), ...(cosmosData?.mergedCosmos || [])],
                         protocols: allProtocols,
                     };
 
                     updated.push(solData?.sol);
                     updated.push(cosmosData?.cosmos);
+
                     setList([allItem, ...updated].filter(Boolean));
                     setSelectedItem(allItem);
                 } catch (error) {
@@ -118,7 +119,7 @@ function App() {
             </>) : (<div>No data available</div>)}
         </Container>
 
-        <SettingsDialog openSettings={openSettings} setOpenSettings={setOpenSettings}/>
+        <SettingsDialog hideSmallBalances={hideSmallBalances} setHideSmallBalances={setHideSmallBalances} openSettings={openSettings} setOpenSettings={setOpenSettings}/>
     </ThemeProvider>);
 }
 

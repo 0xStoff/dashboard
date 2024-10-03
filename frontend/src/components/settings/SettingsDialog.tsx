@@ -8,8 +8,7 @@ import {
 } from '@mui/material';
 import ThresholdSlider from "../../utils/ThresholdSlider";
 
-function SettingsDialog({openSettings, setOpenSettings}) {
-    const [hideSmallBalances, setHideSmallBalances] = useState<number>(10); // Default value
+function SettingsDialog({openSettings, setOpenSettings, hideSmallBalances, setHideSmallBalances}) {
     const [nextClearTime, setNextClearTime] = useState<number | null>(null);
     const [countdown, setCountdown] = useState<string>('');  // Timer for next cache clear
 
