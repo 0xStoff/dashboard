@@ -3,14 +3,17 @@ import express from 'express';
 import WalletModel from "../models/WalletModel.js";
 import TokenModel from "../models/TokenModel.js";
 import WalletTokenModel from "../models/WalletTokenModel.js";
+import {Op} from "sequelize";
 
 const router = express.Router();
-
 
 const flattenAmount = (tokens) => tokens.map(token => {
     const {wallets_tokens, ...tokenData} = token.get();
     return {
-        ...tokenData, amount: wallets_tokens.amount, raw_amount: wallets_tokens.raw_amount,
+        ...tokenData,
+        amount: wallets_tokens.amount,
+        raw_amount: wallets_tokens.raw_amount,
+        usd_value: wallets_tokens.usd_value
     };
 });
 
@@ -29,27 +32,38 @@ const flattenAllWallets = (wallets) => wallets.map(wallet => {
     };
 });
 
+
 router.get('/wallets', async (req, res) => {
     try {
-        const {chain} = req.query;
-        const whereClause = chain ? {chain} : undefined;
+        const { chain, usd_value } = req.query;
+
+        const whereClause = {};
+        if (chain) whereClause.chain = chain;
+
+        const includeClause = [{
+            model: TokenModel,
+            through: {
+                model: WalletTokenModel,
+                attributes: ['amount', 'raw_amount', 'usd_value'],
+                where: usd_value ? { usd_value: { [Op.gt]: usd_value } } : {},
+            },
+            attributes: ['name', 'symbol', 'decimals', 'price', 'logo_path', 'chain_id'],
+        }];
 
         const wallets = await WalletModel.findAll({
-            where: whereClause, include: [{
-                model: TokenModel, through: {
-                    model: WalletTokenModel, attributes: ['amount', 'raw_amount'],
-                }, attributes: ['name', 'symbol', 'decimals', 'price', 'logo_path', 'chain_id'],
-            }], order: [['id', 'ASC']],
+            where: whereClause,
+            include: includeClause,
+            order: [['id', 'ASC']],
         });
 
-        const result = flattenAllWallets(wallets)
-
+        const result = flattenAllWallets(wallets);
         res.json(result);
     } catch (err) {
         console.error('Error fetching wallets:', err);
-        res.status(500).json({error: 'Failed to fetch wallets'});
+        res.status(500).json({ error: 'Failed to fetch wallets' });
     }
 });
+
 
 router.get('/wallets/:walletId', async (req, res) => {
     const {walletId} = req.params;
@@ -58,7 +72,7 @@ router.get('/wallets/:walletId', async (req, res) => {
         const wallet = await WalletModel.findOne({
             where: {id: walletId}, include: [{
                 model: TokenModel, through: {
-                    model: WalletTokenModel, attributes: ['amount', 'raw_amount'],
+                    model: WalletTokenModel, attributes: ['amount', 'raw_amount', 'usd_value'],
                 }, attributes: ['id', 'name', 'symbol', 'decimals', 'price', 'logo_path', 'chain_id'],
             }],
         });

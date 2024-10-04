@@ -30,7 +30,11 @@ const WalletTokenModel = sequelize.define('wallets_tokens', {
     raw_amount: {
         type: DataTypes.DECIMAL(40, 0),
         allowNull: false
-    }
+    },
+    usd_value: {
+        type: DataTypes.DECIMAL(20, 8),
+        allowNull: false
+    },
 }, {
     tableName: 'wallets_tokens',
     timestamps: false

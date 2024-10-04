@@ -155,6 +155,7 @@ CREATE TABLE wallets_tokens
     token_id   INT REFERENCES tokens (id) ON DELETE CASCADE,
     amount     DECIMAL(20, 8),
     raw_amount DECIMAL(40, 0),
+    usd_value     DECIMAL(20, 8),
     UNIQUE (wallet_id, token_id)
 );
 

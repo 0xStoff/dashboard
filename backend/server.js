@@ -12,7 +12,6 @@ import WalletTokenModel from "./models/WalletTokenModel.js";
 import {updateChainsData, updateNonEvmChainsData} from "./utils/chain_data.js";
 import {evmChains, nonEvmChains} from "./utils/chainlist.js";
 import {fetchAndSaveEvmTokenDataForAllWallets, fetchAndSaveSolTokenDataForAllWallets} from "./utils/token_data.js";
-import fetchDebankData from "./utils/debank_api.js";
 
 dotenv.config();
 
@@ -59,7 +58,7 @@ initDb().then(() => {
         // fetchAndSaveSolTokenDataForAllWallets()
         //     .then(() => console.log('Token Data for sol Wallets fetched'))
         //     .catch((err) => console.error('Failed to fetch Tokens:', err));
-
+        //
         //
         // fetchAndSaveEvmTokenDataForAllWallets()
         //     .then(() => console.log('Token Data for all Wallets fetched'))
