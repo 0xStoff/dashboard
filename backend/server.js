@@ -9,9 +9,7 @@ import sequelize from "./sequelize.js";
 import WalletModel from "./models/WalletModel.js";
 import TokenModel from "./models/TokenModel.js";
 import WalletTokenModel from "./models/WalletTokenModel.js";
-import {updateChainsData, updateNonEvmChainsData} from "./utils/chain_data.js";
-import {evmChains, nonEvmChains} from "./utils/chainlist.js";
-import {fetchAndSaveEvmTokenDataForAllWallets, fetchAndSaveSolTokenDataForAllWallets} from "./utils/token_data.js";
+import {fetchCosmosTokens} from "./utils/token_data.js";
 
 dotenv.config();
 
@@ -45,6 +43,14 @@ initDb().then(() => {
     console.log('Database synced');
     app.listen(port, async () => {
         console.log('Server running on port 3000');
+
+
+        const test = await fetchCosmosTokens()
+        console.log(test)
+        // fetchAndSaveCosmosTokenData()
+        //     .then(() => console.log('Token Data for cosmos wallets fetched'))
+        //     .catch((err) => console.error('Failed to fetch Tokens:', err));
+
 
         // updateNonEvmChainsData(nonEvmChains)
         //     .then(() => console.log('Non-EVM chains updated'))
