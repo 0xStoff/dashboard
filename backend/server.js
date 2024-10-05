@@ -9,7 +9,8 @@ import sequelize from "./sequelize.js";
 import WalletModel from "./models/WalletModel.js";
 import TokenModel from "./models/TokenModel.js";
 import WalletTokenModel from "./models/WalletTokenModel.js";
-import {fetchCosmosTokens} from "./utils/token_data.js";
+import {fetchCosmosTokens} from "./token_data/cosmos_token_data.js";
+import {downloadLogo} from "./utils/download_logo.js";
 
 dotenv.config();
 
@@ -47,6 +48,10 @@ initDb().then(() => {
 
         const test = await fetchCosmosTokens()
         console.log(test)
+
+
+        //
+        // console.log(`Token data successfully saved/updated for Solana wallet ID ${walletId}`);
         // fetchAndSaveCosmosTokenData()
         //     .then(() => console.log('Token Data for cosmos wallets fetched'))
         //     .catch((err) => console.error('Failed to fetch Tokens:', err));
