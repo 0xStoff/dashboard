@@ -1,6 +1,15 @@
 {
   "total_usd_value": 12653.232488807924,
   "chain_list": [{
+    "id": "sui",
+    "community_id": 1111,
+    "name": "Sui",
+    "native_token_id": "sui",
+    "logo_url": "https://cryptologos.cc/logos/sui-sui-logo.png?v=035",
+    "wrapped_token_id": "0x0",
+    "is_support_pre_exec": true,
+    "usd_value": 0
+  },{
     "id": "cosmos",
     "community_id": 1111,
     "name": "Cosmos Hub",

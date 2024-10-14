@@ -6,14 +6,7 @@ import WalletTable from './components/wallet/WalletTable';
 import ProtocolTable from './components/protocol/ProtocolTable';
 import {Account} from './interfaces/account';
 import {
-    AppBar,
-    Chip,
-    CircularProgress,
-    Container,
-    CssBaseline,
-    IconButton,
-    ThemeProvider,
-    Toolbar,
+    AppBar, Chip, CircularProgress, Container, CssBaseline, IconButton, ThemeProvider, Toolbar,
 } from '@mui/material';
 import {Settings} from '@mui/icons-material';
 import {theme} from './utils/theme';
@@ -21,6 +14,10 @@ import {fetchSolanaData} from './api/fetchRaydiumSolanaTokens';
 import {fetchCosmosTokens} from './api/fetchCosmosTokens';
 import PieChartComponent from "./components/piechart/PieChart";
 import SettingsDialog from "./components/settings/SettingsDialog";
+import {getFullnodeUrl, SuiClient} from '@mysten/sui/client';
+import {fetchTokenPrice} from "./api/fetchTokenPriceCoingecko";
+import {Aptos, AptosConfig, Network} from "@aptos-labs/ts-sdk";
+
 
 function App() {
     const [selectedItem, setSelectedItem] = useState<Account | null>(null);
@@ -47,17 +44,104 @@ function App() {
 
                     const totalUSDValue = chainsData.reduce((sum, chain) => sum + (chain.usd_value || 0), 0); // Check for usd_value
 
+
+                    const rpcUrl = getFullnodeUrl('mainnet');
+
+                    const client = new SuiClient({url: rpcUrl});
+                    const suiAddress = "0xb0ff460367eae42bc92566dc50135dc12eed99ead8938d18f6b8c0dd0f41b11b";
+
+                    const suiBalance = await client.getCoins({
+                        owner: suiAddress,
+                    });
+                    const stakingData = await client.getStakes({
+                        owner: suiAddress,
+                    });
+
+                    const suiPrice = await fetchTokenPrice('sui') || {usd: 0}
+
+                    const suiAmount = stakingData[0].stakes[0].principal / 10 ** 9 + suiBalance.data[0].balance / 10 ** 9;
+
+                    const mergedSui = [{
+                        id: 'sui',
+                        name: 'Sui',
+                        symbol: 'SUI',
+                        decimals: 18,
+                        logo_url: "https://cryptologos.cc/logos/sui-sui-logo.png?v=035",
+                        price: suiPrice.usd,
+                        amount: suiAmount,
+                        is_core: true,
+                        wallets: [{tag: 'Sui', id: 30, wallet: suiAddress, amount: suiAmount}],
+                    }];
+
+                    const sui = {
+                        chains: {total_usd_value: suiAmount * suiPrice.usd, chain_list: ['sui']},
+                        id: 30,
+                        protocols: [],
+                        tag: "Sui",
+                        tokens: mergedSui,
+                        wallet: suiAddress,
+                    };
+
+                    const config = new AptosConfig({network: Network.MAINNET});
+                    const aptosConf = new Aptos(config);
+
+                    const aptosAddress = "0x7acbb55470beae407d0c897c3d1c85ba5d17955cf48ce128a05a36c2e23e2260";
+
+                    const stakingActivities = await aptosConf.staking.getDelegatedStakingActivities({
+                        poolAddress: "0xdb5247f859ce63dbe8940cf8773be722a60dcc594a8be9aca4b76abceb251b8e",
+                        delegatorAddress: aptosAddress
+                    })
+
+                    let totalStake = 0;
+                    stakingActivities.forEach(activity => {
+                        if (activity.event_type === "0x1::delegation_pool::AddStakeEvent") {
+                            totalStake += activity.amount;
+                        } else if (activity.event_type === "0x1::delegation_pool::UnlockStakeEvent") {
+                            totalStake -= activity.amount;
+                        }
+                    });
+
+                    const aptosBalance = await aptosConf.getAccountAPTAmount({accountAddress:aptosAddress});
+                    const aptosPrice = await fetchTokenPrice('aptos') || {usd: 0}
+
+                    const aptosAmount = totalStake / 10 ** 8 + aptosBalance / 10 ** 8;
+
+                    const mergedAptos = [{
+                        id: 'aptos',
+                        name: 'Aptos',
+                        symbol: 'APT',
+                        decimals: 8,
+                        logo_url: "https://cryptologos.cc/logos/aptos-apt-logo.png?v=035",
+                        price: aptosPrice.usd,
+                        amount: aptosAmount,
+                        is_core: true,
+                        wallets: [{tag: 'Sui', id: 39, wallet: aptosAddress, amount: aptosAmount}],
+                    }];
+
+                    const aptos = {
+                        chains: {total_usd_value: aptosAmount * aptosPrice.usd, chain_list: ['aptos']},
+                        id: 30,
+                        protocols: [],
+                        tag: "Aptos",
+                        tokens: mergedAptos,
+                        wallet: aptosAddress,
+                    };
+
                     const allItem = {
                         id: 0,
                         tag: 'all',
                         wallet: '',
-                        chains: {total_usd_value: totalUSDValue, chain_list: chainsData},
-                        tokens: [...allTokens, ...(solData?.sol.tokens || []), ...(cosmosData?.mergedCosmos || [])],
+                        chains: {
+                            total_usd_value: totalUSDValue + (suiAmount * mergedSui[0].price) + (aptosAmount * mergedAptos[0].price), chain_list: chainsData
+                        },
+                        tokens: [...allTokens, ...(solData?.sol.tokens || []), ...(cosmosData?.mergedCosmos || []), ...mergedSui, ...mergedAptos],
                         protocols: allProtocols,
                     };
 
                     updated.push(solData?.sol);
                     updated.push(cosmosData?.cosmos);
+                    updated.push(sui)
+                    updated.push(aptos)
 
                     setList([allItem, ...updated].filter(Boolean));
                     setSelectedItem(allItem);
@@ -119,7 +203,8 @@ function App() {
             </>) : (<div>No data available</div>)}
         </Container>
 
-        <SettingsDialog hideSmallBalances={hideSmallBalances} setHideSmallBalances={setHideSmallBalances} openSettings={openSettings} setOpenSettings={setOpenSettings}/>
+        <SettingsDialog hideSmallBalances={hideSmallBalances} setHideSmallBalances={setHideSmallBalances}
+                        openSettings={openSettings} setOpenSettings={setOpenSettings}/>
     </ThemeProvider>);
 }
 
