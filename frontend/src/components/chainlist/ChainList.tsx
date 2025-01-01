@@ -29,12 +29,12 @@ const ChainList: React.FC<{ data: Account, chainIdState: ChainIdState, hideSmall
 
 
     return (
-            <Card sx={{ width: 'fit-content' , height: 'fit-content', marginRight: 5 }}>
+            <Card sx={{ minWidth: 200, height: 'fit-content', marginRight: 5, borderRadius: 10 }}>
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell component="th" scope="row" colSpan={6}>
-                                <Typography variant="h6">Chains</Typography>
+                            <TableCell sx={{border: 0, padding: 3}} component="th" scope="row" colSpan={6}>
+                                <Typography variant="h5" fontWeight="bold">Chains</Typography>
                             </TableCell>
                         </TableRow>
                     </TableHead>
@@ -53,10 +53,10 @@ const ChainList: React.FC<{ data: Account, chainIdState: ChainIdState, hideSmall
                                 }}
                             >
                                 <TableCell sx={{ display: 'flex', alignItems: 'center', border: 0 }}>
-                                    <Avatar alt={chain.name} src={chain.logo_url} sx={{ width: 35, height: 35, marginRight: 1 }} />
-                                    <Typography>{chain.name}</Typography>
+                                    <Avatar alt={chain.name} src={chain.logo_url} sx={{ width: 35, height: 35}} />
+                                    {/*<Typography>{chain.name}</Typography>*/}
                                 </TableCell>
-                                <TableCell sx={{ fontWeight: 'bold', border: 0 }} align='right'>
+                                <TableCell sx={{ border: 0, fontWeight: 'bold' }} align='right'>
                                     $ {chain.usd_value.toFixed(2)}
                                 </TableCell>
                             </TableRow>

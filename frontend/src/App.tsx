@@ -6,7 +6,7 @@ import WalletTable from './components/wallet/WalletTable';
 import ProtocolTable from './components/protocol/ProtocolTable';
 import {Account} from './interfaces/account';
 import {
-    AppBar, Chip, CircularProgress, Container, CssBaseline, IconButton, ThemeProvider, Toolbar,
+    AppBar, Card, Chip, CircularProgress, Container, CssBaseline, IconButton, ThemeProvider, Toolbar, Typography,
 } from '@mui/material';
 import {Settings} from '@mui/icons-material';
 import {theme} from './utils/theme';
@@ -50,17 +50,23 @@ function App() {
                     const client = new SuiClient({url: rpcUrl});
                     const suiAddress = "0xb0ff460367eae42bc92566dc50135dc12eed99ead8938d18f6b8c0dd0f41b11b";
 
-                    const suiBalance = await client.getCoins({
+                    const suiBalance = await client.getAllCoins({
                         owner: suiAddress,
                     });
                     const stakingData = await client.getStakes({
                         owner: suiAddress,
                     });
 
+
+                    const tokenType = "0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP";
+                    const deepBalance = suiBalance.data.filter((coin) => coin.coinType === tokenType);
+
+
                     const suiPrice = await fetchTokenPrice('sui') || {usd: 0}
+                    const deepPrice = await fetchTokenPrice('deep') || {usd: 0}
 
                     const suiAmount = stakingData[0].stakes[0].principal / 10 ** 9 + suiBalance.data[0].balance / 10 ** 9;
-
+                    const deepAmount = deepBalance[0].balance / 10 ** 6
                     const mergedSui = [{
                         id: 'sui',
                         name: 'Sui',
@@ -71,10 +77,20 @@ function App() {
                         amount: suiAmount,
                         is_core: true,
                         wallets: [{tag: 'Sui', id: 30, wallet: suiAddress, amount: suiAmount}],
+                    }, {
+                        id: 'deep',
+                        name: 'DEEP',
+                        symbol: 'DEEP',
+                        decimals: 18,
+                        logo_url: "https://s2.coinmarketcap.com/static/img/coins/200x200/33391.png",
+                        price: deepPrice.usd,
+                        amount: deepAmount,
+                        is_core: true,
+                        wallets: [{tag: 'Sui', id: 30, wallet: suiAddress, amount: suiAmount}],
                     }];
 
                     const sui = {
-                        chains: {total_usd_value: suiAmount * suiPrice.usd, chain_list: ['sui']},
+                        chains: {total_usd_value: suiAmount * suiPrice.usd + deepAmount * deepPrice.usd, chain_list: ['sui']},
                         id: 30,
                         protocols: [],
                         tag: "Sui",
@@ -101,7 +117,7 @@ function App() {
                         }
                     });
 
-                    const aptosBalance = await aptosConf.getAccountAPTAmount({accountAddress:aptosAddress});
+                    const aptosBalance = await aptosConf.getAccountAPTAmount({accountAddress: aptosAddress});
                     const aptosPrice = await fetchTokenPrice('aptos') || {usd: 0}
 
                     const aptosAmount = totalStake / 10 ** 8 + aptosBalance / 10 ** 8;
@@ -115,7 +131,7 @@ function App() {
                         price: aptosPrice.usd,
                         amount: aptosAmount,
                         is_core: true,
-                        wallets: [{tag: 'Sui', id: 39, wallet: aptosAddress, amount: aptosAmount}],
+                        wallets: [{tag: 'Aptos', id: 39, wallet: aptosAddress, amount: aptosAmount}],
                     }];
 
                     const aptos = {
@@ -132,7 +148,8 @@ function App() {
                         tag: 'all',
                         wallet: '',
                         chains: {
-                            total_usd_value: totalUSDValue + (suiAmount * mergedSui[0].price) + (aptosAmount * mergedAptos[0].price), chain_list: chainsData
+                            total_usd_value: totalUSDValue + (suiAmount * mergedSui[0].price) + (deepAmount * mergedSui[1].price) + (aptosAmount * mergedAptos[0].price),
+                            chain_list: chainsData
                         },
                         tokens: [...allTokens, ...(solData?.sol.tokens || []), ...(cosmosData?.mergedCosmos || []), ...mergedSui, ...mergedAptos],
                         protocols: allProtocols,
@@ -163,8 +180,8 @@ function App() {
             <Toolbar sx={{display: 'flex', overflowX: 'auto', '&::-webkit-scrollbar': {display: 'none'}}}>
                 {list && list
                     .filter(Boolean)
-                    .map((acc) => (<Chip
-                        key={acc.id}
+                    .map((acc, i) => (<Chip
+                        key={`${acc.id}${i}`}
                         sx={{margin: 1}}
                         onClick={() => setSelectedItem(acc)}
                         label={acc.tag}
@@ -179,6 +196,8 @@ function App() {
         </AppBar>
         <Container sx={{marginY: 15}}>
             {loading ? (<CircularProgress/>) : selectedItem ? (<>
+
+
                 <PieChartComponent
                     chainIdState={chainIdState}
                     data={selectedItem}

@@ -11,9 +11,7 @@ import {ChainIdState} from "../../interfaces/chain";
 
 
 const WalletTable: React.FC<{ data: Account, chainIdState: ChainIdState }> = ({
-                                                                                  data,
-                                                                                  chainIdState,
-                                                                                  hideSmallBalances
+                                                                                  data, chainIdState, hideSmallBalances
                                                                               }) => {
     const [selectedChainId] = chainIdState;
 
@@ -33,55 +31,58 @@ const WalletTable: React.FC<{ data: Account, chainIdState: ChainIdState }> = ({
     };
 
     const widthClass = data.id ? 'max-content' : 'min-content'
-    return (<Card sx={{height: 'fit-content', width: widthClass}}>
-            <Table>
-                <TableHead>
-                    <TableRow>
-                        <TableCell component="th" scope="row" colSpan={6}>
-                            <Typography variant="h6">Wallet</Typography>
-                            <Typography variant="body2">$ {totalUSD.toFixed(2)}</Typography>
-                        </TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    {sortedData.map((item, index) => (
-                        <TableRow key={item.id + index} sx={{'&:last-child td, &:last-child th': {border: 0}}}>
-                            <TableCell sx={{border: 0}} component="th" scope="row">
-                                <Box sx={{display: 'flex', alignItems: 'center'}}>
-                                    <Avatar alt={item.name} src={item.logo_url || ''}
-                                            sx={{width: 35, height: 35, marginRight: 1, backgroundColor: 'white'}}/>
-                                    <Box sx={{position: 'relative', display: 'inline-flex', verticalAlign: 'middle'}}>
-                                        {item.chain && <Avatar alt={item.chain} src={getChainLogo(item.chain)} sx={{
-                                            width: 20,
-                                            height: 20,
-                                            position: 'absolute',
-                                            bottom: 0,
-                                            right: 0,
-                                            border: '1px solid',
-                                            borderColor: 'background.paper'
-                                        }}/>}
-                                    </Box>
+    return (<Card sx={{height: 'fit-content', width: 'auto', borderRadius: 10}}>
+        <Table>
+            <TableHead>
+                <TableRow>
+                    <TableCell sx={{border: 0, padding: 3}} component="th" scope="row" colSpan={6}>
+                        <Typography variant="h5" fontWeight="bold">Wallet</Typography>
+                        <Typography variant="body2" fontWeight="bold">$ {totalUSD.toFixed(2)}</Typography>
+                    </TableCell>
+                </TableRow>
+            </TableHead>
+            <TableBody>
+                {sortedData.map((item, index) => (
+                    <TableRow key={item.id + index} sx={{'&:last-child td, &:last-child th': {border: 0}}}>
+                        <TableCell sx={{border: 0}} component="th" scope="row">
+                            <Box sx={{display: 'flex', alignItems: 'center'}}>
+                                <Avatar alt={item.name} src={item.logo_url || ''}
+                                        sx={{width: 35, height: 35, marginRight: 1, backgroundColor: 'white'}}/>
+                                <Box sx={{position: 'relative', display: 'inline-flex', verticalAlign: 'middle'}}>
+                                    {item.chain && <Avatar alt={item.chain} src={getChainLogo(item.chain)} sx={{
+                                        width: 20,
+                                        height: 20,
+                                        position: 'absolute',
+                                        bottom: 0,
+                                        right: 0,
+                                        border: '1px solid',
+                                        borderColor: 'background.paper'
+                                    }}/>}
                                 </Box>
-                            </TableCell>
-                            <TableCell sx={{border: 0}} align="left">
-                                <Typography fontWeight="bold" marginLeft={2} variant="body2" noWrap>
-                                    {item.name.length > 20 ? item.symbol : item.name}
-                                </Typography>
-                            </TableCell>
-                            <TableCell sx={{border: 0}} align="right">
-                                {item.wallets?.map((wallet) => <ChipWithTooltip key={wallet.id} item={item}
-                                                                                wallet={wallet}/>)}
-                            </TableCell>
-                            <TableCell sx={{border: 0, whiteSpace: 'nowrap'}}
-                                       align="left">$ {item.price.toFixed(4)}</TableCell>
-                            <TableCell sx={{border: 0}}
-                                       align="right">{item.amount.toLocaleString()} {item.symbol}</TableCell>
-                            <TableCell sx={{border: 0, whiteSpace: 'nowrap', fontWeight: 'bold'}}
-                                       align="right">$ {(item.amount * item.price).toFixed(2)}</TableCell>
-                        </TableRow>))}
-                </TableBody>
-            </Table>
-        </Card>);
+                            </Box>
+                        </TableCell>
+                        <TableCell sx={{border: 0}} align="left">
+                            <Typography fontWeight="bold" marginLeft={2} variant="body2" noWrap>
+                                {/*{item.name.length > 20 ? item.symbol : item.name}*/}
+                                {item.symbol}
+                            </Typography>
+                        </TableCell>
+                        <TableCell sx={{border: 0}} align="right">
+                            {item.wallets?.map((wallet) =>
+                                <ChipWithTooltip
+                                    key={wallet.id} item={item}
+                                    wallet={wallet}/>)}
+                        </TableCell>
+                        <TableCell sx={{border: 0, whiteSpace: 'nowrap'}}
+                                   align="left">$ {item.price.toFixed(4)}</TableCell>
+                        <TableCell sx={{border: 0}}
+                                   align="right">{item.amount.toLocaleString()} {item.symbol}</TableCell>
+                        <TableCell sx={{border: 0, whiteSpace: 'nowrap', fontWeight: 'bold'}}
+                                   align="right">$ {(item.amount * item.price).toFixed(2)}</TableCell>
+                    </TableRow>))}
+            </TableBody>
+        </Table>
+    </Card>);
 };
 
 export default React.memo(WalletTable);

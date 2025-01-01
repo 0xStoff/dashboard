@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Container, Typography, Box} from '@mui/material';
+import {Container, Typography, Box, Card} from '@mui/material';
 import {PieChart} from "@mui/x-charts";
 import {ChainIdState, ChainListInterface} from "../../interfaces/chain";
 import {Account} from "../../interfaces/account";
@@ -27,22 +27,28 @@ const PieChartComponent: React.FC<{ data: Account, chainIdState: ChainIdState }>
         id: 'other', value: otherDataTotal, label: `Other ${getArcLabel({usd_value: otherDataTotal})}`
     }] : [])];
 
-    return (<Container>
-        <Typography fontWeight='bold' variant="h2">
-            $
-            {data.chains && selectedChainId === 'all' ? data.chains.total_usd_value.toFixed(2) : sortedData.find(data => data.id === selectedChainId)?.usd_value.toFixed(2)}
-        </Typography>
+    return (
+        // <Container>
+        <Card sx={{padding: 3, width: 'min-content', borderRadius: 10}}>
+            <Typography variant="h5" fontWeight="bold">Net Worth</Typography>
 
-        <Box sx={{display: 'flex'}}>
-            <PieChart
-                series={[{
-                    data: pieChartData, innerRadius: 100, outerRadius: 160, paddingAngle: 3, cornerRadius: 3, cx: 30,
-                }]}
-                width={400}
-                height={400}
-            />
-        </Box>
-    </Container>);
+            <Typography fontWeight='bold' variant="h2">
+                $
+                {data.chains && selectedChainId === 'all' ? data.chains.total_usd_value.toFixed(2) : sortedData.find(data => data.id === selectedChainId)?.usd_value.toFixed(2)}
+            </Typography>
+        </Card>
+
+        // {/*<Box sx={{display: 'flex'}}>*/}
+        // {/*    <PieChart*/}
+        // {/*        series={[{*/}
+        // {/*            data: pieChartData, innerRadius: 100, outerRadius: 160, paddingAngle: 3, cornerRadius: 3, cx: 30,*/}
+        // {/*        }]}*/}
+        // {/*        width={400}*/}
+        // {/*        height={400}*/}
+        // {/*    />*/}
+        // {/*</Box>*/}
+    // </Container>
+);
 };
 
 export default PieChartComponent;
