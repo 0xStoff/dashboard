@@ -55,8 +55,20 @@ module.exports = {
     ],
     devServer: {
         proxy: {
+            "/binance": {
+                target: "https://api.binance.com",
+                changeOrigin: true,
+                secure: true,
+                pathRewrite: { "^/binance": "" },
+            },
+            '/kraken': {
+                target: 'https://api.kraken.com', // Kraken API base URL
+                pathRewrite: { '^/kraken': '' }, // Remove `/kraken` from the request path
+                changeOrigin: true,
+                secure: true,
+            },
             '/cosmos': {
-                target: 'https://cosmos-grpc.publicnode.com:443', // Use HTTPS for security
+                target: 'https://cosmos-grpc.publicnode.com:443', // Cosmos API base URL
                 changeOrigin: true,
                 secure: false,
             },

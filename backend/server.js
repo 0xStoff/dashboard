@@ -11,6 +11,7 @@ import TokenModel from "./models/TokenModel.js";
 import WalletTokenModel from "./models/WalletTokenModel.js";
 import {fetchCosmosTokens} from "./token_data/cosmos_token_data.js";
 import {downloadLogo} from "./utils/download_logo.js";
+import transactionsRoutes from './api/transactions.js';
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.use('/api', chainsRoutes);
 app.use('/api', walletRoutes);
 app.use('/api', nonEvmRoutes);
 app.use('/api', tokensRoutes);
+app.use('/api', transactionsRoutes);
 
 // Set up associations after all models are defined
 const setupAssociations = () => {
@@ -47,7 +49,7 @@ initDb().then(() => {
 
 
         const test = await fetchCosmosTokens()
-        console.log(test)
+        // console.log(test)
 
 
         //

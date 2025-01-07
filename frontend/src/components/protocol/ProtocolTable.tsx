@@ -114,7 +114,6 @@ const ProtocolTable: React.FC<{ data: Account, chainIdState: ChainIdState, hideS
     return (protocolViewSetting ? <Container>
         <Card sx={{height: 'fit-content', width: 'auto', borderRadius: 10, marginTop: 10}}>
             <Table>
-
                 <TableHead>
                     <TableRow>
                         <TableCell sx={{border: 0, padding: 3}} component="th" scope="row" colSpan={6}>
@@ -127,7 +126,8 @@ const ProtocolTable: React.FC<{ data: Account, chainIdState: ChainIdState, hideS
                 <TableBody>
                     {sortedGroupedProtocols
                         .filter(protocol => protocol.totalUSD > hideSmallBalances)
-                        .map((protocol) => (<React.Fragment key={protocol.name}>
+                        .map((protocol, i) => (
+                            <React.Fragment key={protocol.name}>
                             {protocol.positions
                                 .filter(position => position.usdValue > hideSmallBalances)
                                 .map((position, index) => (<TableRow key={`${protocol.name}-${index}`}
@@ -135,7 +135,7 @@ const ProtocolTable: React.FC<{ data: Account, chainIdState: ChainIdState, hideS
                                     <TableCell sx={{border: 0}} colSpan={6}>
                                         <Grid container spacing={1}>
                                             <Grid item xs={1} sx={{display: 'flex', alignItems: 'center'}}>
-                                                {posimtion.logoUrls.map((url, i) => (
+                                                {position.logoUrls.map((url, i) => (
                                                     <Avatar
                                                         key={i}
                                                         alt={position.tokenNames}
