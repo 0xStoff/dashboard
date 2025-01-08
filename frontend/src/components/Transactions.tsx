@@ -197,8 +197,7 @@ const Transactions = () => {
 
     const paginatedGnosisTransactions = gnosisTransactions.slice(gnosisPage * gnosisRowsPerPage, gnosisPage * gnosisRowsPerPage + gnosisRowsPerPage);
 
-    return (<Container>
-
+    return (<Container sx={{marginTop: 10}}>
         <Container sx={{display: 'flex', justifyContent: 'space-between', marginBottom: 5}}>
             <Card sx={{padding: 3, borderRadius: 10}}>
                 <Typography variant="h5">Deposits</Typography>
