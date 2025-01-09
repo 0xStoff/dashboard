@@ -75,7 +75,12 @@ const ProtocolTable: React.FC<{ data: Account, chainIdState: ChainIdState, hideS
         return acc;
     }, {}) || {};
 
-    const sortedGroupedProtocols = Object.values(groupedByProtocol).sort((a, b) => b.totalUSD - a.totalUSD);
+    const sortedGroupedProtocols =
+            Object.values(groupedByProtocol)
+            .sort((a, b) => b.totalUSD - a.totalUSD)
+            .filter(protocol => protocol.totalUSD > hideSmallBalances)
+
+    if (!sortedGroupedProtocols.length) return <></>
 
     // Rendering function for positions
     const renderPosition = (position: Position, index: number) => position.usdValue > hideSmallBalances && (
@@ -125,55 +130,54 @@ const ProtocolTable: React.FC<{ data: Account, chainIdState: ChainIdState, hideS
                 </TableHead>
                 <TableBody>
                     {sortedGroupedProtocols
-                        .filter(protocol => protocol.totalUSD > hideSmallBalances)
                         .map((protocol, i) => (
                             <React.Fragment key={protocol.name}>
-                            {protocol.positions
-                                .filter(position => position.usdValue > hideSmallBalances)
-                                .map((position, index) => (<TableRow key={`${protocol.name}-${index}`}
-                                                                     sx={{'&:last-child td, &:last-child th': {border: 0}}}>
-                                    <TableCell sx={{border: 0}} colSpan={6}>
-                                        <Grid container spacing={1}>
-                                            <Grid item xs={1} sx={{display: 'flex', alignItems: 'center'}}>
-                                                {position.logoUrls.map((url, i) => (
-                                                    <Avatar
-                                                        key={i}
-                                                        alt={position.tokenNames}
-                                                        src={url}
-                                                        sx={{marginRight: 1, width: 35, height: 35}}
-                                                    />))}
-                                            </Grid>
-                                            <Grid item xs={3}>
-                                                <Typography>{position.tokenNames}</Typography>
-                                                <Typography
-                                                    variant='caption'>{protocol.name}</Typography>
-                                            </Grid>
+                                {protocol.positions
+                                    .filter(position => position.usdValue > hideSmallBalances)
+                                    .map((position, index) => (<TableRow key={`${protocol.name}-${index}`}
+                                                                         sx={{'&:last-child td, &:last-child th': {border: 0}}}>
+                                        <TableCell sx={{border: 0}} colSpan={6}>
+                                            <Grid container spacing={1}>
+                                                <Grid item xs={1} sx={{display: 'flex', alignItems: 'center'}}>
+                                                    {position.logoUrls.map((url, i) => (
+                                                        <Avatar
+                                                            key={i}
+                                                            alt={position.tokenNames}
+                                                            src={url}
+                                                            sx={{marginRight: 1, width: 35, height: 35}}
+                                                        />))}
+                                                </Grid>
+                                                <Grid item xs={3}>
+                                                    <Typography>{position.tokenNames}</Typography>
+                                                    <Typography
+                                                        variant='caption'>{protocol.name}</Typography>
+                                                </Grid>
 
-                                            <Grid item xs={2}>
-                                                <Chip sx={{marginRight: 1}} label={position.type}
-                                                      variant="filled"/>
-                                                {position.wallets.map((wallet, i) => (<ColoredChip
-                                                    label={wallet.tag}
-                                                    key={i}
-                                                    variant="outlined"
-                                                    size="small"
-                                                    fillPercentage="100"
-                                                />))}
+                                                <Grid item xs={2}>
+                                                    <Chip sx={{marginRight: 1}} label={position.type}
+                                                          variant="filled"/>
+                                                    {position.wallets.map((wallet, i) => (<ColoredChip
+                                                        label={wallet.tag}
+                                                        key={i}
+                                                        variant="outlined"
+                                                        size="small"
+                                                        fillPercentage="100"
+                                                    />))}
+                                                </Grid>
+                                                <Grid item xs={2}>
+                                                    <Typography>$ {position.price.toFixed(4)}</Typography>
+                                                </Grid>
+                                                <Grid item xs={2}>
+                                                    <Typography>{position.amount.toFixed(5)}</Typography>
+                                                </Grid>
+                                                <Grid item xs={2}>
+                                                    <Typography align="right"
+                                                                fontWeight="bold">$ {position.usdValue.toFixed(2)}</Typography>
+                                                </Grid>
                                             </Grid>
-                                            <Grid item xs={2}>
-                                                <Typography>$ {position.price.toFixed(4)}</Typography>
-                                            </Grid>
-                                            <Grid item xs={2}>
-                                                <Typography>{position.amount.toFixed(5)}</Typography>
-                                            </Grid>
-                                            <Grid item xs={2}>
-                                                <Typography align="right"
-                                                            fontWeight="bold">$ {position.usdValue.toFixed(2)}</Typography>
-                                            </Grid>
-                                        </Grid>
-                                    </TableCell>
-                                </TableRow>))}
-                        </React.Fragment>))}
+                                        </TableCell>
+                                    </TableRow>))}
+                            </React.Fragment>))}
                 </TableBody>
             </Table>
         </Card>

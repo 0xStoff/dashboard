@@ -14,7 +14,7 @@ import {
     Divider,
     Card,
     CardContent,
-    Tooltip,
+    Tooltip, CircularProgress,
 } from "@mui/material";
 import SummaryWithIcons from "../../archive/SummaryWithIcons";
 import {Box} from "@mui/system";
@@ -34,6 +34,8 @@ const Transactions = () => {
 
     const [gnosisPage, setGnosisPage] = useState(0);
     const [gnosisRowsPerPage, setGnosisRowsPerPage] = useState(10);
+
+
 
     const handleBinancePageChange = (event, newPage) => {
         setBinancePage(newPage);
@@ -129,6 +131,11 @@ const Transactions = () => {
             effectRan.current = true;
 
             try {
+                const cachedBalances = JSON.parse(localStorage.getItem('sortedTransactions'));
+                if (cachedBalances) {
+                    setTransactions(cachedBalances);
+                    return JSON.parse(cachedBalances);
+                }
                 const allTransactions = [];
                 const [fiatPayments, fiatOrders, krakenLedgers] = await Promise.all([fetchBinanceFiatPayments(), fetchBinanceFiatOrders(), fetchKrakenLedgers(),]);
 
@@ -136,6 +143,7 @@ const Transactions = () => {
 
                 const sortedTransactions = allTransactions.sort((a, b) => b.timestamp - a.timestamp);
                 setTransactions(sortedTransactions);
+                localStorage.setItem('sortedTransactions', JSON.stringify(sortedTransactions));
             } catch (error) {
                 console.error("Error fetching transactions:", error);
             } finally {
@@ -148,15 +156,26 @@ const Transactions = () => {
         // Fetch Gnosis Transactions
         const fetchGnosisPayTransactions = async () => {
             try {
+                const cachedBalances = JSON.parse(localStorage.getItem('gnosisTransactions'));
+                const cachedSum = JSON.parse(localStorage.getItem('approvedSum'));
+                if (cachedBalances) {
+                    setGnosisTransactions(cachedBalances);
+                    setApprovedSum(cachedSum);
+                    return JSON.parse(cachedBalances);
+                }
                 const response = await axios.get("http://localhost:3000/api/gnosispay/transactions");
                 const transactions = response.data;
 
                 setGnosisTransactions(transactions);
+                localStorage.setItem('gnosisTransactions', JSON.stringify(transactions));
+
 
                 const sum = transactions
                     .filter((transaction) => transaction.status === "Approved")
                     .reduce((total, transaction) => total + Number(transaction.transactionAmount), 0);
                 setApprovedSum(sum / 100);
+                localStorage.setItem('approvedSum', JSON.stringify(sum / 100));
+
             } catch (error) {
                 console.error("Error fetching Gnosis Pay transactions:", error);
             }
@@ -176,9 +195,7 @@ const Transactions = () => {
 
     if (loading) {
         return (<Container>
-            <Typography variant="h4" gutterBottom>
-                Loading Transactions...
-            </Typography>
+            <CircularProgress/>
         </Container>);
     }
 

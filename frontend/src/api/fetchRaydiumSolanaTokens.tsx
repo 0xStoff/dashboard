@@ -31,7 +31,7 @@ const fetchRaydiumData = async (wallet): Promise<SolToken[]> => {
         let tokenData: SolToken[] = [{
             amount: balance / 10**9,
             name: 'Solana',
-            logoURI: 'https://zapper.xyz/cdn-cgi/image/width=64/https://storage.googleapis.com/zapper-fi-assets/tokens/solana/So11111111111111111111111111111111111111111.png',
+            logoURI: 'https://cryptologos.cc/logos/solana-sol-logo.png?v=040',
             address: wallet,
             symbol: 'SOL',
             decimals: 9,
@@ -78,7 +78,7 @@ export const fetchSolanaData = async (solanaWallets): Promise<null | {
         const solMetadata = {
             id: 'sol',
             name: 'Solana',
-            logo_url: "https://zapper.xyz/cdn-cgi/image/width=64/https://storage.googleapis.com/zapper-fi-assets/tokens/solana/So11111111111111111111111111111111111111111.png",
+            logo_url: "https://cryptologos.cc/logos/solana-sol-logo.png?v=040",
             usd_value: solTotalValue || 0,
             address: solanaWallets[0].wallet,
             symbol: 'SOL',

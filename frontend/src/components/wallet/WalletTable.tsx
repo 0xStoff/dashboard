@@ -26,6 +26,8 @@ const WalletTable: React.FC<{
     const sortedData = useMemo(() => data.tokens ? filterAndSortData(data.tokens) : [], [data.tokens, filterAndSortData]);
     const totalUSD = useMemo(() => sortedData.reduce((acc, item) => acc + (item.price * item.amount), 0), [sortedData]);
 
+    if(!sortedData.length) return <></>
+
     const getChainLogo = (chainId: string) => {
         const chain = chainList.chain_list.find(c => c.id === chainId);
         return chain ? chain.logo_url : '';

@@ -116,6 +116,15 @@ export const fetchStaticData = async () => {
         priceKey: 'bvm',
         amount: 1400,
         wallet: '14MVcXjexqZTnqz4zSBhEbTzMdCL6mSVnVhsVMdKgx2Jvue2',
+    }, {
+        id: 'magic',
+        name: 'MAGIC',
+        symbol: 'MAGIC',
+        decimals: 16,
+        logo_url: "https://cryptologos.cc/logos/magic-token-magic-logo.svg?v=040",
+        priceKey: 'magic',
+        amount: 4349,
+        wallet: '0x770353615119F0f701118d3A4eaf1FE57fA00F84',
     }];
 
     return Promise.all(chains.map(async chain => {

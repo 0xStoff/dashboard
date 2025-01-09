@@ -23,7 +23,7 @@
     "community_id": 1111,
     "name": "Solana",
     "native_token_id": "sol",
-    "logo_url": "https://zapper.xyz/cdn-cgi/image/width=64/https://storage.googleapis.com/zapper-fi-assets/tokens/solana/So11111111111111111111111111111111111111111.png",
+    "logo_url": "https://cryptologos.cc/logos/solana-sol-logo.png?v=040",
     "wrapped_token_id": "0x0",
     "is_support_pre_exec": true,
     "usd_value": 0
