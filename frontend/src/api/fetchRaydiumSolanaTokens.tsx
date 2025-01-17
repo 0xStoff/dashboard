@@ -35,7 +35,8 @@ const fetchRaydiumData = async (wallet): Promise<SolToken[]> => {
             address: wallet,
             symbol: 'SOL',
             decimals: 9,
-            usd: solPrice.usd
+            usd: solPrice.usd,
+            price_24h_change: solPrice.price_24h_change
         }];
 
         for (const accountInfo of tokenAccounts.value) {
@@ -49,7 +50,7 @@ const fetchRaydiumData = async (wallet): Promise<SolToken[]> => {
                     tokenData.push({
                         ...tokenInfo,
                         amount: parsedAccountInfo.tokenAmount.uiAmount,
-                        usd: tokenPrice.usd
+                        ...tokenPrice
                     });
                 }
             }
@@ -75,6 +76,7 @@ export const fetchSolanaData = async (solanaWallets): Promise<null | {
         const solanaTokens = await fetchRaydiumData(solanaWallets[0].wallet);
         const solTotalValue = solanaTokens.reduce((sum, token) => sum + (token.amount * (token.usd || 0)), 0);
 
+
         const solMetadata = {
             id: 'sol',
             name: 'Solana',
@@ -85,7 +87,7 @@ export const fetchSolanaData = async (solanaWallets): Promise<null | {
             decimals: 9
         };
 
-        const solTokens = solanaTokens.map(({ address, name, symbol, decimals, logoURI, usd, amount }) => ({
+        const solTokens = solanaTokens.map(({ address, name, symbol, decimals, logoURI, usd, amount, price_24h_change }) => ({
             id: address,
             chain: "sol",
             name,
@@ -93,6 +95,7 @@ export const fetchSolanaData = async (solanaWallets): Promise<null | {
             decimals,
             logo_url: logoURI,
             price: usd,
+            price_24h_change,
             amount,
             is_core: true,
             wallets: [{ tag: "Sol", id: 15, wallet: address, amount }],

@@ -16,12 +16,10 @@ const WalletTable: React.FC<{
       }) => {
     const [selectedChainId] = chainIdState;
 
-    const filterAndSortData = useCallback((data: WalletList) => {
-
-        return data
+    const filterAndSortData = useCallback((data: WalletList) =>
+        data
             .filter(item => (item.amount * item.price) > hideSmallBalances && item.is_core && (selectedChainId === 'all' || item.chain === selectedChainId))
-            .sort((a, b) => (b.price * b.amount) - (a.price * a.amount));
-    }, [hideSmallBalances, selectedChainId]);
+            .sort((a, b) => (b.price * b.amount) - (a.price * a.amount)), [hideSmallBalances, selectedChainId]);
 
     const sortedData = useMemo(() => data.tokens ? filterAndSortData(data.tokens) : [], [data.tokens, filterAndSortData]);
     const totalUSD = useMemo(() => sortedData.reduce((acc, item) => acc + (item.price * item.amount), 0), [sortedData]);

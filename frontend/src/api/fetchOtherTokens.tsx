@@ -9,7 +9,8 @@ const createTokenData = (id, name, symbol, decimals, logoUrl, price, amount, wal
         symbol,
         decimals,
         logo_url: logoUrl,
-        price: price || 0,
+        price: price.usd || 0,
+        price_24h_change: price.price_24h_change,
         amount: amount || 0,
         is_core: true,
         wallets: [{tag: walletTag, id: walletId, wallet: walletAddress, amount: amount || 0},],
@@ -40,7 +41,7 @@ export const fetchSuiData = async () => {
     const suiAmount = stakingData[0]?.stakes[0]?.principal / 10 ** 9 + suiBalance.data[0]?.balance / 10 ** 9;
     const deepAmount = suiBalance.data.filter(coin => coin.coinType.includes("DEEP"))[0]?.balance / 10 ** 6 || 0;
 
-    const tokens = [createTokenData('sui', 'Sui', 'SUI', 18, "https://cryptologos.cc/logos/sui-sui-logo.png?v=035", suiPrice?.usd, suiAmount, 'Sui', 30, suiAddress), createTokenData('deep', 'DEEP', 'DEEP', 18, "https://s2.coinmarketcap.com/static/img/coins/200x200/33391.png", deepPrice?.usd, deepAmount, 'Sui', 30, suiAddress)];
+    const tokens = [createTokenData('sui', 'Sui', 'SUI', 18, "https://cryptologos.cc/logos/sui-sui-logo.png?v=035", suiPrice, suiAmount, 'Sui', 30, suiAddress), createTokenData('deep', 'DEEP', 'DEEP', 18, "https://s2.coinmarketcap.com/static/img/coins/200x200/33391.png", deepPrice, deepAmount, 'Sui', 30, suiAddress)];
 
     return createChainData(30, ['sui'], 'Sui', tokens, suiAddress);
 };
@@ -65,7 +66,7 @@ export const fetchAptosData = async () => {
     });
 
     const aptosAmount = totalStake / 10 ** 8 + aptosBalance / 10 ** 8;
-    const tokens = [createTokenData('aptos', 'Aptos', 'APT', 8, "https://cryptologos.cc/logos/aptos-apt-logo.png?v=035", aptosPrice?.usd, aptosAmount, 'Aptos', 39, aptosAddress)];
+    const tokens = [createTokenData('aptos', 'Aptos', 'APT', 8, "https://cryptologos.cc/logos/aptos-apt-logo.png?v=035", aptosPrice, aptosAmount, 'Aptos', 39, aptosAddress)];
 
     return createChainData(39, ['aptos'], 'Aptos', tokens, aptosAddress);
 };
@@ -128,7 +129,7 @@ export const fetchStaticData = async () => {
     }];
 
     return Promise.all(chains.map(async chain => {
-        const price = (await fetchTokenPrice(chain.priceKey))?.usd || 0;
+        const price = (await fetchTokenPrice(chain.priceKey)) || 0;
         const tokens = [createTokenData(chain.id, chain.name, chain.symbol, chain.decimals, chain.logo_url, price, chain.amount, chain.name, chain.id, chain.wallet)];
         return createChainData(chain.id, [chain.name.toLowerCase()], chain.name, tokens, chain.wallet);
     }));

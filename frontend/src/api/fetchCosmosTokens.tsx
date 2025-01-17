@@ -19,7 +19,7 @@ const aggregateChainData = (chainName: string, result: any[]) => {
     return {
         totalValue: calculateTotalValue(allData, 'price.usd'),
         amount: allData.reduce((sum, item) => (sum + item.amount), 0),
-        price: allData[0]?.price?.usd
+        price: allData[0]?.price
     };
 };
 
@@ -33,7 +33,7 @@ const fetchBalances = async (chain: Chain): Promise<FetchResult[]> => {
             const price = await fetchTokenPrice(chain.id);
 
             const balances: TokenBalance[] = response.data.balances.map(token => ({
-                denom: token.denom, amount: parseInt(token.amount, 10) / Math.pow(10, chain.decimals), price,
+                denom: token.denom, amount: parseInt(token.amount, 10) / Math.pow(10, chain.decimals), price
             }));
 
             const nonIbcBalances = balances.filter(b => !b.denom.startsWith('ibc/') && !b.denom.startsWith('factory/'));
@@ -196,6 +196,7 @@ export const fetchCosmosTokens = async (cosmosWallets) => {
         let cosmosChains = storedCosmosChains ? JSON.parse(storedCosmosChains) : await chains(cosmosWallets);
         let cosmosBalances = storedCosmosBalances ? JSON.parse(storedCosmosBalances) : await fetchNode(cosmosWallets);
 
+
         // Filter out empty data arrays before caching
         cosmosBalances = cosmosBalances.filter(result => result.data && result.data.length > 0);
 
@@ -206,9 +207,9 @@ export const fetchCosmosTokens = async (cosmosWallets) => {
         // Calculate total values
         let total = 0;
         const chainMetadata = cosmosChains.map(chain => {
-            const {totalValue, amount, price} = aggregateChainData(chain.name, cosmosBalances);
+            const {totalValue, amount, price, price_24h_change} = aggregateChainData(chain.name, cosmosBalances);
             total += totalValue;
-            return {...chain, usd_value: totalValue, usd: price, amount, address: chain.wallets[0]};
+            return {...chain, usd_value: totalValue, usd: price.usd, price_24h_change: price.price_24h_change, amount, address: chain.wallets[0]};
         });
 
         // Merge and structure Cosmos data
@@ -219,10 +220,13 @@ export const fetchCosmosTokens = async (cosmosWallets) => {
             decimals: chain.decimals,
             logo_url: chain.logo_url,
             price: chain.usd,
+            price_24h_change: chain.price_24h_change,
             amount: chain.amount,
             is_core: true,
             wallets: [{tag: chain.symbol, id: index + 16, wallet: chain.address, amount: chain.amount}],
         }));
+
+        console.log(mergedCosmos)
 
         // Final Cosmos structure
         const cosmos = {

@@ -25,8 +25,8 @@ function App() {
     const chainIdState = [selectedChainId, setSelectedChainId];
     const [list, setList] = useState<Account[] | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
-    const [hideSmallBalances, setHideSmallBalances] = useState<number>(10); // Default value
-    const [openSettings, setOpenSettings] = useState(false);  // State for opening/closing settings popup
+    const [hideSmallBalances, setHideSmallBalances] = useState<number>(10);
+    const [openSettings, setOpenSettings] = useState(false);
     const [isCryptoView, setIsCryptoView] = useState(true);
 
     const wallets = useFetchWallets();
@@ -83,10 +83,7 @@ function App() {
         setIsCryptoView(!isCryptoView);
     };
 
-    const clearCache1 = () => {
-        localStorage.clear();
-        window.location.reload();
-    }
+
 
     const sortedData = selectedItem?.chains ? [...selectedItem.chains.chain_list].sort((a, b) => b.usd_value - a.usd_value) : [];
 
