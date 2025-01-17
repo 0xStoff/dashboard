@@ -84,10 +84,12 @@ const ProtocolTable: React.FC<{ data: Account, chainIdState: ChainIdState, hideS
 
 
     const renderPosition = (position: Position, index: number) => position.usdValue > hideSmallBalances && (
-        <Grid container marginY={2}>
-            <Grid item xs={4} sx={{display: 'flex', alignItems: 'center'}}>
+        <Grid key={index} container marginY={2}>
+            <Grid sx={{display: 'flex'}} item xs={1}>
                 {position.logoUrls.map((url, i) => (
                     <Avatar key={i} alt={position.tokenNames} src={url} sx={{marginRight: 1}}/>))}
+            </Grid>
+            <Grid item xs={3}>
                 <Typography sx={{marginLeft: 2}}>{position.tokenNames}</Typography>
             </Grid>
             <Grid item xs={2}>
@@ -95,7 +97,7 @@ const ProtocolTable: React.FC<{ data: Account, chainIdState: ChainIdState, hideS
             </Grid>
             <Grid item xs={2}>
                 <Chip  label={position.type} variant="filled"/>
-                {position.wallets.map((wallet, i) => (// <ChipWithÒTooltip key={i} item={position} wallet={wallet} />
+                {position.wallets.map((wallet, i) => (
                     <ColoredChip label={wallet.tag}
                                  key={i}
                                  variant="outlined"
