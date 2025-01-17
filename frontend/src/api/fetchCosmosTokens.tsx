@@ -226,7 +226,6 @@ export const fetchCosmosTokens = async (cosmosWallets) => {
             wallets: [{tag: chain.symbol, id: index + 16, wallet: chain.address, amount: chain.amount}],
         }));
 
-        console.log(mergedCosmos)
 
         // Final Cosmos structure
         const cosmos = {

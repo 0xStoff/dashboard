@@ -69,6 +69,7 @@ const fetchRaydiumData = async (wallet): Promise<SolToken[]> => {
 
 // Function to fetch Solana tokens with metadata, utilizing caching
 export const fetchSolanaData = async (solanaWallets): Promise<null | {
+    solMetadata: any;
     solTotalValue: number;
     sol: any;
 }> => {

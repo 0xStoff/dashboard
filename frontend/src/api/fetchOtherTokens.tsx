@@ -89,7 +89,7 @@ export const fetchStaticData = async () => {
         logo_url: "https://cryptologos.cc/logos/polkadot-new-dot-logo.png?v=035",
         priceKey: 'polkadot',
         wallet: '14MVcXjexqZTnqz4zSBhEbTzMdCL6mSVnVhsVMdKgx2Jvue2',
-        amount: 100
+        amount: 70
     }, {
         id: 'flow',
         name: 'Flow',
@@ -98,7 +98,7 @@ export const fetchStaticData = async () => {
         logo_url: "https://cryptologos.cc/logos/flow-flow-logo.png?v=035",
         priceKey: 'flow',
         wallet: '14MVcXjexqZTnqz4zSBhEbTzMdCL6mSVnVhsVMdKgx2Jvue2',
-        amount: 700
+        amount: 730
     }, {
         id: 'strk',
         name: 'Starknet',
@@ -106,7 +106,7 @@ export const fetchStaticData = async () => {
         decimals: 16,
         logo_url: "https://cryptologos.cc/logos/starknet-token-strk-logo.png?v=040",
         priceKey: 'starknet',
-        amount: 900,
+        amount: 890,
         wallet: '14MVcXjexqZTnqz4zSBhEbTzMdCL6mSVnVhsVMdKgx2Jvue2'
     }, {
         id: 'bvm',

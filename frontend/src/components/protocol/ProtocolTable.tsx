@@ -75,18 +75,26 @@ const ProtocolTable: React.FC<{ data: Account, chainIdState: ChainIdState, hideS
         return acc;
     }, {}) || {};
 
-    const sortedGroupedProtocols =
-            Object.values(groupedByProtocol)
-            .sort((a, b) => b.totalUSD - a.totalUSD)
-            .filter(protocol => protocol.totalUSD > hideSmallBalances)
+    const sortedGroupedProtocols = Object.values(groupedByProtocol)
+        .sort((a, b) => b.totalUSD - a.totalUSD)
+        .filter(protocol => protocol.totalUSD > hideSmallBalances)
+
 
     if (!sortedGroupedProtocols.length) return <></>
 
-    // Rendering function for positions
+
     const renderPosition = (position: Position, index: number) => position.usdValue > hideSmallBalances && (
-        <Grid item xs={12} key={index}>
-            <Box sx={{marginTop: 3, marginBottom: 2}}>
-                <Chip sx={{marginRight: 1}} label={position.type} variant="filled"/>
+        <Grid container marginY={2}>
+            <Grid item xs={4} sx={{display: 'flex', alignItems: 'center'}}>
+                {position.logoUrls.map((url, i) => (
+                    <Avatar key={i} alt={position.tokenNames} src={url} sx={{marginRight: 1}}/>))}
+                <Typography sx={{marginLeft: 2}}>{position.tokenNames}</Typography>
+            </Grid>
+            <Grid item xs={2}>
+                <Typography>$ {position.price.toFixed(2)}</Typography>
+            </Grid>
+            <Grid item xs={2}>
+                <Chip  label={position.type} variant="filled"/>
                 {position.wallets.map((wallet, i) => (// <ChipWithÒTooltip key={i} item={position} wallet={wallet} />
                     <ColoredChip label={wallet.tag}
                                  key={i}
@@ -94,27 +102,17 @@ const ProtocolTable: React.FC<{ data: Account, chainIdState: ChainIdState, hideS
                                  size="small"
                                  fillPercentage='100'
                     />))}
-            </Box>
-            <Grid container spacing={1}>
-                <Grid item xs={6} sx={{display: 'flex', alignItems: 'center'}}>
-                    {position.logoUrls.map((url, i) => (
-                        <Avatar key={i} alt={position.tokenNames} src={url} sx={{marginRight: 1}}/>))}
-                    <Typography sx={{marginLeft: 2}}>{position.tokenNames}</Typography>
-                </Grid>
-                <Grid item xs={2}>
-                    <Typography>$ {position.price.toFixed(4)}</Typography>
-                </Grid>
-                <Grid item xs={2}>
-                    <Typography>{position.amount.toFixed(5)}</Typography>
-                </Grid>
-                <Grid item xs={2}>
-                    <Typography align='right' fontWeight="bold">$ {position.usdValue.toFixed(2)}</Typography>
-                </Grid>
+            </Grid>
+            <Grid item xs={2}>
+                <Typography align='right'>{position.amount.toFixed(5)}</Typography>
+            </Grid>
+            <Grid item xs={2}>
+                <Typography align='right' fontWeight="bold">$ {position.usdValue.toFixed(2)}</Typography>
             </Grid>
         </Grid>);
 
 
-    const protocolViewSetting = true;
+    const protocolViewSetting = false;
 
     return (protocolViewSetting ? <Container>
         <Card sx={{height: 'fit-content', width: 'auto', borderRadius: 10, marginTop: 10}}>
@@ -130,54 +128,52 @@ const ProtocolTable: React.FC<{ data: Account, chainIdState: ChainIdState, hideS
                 </TableHead>
                 <TableBody>
                     {sortedGroupedProtocols
-                        .map((protocol, i) => (
-                            <React.Fragment key={protocol.name}>
-                                {protocol.positions
-                                    .filter(position => position.usdValue > hideSmallBalances)
-                                    .map((position, index) => (<TableRow key={`${protocol.name}-${index}`}
-                                                                         sx={{'&:last-child td, &:last-child th': {border: 0}}}>
-                                        <TableCell sx={{border: 0}} colSpan={6}>
-                                            <Grid container spacing={1}>
-                                                <Grid item xs={1} sx={{display: 'flex', alignItems: 'center'}}>
-                                                    {position.logoUrls.map((url, i) => (
-                                                        <Avatar
-                                                            key={i}
-                                                            alt={position.tokenNames}
-                                                            src={url}
-                                                            sx={{marginRight: 1, width: 35, height: 35}}
-                                                        />))}
-                                                </Grid>
-                                                <Grid item xs={3}>
-                                                    <Typography>{position.tokenNames}</Typography>
-                                                    <Typography
-                                                        variant='caption'>{protocol.name}</Typography>
-                                                </Grid>
-
-                                                <Grid item xs={2}>
-                                                    <Chip sx={{marginRight: 1}} label={position.type}
-                                                          variant="filled"/>
-                                                    {position.wallets.map((wallet, i) => (<ColoredChip
-                                                        label={wallet.tag}
-                                                        key={i}
-                                                        variant="outlined"
-                                                        size="small"
-                                                        fillPercentage="100"
-                                                    />))}
-                                                </Grid>
-                                                <Grid item xs={2}>
-                                                    <Typography>$ {position.price.toFixed(4)}</Typography>
-                                                </Grid>
-                                                <Grid item xs={2}>
-                                                    <Typography>{position.amount.toFixed(5)}</Typography>
-                                                </Grid>
-                                                <Grid item xs={2}>
-                                                    <Typography align="right"
-                                                                fontWeight="bold">$ {position.usdValue.toFixed(2)}</Typography>
-                                                </Grid>
+                        .map((protocol, i) => (<React.Fragment key={protocol.name}>
+                            {protocol.positions
+                                .filter(position => position.usdValue > hideSmallBalances)
+                                .map((position, index) => (<TableRow key={`${protocol.name}-${index}`}
+                                                                     sx={{'&:last-child td, &:last-child th': {border: 0}}}>
+                                    <TableCell sx={{border: 0}} colSpan={6}>
+                                        <Grid container spacing={1}>
+                                            <Grid item xs={1} sx={{display: 'flex', alignItems: 'center'}}>
+                                                {position.logoUrls.map((url, i) => (<Avatar
+                                                    key={i}
+                                                    alt={position.tokenNames}
+                                                    src={url}
+                                                    sx={{marginRight: 1, width: 35, height: 35}}
+                                                />))}
                                             </Grid>
-                                        </TableCell>
-                                    </TableRow>))}
-                            </React.Fragment>))}
+                                            <Grid item xs={3}>
+                                                <Typography>{position.tokenNames}</Typography>
+                                                <Typography
+                                                    variant='caption'>{protocol.name}</Typography>
+                                            </Grid>
+
+                                            <Grid item xs={2}>
+                                                <Chip sx={{marginRight: 1}} label={position.type}
+                                                      variant="filled"/>
+                                                {position.wallets.map((wallet, i) => (<ColoredChip
+                                                    label={wallet.tag}
+                                                    key={i}
+                                                    variant="outlined"
+                                                    size="small"
+                                                    fillPercentage="100"
+                                                />))}
+                                            </Grid>
+                                            <Grid item xs={2}>
+                                                <Typography>$ {position.price.toFixed(4)}</Typography>
+                                            </Grid>
+                                            <Grid item xs={2}>
+                                                <Typography>{position.amount.toFixed(5)}</Typography>
+                                            </Grid>
+                                            <Grid item xs={2}>
+                                                <Typography align="right"
+                                                            fontWeight="bold">$ {position.usdValue.toFixed(2)}</Typography>
+                                            </Grid>
+                                        </Grid>
+                                    </TableCell>
+                                </TableRow>))}
+                        </React.Fragment>))}
                 </TableBody>
             </Table>
         </Card>
@@ -191,9 +187,7 @@ const ProtocolTable: React.FC<{ data: Account, chainIdState: ChainIdState, hideS
                     <Typography variant="body2" color="text.secondary">
                         $ {protocol.totalUSD.toFixed(2)}
                     </Typography>
-                    <Grid container spacing={2}>
-                        {protocol.positions.map(renderPosition)}
-                    </Grid>
+                    {protocol.positions.map(renderPosition)}
                 </CardContent>
             </Card>)))}
     </Container>);
