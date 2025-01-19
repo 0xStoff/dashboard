@@ -196,6 +196,44 @@ router.get('/kraken/ledgers', async (req, res) => {
     }
 });
 
+router.get('/kraken/portfolio', async (req, res) => {
+    const apiKey = process.env.KRAKEN_API_KEY;
+    const apiSecret = process.env.KRAKEN_API_SECRET;
+
+    if (!apiKey || !apiSecret) {
+        return res.status(400).json({ error: 'Missing API key or secret' });
+    }
+
+    try {
+        // Generate nonce and signature
+        const nonce = Date.now().toString();
+        const data = { nonce };
+        const signature = getKrakenSignature('/0/private/BalanceEx', data, apiSecret);
+
+        // Make the request to the Kraken API
+        const response = await axios.post(
+            'https://api.kraken.com/0/private/BalanceEx',
+            querystring.stringify(data),
+            {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'API-Key': apiKey,
+                    'API-Sign': signature,
+                },
+            }
+        );
+
+        res.json(response.data.result);
+    } catch (error) {
+        console.error('Error fetching Kraken portfolio:', error.response?.data || error.message);
+        res.status(500).json({
+            error: 'Failed to fetch Kraken portfolio',
+            details: error.response?.data || error.message,
+        });
+    }
+});
+
+
 router.get('/gnosispay/transactions', async (req, res) => {
     try {
         const response = await axios.get("https://app.gnosispay.com/api/v1/transactions", {

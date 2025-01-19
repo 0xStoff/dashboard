@@ -4,7 +4,7 @@ const Dotenv = require('dotenv-webpack');
 const webpack = require('webpack'); // Import Webpack
 
 module.exports = {
-    entry: './src/index.tsx', // Your application's entry point
+    entry: './src/index.ts', // Your application's entry point
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: 'bundle.js',

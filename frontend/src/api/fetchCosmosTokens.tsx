@@ -2,7 +2,7 @@ import {
     BalanceApiResponse, Chain, FetchResult, StakedAmount, StakingApiResponse, TokenBalance
 } from "../interfaces/cosmos";
 import axios from "axios";
-import {fetchTokenPrice} from "./fetchTokenPriceCoingecko";
+import {fetchTokenPriceCoingecko} from "./fetchTokenPriceCoingecko";
 import {fromBech32, toBech32} from "@cosmjs/encoding";
 import {useFetchWallets} from "../hooks/useFetchWallets";
 
@@ -30,7 +30,7 @@ const fetchBalances = async (chain: Chain): Promise<FetchResult[]> => {
         const balanceUrl = `${chain.endpoint}/cosmos/bank/v1beta1/balances/${wallet}`;
         try {
             const response = await axios.get<BalanceApiResponse>(balanceUrl);
-            const price = await fetchTokenPrice(chain.id);
+            const price = await fetchTokenPriceCoingecko(chain.id);
 
             const balances: TokenBalance[] = response.data.balances.map(token => ({
                 denom: token.denom, amount: parseInt(token.amount, 10) / Math.pow(10, chain.decimals), price
@@ -54,7 +54,7 @@ const fetchStakings = async (chain: Chain): Promise<FetchResult[]> => {
         const stakingUrl = `${chain.endpoint}/cosmos/staking/v1beta1/delegations/${wallet}`;
         try {
             const response = await axios.get<StakingApiResponse>(stakingUrl);
-            const price = await fetchTokenPrice(chain.id);
+            const price = await fetchTokenPriceCoingecko(chain.id);
 
             const stakedAmounts: StakedAmount[] = response.data.delegation_responses.map(delegationResponse => ({
                 validator: delegationResponse.delegation.validator_address,
@@ -134,7 +134,7 @@ const chains = async (wallets): Promise<({
         decimals: 6,
         wallets: cosmosAddresses,
         logo_url: "https://cryptologos.cc/logos/cosmos-atom-logo.png?v=035",
-        symbol: "ATOM"
+        symbol: "ATOM",
     }, {
         id: "osmosis",
         name: "Osmosis",
@@ -217,6 +217,7 @@ export const fetchCosmosTokens = async (cosmosWallets) => {
             id: chain.id,
             name: chain.name,
             symbol: chain.symbol,
+            chain: 'cosmos',
             decimals: chain.decimals,
             logo_url: chain.logo_url,
             price: chain.usd,

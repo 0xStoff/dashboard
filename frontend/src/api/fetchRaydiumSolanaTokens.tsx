@@ -1,7 +1,7 @@
 import { Connection, ParsedAccountData, PublicKey } from '@solana/web3.js';
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import { fetchTokenPrice } from "./fetchTokenPriceCoingecko";
+import { fetchTokenPriceCoingecko } from "./fetchTokenPriceCoingecko";
 import { SolToken } from "../interfaces/solana";
 
 // Fetch token balances and metadata with caching
@@ -26,7 +26,7 @@ const fetchRaydiumData = async (wallet): Promise<SolToken[]> => {
         });
 
         const balance = await connection.getBalance(owner);
-        const solPrice = await fetchTokenPrice('solana') || { usd: 0 }
+        const solPrice = await fetchTokenPriceCoingecko('solana') || { usd: 0 }
 
         let tokenData: SolToken[] = [{
             amount: balance / 10**9,
@@ -45,7 +45,7 @@ const fetchRaydiumData = async (wallet): Promise<SolToken[]> => {
             const tokenInfo = raydium.token.tokenList.find(token => token.address === tokenAddress);
 
             if (tokenInfo) {
-                const tokenPrice = await fetchTokenPrice(tokenInfo.extensions.coingeckoId || '');
+                const tokenPrice = await fetchTokenPriceCoingecko(tokenInfo.extensions.coingeckoId || '');
                 if (tokenPrice) {
                     tokenData.push({
                         ...tokenInfo,

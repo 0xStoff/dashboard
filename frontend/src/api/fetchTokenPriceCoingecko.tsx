@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export const fetchTokenPrice = async (coingeckoId: string): Promise<{
+export const fetchTokenPriceCoingecko = async (coingeckoId: string): Promise<{
     usd: number;
     market_cap?: number;
     usd_24h_vol?: number;

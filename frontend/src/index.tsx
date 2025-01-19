@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import "@interchain-ui/react/styles";
 import App from "./App";
-import EthTokens from "./EthTokens";
+import EthTokens from "../archive/EthTokens";
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement

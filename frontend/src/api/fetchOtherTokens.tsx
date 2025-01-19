@@ -1,5 +1,5 @@
 import {getFullnodeUrl, SuiClient} from '@mysten/sui/client';
-import {fetchTokenPrice} from "./fetchTokenPriceCoingecko";
+import {fetchTokenPriceCoingecko} from "./fetchTokenPriceCoingecko";
 import {Aptos, AptosConfig, Network} from "@aptos-labs/ts-sdk";
 
 const createTokenData = (id, name, symbol, decimals, logoUrl, price, amount, walletTag, walletId, walletAddress) => {
@@ -21,7 +21,7 @@ const createTokenData = (id, name, symbol, decimals, logoUrl, price, amount, wal
 const createChainData = (chainId, chainList, tag, tokens, walletAddress) => {
     const totalUsdValue = tokens.reduce((sum, token) => sum + token.amount * token.price, 0);
     return {
-        chains: {total_usd_value: totalUsdValue, chain_list: chainList},
+        chains: {usd_value: totalUsdValue, chain_list: chainList},
         id: chainId,
         protocols: [],
         tag,
@@ -36,7 +36,7 @@ export const fetchSuiData = async () => {
     const client = new SuiClient({url: rpcUrl});
     const suiAddress = "0xb0ff460367eae42bc92566dc50135dc12eed99ead8938d18f6b8c0dd0f41b11b";
 
-    const [suiBalance, stakingData, suiPrice, deepPrice] = await Promise.all([client.getAllCoins({owner: suiAddress}), client.getStakes({owner: suiAddress}), fetchTokenPrice('sui'), fetchTokenPrice('deep')]);
+    const [suiBalance, stakingData, suiPrice, deepPrice] = await Promise.all([client.getAllCoins({owner: suiAddress}), client.getStakes({owner: suiAddress}), fetchTokenPriceCoingecko('sui'), fetchTokenPriceCoingecko('deep')]);
 
     const suiAmount = stakingData[0]?.stakes[0]?.principal / 10 ** 9 + suiBalance.data[0]?.balance / 10 ** 9;
     const deepAmount = suiBalance.data.filter(coin => coin.coinType.includes("DEEP"))[0]?.balance / 10 ** 6 || 0;
@@ -54,7 +54,7 @@ export const fetchAptosData = async () => {
     const [stakingActivities, aptosBalance, aptosPrice] = await Promise.all([aptosConf.staking.getDelegatedStakingActivities({
         poolAddress: "0xdb5247f859ce63dbe8940cf8773be722a60dcc594a8be9aca4b76abceb251b8e",
         delegatorAddress: aptosAddress
-    }), aptosConf.getAccountAPTAmount({accountAddress: aptosAddress}), fetchTokenPrice('aptos')]);
+    }), aptosConf.getAccountAPTAmount({accountAddress: aptosAddress}), fetchTokenPriceCoingecko('aptos')]);
 
     let totalStake = 0;
     stakingActivities.forEach(activity => {
@@ -126,10 +126,19 @@ export const fetchStaticData = async () => {
         priceKey: 'magic',
         amount: 4349,
         wallet: '0x770353615119F0f701118d3A4eaf1FE57fA00F84',
+    }, {
+        id: 'kraken',
+        name: 'KRAKEN',
+        symbol: 'KRAKEN',
+        decimals: 16,
+        logo_url: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=040",
+        priceKey: 'usd-coin',
+        amount: 1500,
+        wallet: '0x0',
     }];
 
     return Promise.all(chains.map(async chain => {
-        const price = (await fetchTokenPrice(chain.priceKey)) || 0;
+        const price = (await fetchTokenPriceCoingecko(chain.priceKey)) || 0;
         const tokens = [createTokenData(chain.id, chain.name, chain.symbol, chain.decimals, chain.logo_url, price, chain.amount, chain.name, chain.id, chain.wallet)];
         return createChainData(chain.id, [chain.name.toLowerCase()], chain.name, tokens, chain.wallet);
     }));

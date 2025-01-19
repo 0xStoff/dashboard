@@ -16,7 +16,7 @@ import {
     CardContent,
     Tooltip, CircularProgress,
 } from "@mui/material";
-import SummaryWithIcons from "../../archive/SummaryWithIcons";
+import SummaryWithIcons from "../../../archive/SummaryWithIcons";
 import {Box} from "@mui/system";
 
 const Transactions = () => {
@@ -246,6 +246,49 @@ const Transactions = () => {
             </Card>
         </Container>
 
+        <Typography
+            variant="h5"
+            gutterBottom
+        >
+            Gnosis Pay Transactions
+        </Typography>
+        <TableContainer component={Paper}>
+            <Table>
+                <TableHead>
+                    <TableRow>
+                        <TableCell>Created At</TableCell>
+                        <TableCell>Transaction Amount</TableCell>
+                        <TableCell>Billing Amount</TableCell>
+                        <TableCell>Merchant</TableCell>
+                        <TableCell>Status</TableCell>
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                    {paginatedGnosisTransactions.map((transaction, index) => (<TableRow key={index}>
+                        <TableCell>{new Date(transaction.createdAt).toLocaleString()}</TableCell>
+                        <TableCell>
+                            {transaction.transactionAmount / 100} {transaction.transactionCurrency.symbol}
+                        </TableCell>
+                        <TableCell>
+                            {transaction.billingAmount / 100} {transaction.billingCurrency.symbol}
+                        </TableCell>
+                        <TableCell>
+                            {transaction.merchant.name.trim()} ({transaction.merchant.city})
+                        </TableCell>
+                        <TableCell>{transaction.status}</TableCell>
+                    </TableRow>))}
+                </TableBody>
+            </Table>
+        </TableContainer>
+        <TablePagination
+            component="div"
+            count={gnosisTransactions.length}
+            page={gnosisPage}
+            onPageChange={handleGnosisPageChange}
+            rowsPerPage={gnosisRowsPerPage}
+            onRowsPerPageChange={handleGnosisRowsPerPageChange}
+            rowsPerPageOptions={[10, 25, 50]}
+        />
 
         <Typography
             variant="h5"
@@ -288,50 +331,6 @@ const Transactions = () => {
             onPageChange={handleBinancePageChange}
             rowsPerPage={binanceRowsPerPage}
             onRowsPerPageChange={handleBinanceRowsPerPageChange}
-            rowsPerPageOptions={[10, 25, 50]}
-        />
-
-        <Typography
-            variant="h5"
-            gutterBottom
-        >
-            Gnosis Pay Transactions
-        </Typography>
-        <TableContainer component={Paper}>
-            <Table>
-                <TableHead>
-                    <TableRow>
-                        <TableCell>Created At</TableCell>
-                        <TableCell>Transaction Amount</TableCell>
-                        <TableCell>Billing Amount</TableCell>
-                        <TableCell>Merchant</TableCell>
-                        <TableCell>Status</TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    {paginatedGnosisTransactions.map((transaction, index) => (<TableRow key={index}>
-                        <TableCell>{new Date(transaction.createdAt).toLocaleString()}</TableCell>
-                        <TableCell>
-                            {transaction.transactionAmount / 100} {transaction.transactionCurrency.symbol}
-                        </TableCell>
-                        <TableCell>
-                            {transaction.billingAmount / 100} {transaction.billingCurrency.symbol}
-                        </TableCell>
-                        <TableCell>
-                            {transaction.merchant.name.trim()} ({transaction.merchant.city})
-                        </TableCell>
-                        <TableCell>{transaction.status}</TableCell>
-                    </TableRow>))}
-                </TableBody>
-            </Table>
-        </TableContainer>
-        <TablePagination
-            component="div"
-            count={gnosisTransactions.length}
-            page={gnosisPage}
-            onPageChange={handleGnosisPageChange}
-            rowsPerPage={gnosisRowsPerPage}
-            onRowsPerPageChange={handleGnosisRowsPerPageChange}
             rowsPerPageOptions={[10, 25, 50]}
         />
     </Container>);

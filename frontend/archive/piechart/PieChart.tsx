@@ -1,8 +1,8 @@
 import React, {useState} from 'react';
 import {Container, Typography, Box, Card} from '@mui/material';
 import {PieChart} from "@mui/x-charts";
-import {ChainIdState, ChainListInterface} from "../../interfaces/chain";
-import {Account} from "../../interfaces/account";
+import {ChainIdState, ChainListInterface} from "../../src/interfaces/chain";
+import {Account} from "../../src/interfaces/account";
 
 
 const PieChartComponent: React.FC<{ data: Account, chainIdState: ChainIdState }> = ({data, chainIdState}) => {

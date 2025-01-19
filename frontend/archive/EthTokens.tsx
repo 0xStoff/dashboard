@@ -3,7 +3,7 @@ import {Web3} from 'web3';
 import {Multicall} from 'ethereum-multicall';
 import axios from "axios";
 
-const tokenABI = require('./data/erc20.abi.json');
+const tokenABI = require('../src/data/erc20.abi.json');
 
 function EthTokens() {
     const [balances, setBalances] = useState([]);

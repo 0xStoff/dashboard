@@ -1,157 +1,184 @@
-import React, {useEffect, useState} from 'react';
-import {useFetchWallets} from './hooks/useFetchWallets';
-import {fetchEvmAccounts} from './api/fetchEvmAccounts';
-import ChainList from './components/chainlist/ChainList';
-import WalletTable from './components/wallet/WalletTable';
-import ProtocolTable from './components/protocol/ProtocolTable';
-import {Account} from './interfaces/account';
+import React, {useEffect, useState} from "react";
 import {
-    Box,
-    Card,
-    Chip,
-    CircularProgress,
-    Container,
-    CssBaseline,
-    IconButton,
-    ThemeProvider,
-    Typography,
-} from '@mui/material';
-import {Settings} from '@mui/icons-material';
-import {theme} from './utils/theme';
-import {fetchSolanaData} from './api/fetchRaydiumSolanaTokens';
-import {fetchCosmosTokens} from './api/fetchCosmosTokens';
-import SettingsDialog from "./components/settings/SettingsDialog";
-import Transactions from "./components/Transactions";
-import {fetchAptosData, fetchStaticData, fetchSuiData} from "./api/fetchOtherTokens";
-import NavHeader from "./components/NavHeader";
+    Box, Card, Chip, CircularProgress, Container, CssBaseline, IconButton, ThemeProvider, Typography,
+} from "@mui/material";
+import {Settings} from "@mui/icons-material";
+import {theme} from "./utils/theme";
+import {useFetchWallets} from "./hooks/useFetchWallets";
+import {
+    fetchEvmAccounts, fetchSolanaData, fetchCosmosTokens, fetchAptosData, fetchSuiData, fetchStaticData,
+} from "./api";
+import {
+    ChainList, WalletTable, ProtocolTable, SettingsDialog, Transactions, NavHeader,
+} from "./components";
 
 function App() {
-    const [selectedItem, setSelectedItem] = useState<Account | null>(null);
-    const [selectedChainId, setSelectedChainId] = useState<string>('all');
-    const chainIdState = [selectedChainId, setSelectedChainId];
-    const [list, setList] = useState<Account[] | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [hideSmallBalances, setHideSmallBalances] = useState<number>(10);
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [selectedChainId, setSelectedChainId] = useState("all");
+    const [list, setList] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [hideSmallBalances, setHideSmallBalances] = useState(10);
     const [openSettings, setOpenSettings] = useState(false);
     const [isCryptoView, setIsCryptoView] = useState(true);
 
     const wallets = useFetchWallets();
 
+    const fetchAccountsData = async () => {
+        if (!wallets.length) return;
 
-    useEffect(() => {
-        if (wallets.length > 0) {
-            const fetchAccountsData = async () => {
-                try {
-                    setLoading(true);
-                    const {updated, allChains, allTokens, allProtocols} = await fetchEvmAccounts(wallets);
-                    const solData = await fetchSolanaData(wallets.filter(w => w.chain === 'sol'));
-                    const cosmosData = await fetchCosmosTokens(wallets.filter(w => w.chain === 'cosmos'));
+        try {
+            setLoading(true);
 
-                    const chainsData = [...allChains, solData?.solMetadata].filter(chain => chain && chain.usd_value !== undefined); // Filter out any undefined or null chains
-
-                    const totalUSDValue = [...chainsData, ...cosmosData?.chainMetadata].reduce((sum, chain) => sum + (chain.usd_value || 0), 0); // Check for usd_value
+            const [evmData, solData, cosmosData, suiData, aptosData, staticData,] = await Promise.all([fetchEvmAccounts(wallets), fetchSolanaData(wallets.filter((w) => w.chain === "sol")), fetchCosmosTokens(wallets.filter((w) => w.chain === "cosmos")), fetchSuiData(), fetchAptosData(), fetchStaticData(),]);
 
 
-                    const suiData = await fetchSuiData();
-                    const aptosData = await fetchAptosData();
+            const totalUSDValue = [
+                ...evmData.allChains,
+                solData?.solMetadata,
+                ...cosmosData?.chainMetadata,
+                suiData.chains,
+                aptosData.chains,
+                ...staticData.map((data) => data.chains),
+            ]
+                .filter(Boolean)
+                .reduce((sum, chain) => sum + (chain?.usd_value || chain?.total_usd_value || 0), 0);
+
+            const allTokens = [
+                ...evmData.allTokens,
+                ...(solData?.sol.tokens || []),
+                ...(cosmosData?.mergedCosmos || []),
+                ...suiData.tokens,
+                ...aptosData.tokens,
+                ...staticData.flatMap((data) => data.tokens || [])
+            ];
 
 
-                    const staticData = await fetchStaticData();
-                    const staticDatatotalUSDValue = staticData.reduce((sum, item) => {
-                        return sum + (item.chains?.total_usd_value || 0);
-                    }, 0);
+            const unifiedCosmosList = cosmosData.chainMetadata.reduce((acc, item) => {
+                acc.usd_value += item.usd_value;
+                acc.addresses.push(item.address);
+                acc.symbols.push(item.symbol);
+                return acc;
+            }, {
+                id: "cosmos",
+                name: "Cosmos",
+                chain: 'cosmos',
+                logo_url: cosmosData.chainMetadata[3]?.logo_url || "",
+                usd_value: 0,
+                addresses: [],
+                symbols: []
+            });
 
-                    const allTokenData = [...allTokens, ...(solData?.sol.tokens || []), ...(cosmosData?.mergedCosmos || []), ...suiData.tokens, ...aptosData.tokens, ...staticData.flatMap(data => data.tokens || [])]
 
-
-                    const allItem = {
-                        id: 0, tag: 'all', wallet: '', chains: {
-                            total_usd_value: totalUSDValue + staticDatatotalUSDValue + suiData.chains.total_usd_value + aptosData.chains.total_usd_value,
-                            chain_list: chainsData
-                        }, tokens: allTokenData, protocols: allProtocols,
-                    };
-
-                    setList([allItem, ...updated].filter(Boolean));
-                    setSelectedItem(allItem);
-                } catch (error) {
-                    console.error('Error fetching account data:', error);
-                } finally {
-                    setLoading(false);
-                }
+            const allItem = {
+                id: 0,
+                tag: "all",
+                chains: {total_usd_value: totalUSDValue, chain_list: [...evmData.allChains, solData?.solMetadata, unifiedCosmosList]},
+                tokens: allTokens,
+                protocols: evmData.allProtocols,
             };
 
-            fetchAccountsData();
+            const safeItems = evmData.updated.filter((item) => item.tag === "Safe");
+
+            const unifiedSafeItem = safeItems.reduce(
+                (acc, item, index) => {
+                    acc.chains.total_usd_value += item.chains.total_usd_value || 0;
+                    acc.tokens.push(...(item.tokens || []));
+                    acc.protocols.push(...(item.protocols || []));
+
+                    if (index === 0 && item.chains.chain_list) {
+                        acc.chains.chain_list = item.chains.chain_list.map((chain) => {
+                            const totalChainUSD = safeItems.reduce((sum, safeItem) => {
+                                const matchingChain = safeItem.chains.chain_list.find((c) => c.id === chain.id);
+                                return sum + (matchingChain?.usd_value || 0);
+                            }, 0);
+                            return { ...chain, usd_value: totalChainUSD };
+                        });
+                    }
+
+                    return acc;
+                },
+                {
+                    id: "safe",
+                    tag: "Safe",
+                    chains: { total_usd_value: 0, chain_list: [] },
+                    tokens: [],
+                    protocols: [],
+                }
+            );
+
+            setList([allItem, unifiedSafeItem, ...evmData.updated.filter((item) => item.tag !== "Safe")]);
+
+            setSelectedItem(allItem);
+
+
+        } catch (error) {
+            console.error("Error fetching account data:", error);
+        } finally {
+            setLoading(false);
         }
+    };
+
+
+    useEffect(() => {
+        fetchAccountsData();
     }, [wallets]);
 
-
-
-
-
-    const sortedData = selectedItem?.chains ? [...selectedItem.chains.chain_list].sort((a, b) => b.usd_value - a.usd_value) : [];
-
-
-    const toFraction = (value: number | undefined): string => {
-        if (value === undefined) {
-            return '0.00'; // or handle it in a way that suits your needs
-        }
-        return value.toLocaleString('de-CH', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        });
-    };
+    const formatUSD = (value) => value?.toLocaleString("de-CH", {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+    }) || "0.00";
 
     return (<ThemeProvider theme={theme}>
         <CssBaseline/>
-        {/*<NFTPortfolio walletAddress="0x770353615119F0f701118d3A4eaf1FE57fA00F84" />*/}
-        <NavHeader isCryptoView={isCryptoView} setIsCryptoView={setIsCryptoView} />
+        <NavHeader isCryptoView={isCryptoView} setIsCryptoView={setIsCryptoView}/>
 
         <Container sx={{marginY: 10}}>
             {loading ? (<CircularProgress/>) : selectedItem ? (<>
                 {!isCryptoView && <Transactions/>}
-                {isCryptoView && <Container sx={{display: 'flex'}}>
-                    <Card sx={{padding: 3, width: '65%', borderRadius: 10, marginRight: 3}}>
+                {isCryptoView && (<Container sx={{display: "flex"}}>
+                    <Card sx={{padding: 3, width: "65%", borderRadius: 10, marginRight: 3}}>
                         <Typography variant="h5" fontWeight="bold">Net Worth</Typography>
-                        <Typography fontWeight="bold" variant="h2">
-                            $ {selectedItem?.chains && selectedChainId === 'all' ?
-                            toFraction(selectedItem.chains.total_usd_value) :
-                            toFraction(sortedData.find((data) => data.id === selectedChainId)?.usd_value)}
+                        <Typography variant="h2" fontWeight="bold">
+                            $ {formatUSD(selectedChainId === "all" ? selectedItem.chains.total_usd_value : selectedItem.chains.chain_list.find((c) => c.id === selectedChainId)?.usd_value)}
                         </Typography>
                     </Card>
                     <Box>
-                        {list && list
-                            .filter(Boolean)
-                            .map((acc, i) => (<Chip
-                                key={`${acc.id}${i}`}
-                                sx={{margin: 1}}
-                                onClick={() => setSelectedItem(acc)}
-                                label={acc.tag}
-                                variant={selectedItem === acc ? "outlined" : "filled"}
-                            />))}
+                        {list.map((acc, i) => (
+                            <Chip
+                            key={`${acc.id}-${i}`}
+                            sx={{margin: 1}}
+                            onClick={() => setSelectedItem(acc)}
+                            label={acc.tag}
+                            variant={selectedItem === acc ? "outlined" : "filled"}
+                        />))}
                         <IconButton color="primary" onClick={() => setOpenSettings(true)}>
                             <Settings/>
                         </IconButton>
                     </Box>
-                </Container>}
-                {isCryptoView && <Container sx={{display: 'flex', marginTop: 10}}>
-                    <ChainList
-                        chainIdState={chainIdState}
+                </Container>)}
+                {isCryptoView && (<>
+                    <Container sx={{display: 'flex', gap: 3, marginY: 3}}>
+                        <ChainList
+                            chainIdState={[selectedChainId, setSelectedChainId]}
+                            data={selectedItem}
+                            hideSmallBalances={hideSmallBalances}
+                        />
+
+                        <WalletTable
+                            chainIdState={[selectedChainId, setSelectedChainId]}
+                            data={selectedItem}
+                            hideSmallBalances={hideSmallBalances}
+                        />
+                    </Container>
+
+                    <ProtocolTable
+                        chainIdState={[selectedChainId, setSelectedChainId]}
                         data={selectedItem}
                         hideSmallBalances={hideSmallBalances}
                     />
-                    <WalletTable
-                        chainIdState={chainIdState}
-                        data={selectedItem}
-                        hideSmallBalances={hideSmallBalances}
-                    />
-                </Container>}
-                {isCryptoView && <ProtocolTable
-                    chainIdState={chainIdState}
-                    data={selectedItem}
-                    hideSmallBalances={hideSmallBalances}
-                />}
-            </>) : (<div>No data available</div>)}
+                </>)}
+            </>) : (<Typography>No data available</Typography>)}
         </Container>
+
         <SettingsDialog
             hideSmallBalances={hideSmallBalances}
             setHideSmallBalances={setHideSmallBalances}
@@ -162,4 +189,3 @@ function App() {
 }
 
 export default App;
-
