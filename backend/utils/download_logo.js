@@ -26,7 +26,7 @@ export const downloadLogo = async (logoUrl, id) => {
         response.data.pipe(writer);
 
         return new Promise((resolve, reject) => {
-            writer.on('finish', () => resolve(logoPath));
+            writer.on('finish', () => resolve(`${id}.png`));
             writer.on('error', reject);
         });
     } catch (error) {

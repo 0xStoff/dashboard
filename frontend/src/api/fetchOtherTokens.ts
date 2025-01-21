@@ -135,6 +135,15 @@ export const fetchStaticData = async () => {
         priceKey: 'usd-coin',
         amount: 1500,
         wallet: '0x0',
+    }, {
+        id: 'nft',
+        name: 'NFT',
+        symbol: 'NFT',
+        decimals: 16,
+        logo_url: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=040",
+        priceKey: 'usd-coin',
+        amount: 5000,
+        wallet: '0x0',
     }];
 
     return Promise.all(chains.map(async chain => {

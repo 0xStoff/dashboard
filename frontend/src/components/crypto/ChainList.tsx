@@ -78,7 +78,7 @@ const ChainList: React.FC<{
                                         <Avatar alt={chain.name} src={chain.logo_url} sx={{ width: 35, height: 35 }} />
                                     </TableCell>
                                     <TableCell sx={{ fontWeight: "bold", ...styles.tableCell }} align="right">
-                                        $ {(+chain.usd_value.toFixed(2)).toLocaleString("de-CH")}
+                                        $ {(+parseFloat(chain.usd_value).toFixed(2)).toLocaleString("de-CH")}
                                     </TableCell>
                                 </TableRow>
                             ))}
