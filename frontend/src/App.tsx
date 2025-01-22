@@ -7,6 +7,7 @@ import {
   Container,
   CssBaseline,
   IconButton,
+  TextField,
   ThemeProvider,
   Typography
 } from "@mui/material";
@@ -23,6 +24,71 @@ import {
 } from "./api";
 import { ChainList, NavHeader, ProtocolTable, SettingsDialog, Transactions, WalletTable } from "./components";
 import { useFetchChains } from "./hooks/useFetchChains";
+import { Account } from "../../interfaces/account";
+import { ChainIdState } from "../../interfaces/chain";
+
+
+const Dashboard: React.FC<{
+  accountData: Account;
+  chainIdState: ChainIdState;
+  hideSmallBalances: number;
+}> = ({ accountData, chainIdState, hideSmallBalances }) => {
+  const [searchQuery, setSearchQuery] = useState("");
+
+
+  const filteredProtocols = accountData.protocols?.filter((protocol) =>
+    protocol.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+
+  const filteredWallets = searchQuery
+    ? {
+      ...accountData,
+      tokens: accountData.tokens?.filter((token) =>
+        token.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    }
+    : accountData;
+
+  console.log("filteredWallets", filteredWallets); // Debugging to ensure it works
+
+
+  console.log("accountData", filteredWallets);
+
+  return (
+    <>
+      <TextField
+        // label="Search"
+
+        variant="standard"
+        // fullWidth
+        margin="normal"
+        size="small"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder="search"
+      />
+      <Container sx={{ display: "flex", gap: 3, marginY: 5 }}>
+      <ChainList
+        chainIdState={chainIdState}
+        data={accountData}
+        hideSmallBalances={hideSmallBalances}
+      />
+        <WalletTable
+          chainIdState={chainIdState}
+          data={filteredWallets}
+          hideSmallBalances={hideSmallBalances}
+        />
+
+      </Container>
+        <ProtocolTable
+          data={{ protocols: filteredProtocols, wallets: accountData.wallets }}
+          chainIdState={chainIdState}
+          hideSmallBalances={hideSmallBalances}
+        />
+    </>
+  );
+};
 
 function App() {
   const [selectedItem, setSelectedItem] = useState(null);
@@ -55,8 +121,8 @@ function App() {
         .map((wallet) => wallet.tokens || [])
         .flat();
 
-      // console.log(wallets)
-      console.log(solData?.solMetadata);
+      console.log(evmData.allChains);
+      // console.log(solData?.solMetadata);
       console.log(chains);
       // console.log("allTokens1", allTokens1)
       // console.log("evmData.allTokens", evmData.allTokens)
@@ -104,7 +170,7 @@ function App() {
           chain_list: [...evmData.allChains, solData?.solMetadata, unifiedCosmosList]
           // chain_list: [...chains]
         },
-        tokens: allTokens, protocols: evmData.allProtocols
+        tokens: allTokens1, protocols: evmData.allProtocols
       };
 
       const safeItems = evmData.updated.filter((item) => item.tag === "Safe");
@@ -178,6 +244,11 @@ function App() {
           </Box>
         </Container>)}
         {isCryptoView && (<>
+          {/*<Dashboard*/}
+          {/*  chainIdState={[selectedChainId, setSelectedChainId]}*/}
+          {/*  accountData={selectedItem}*/}
+          {/*  hideSmallBalances={hideSmallBalances}*/}
+          {/*/>*/}
           <Container sx={{ display: "flex", gap: 3, marginY: 3 }}>
             <ChainList
               chainIdState={[selectedChainId, setSelectedChainId]}

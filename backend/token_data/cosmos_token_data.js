@@ -132,13 +132,11 @@ export const fetchCosmosTokens = async () => {
 
             const {totalValue, amount} = aggregateChainData(chain.name, cosmosBalances, price);
 
-
-            await Promise.all(chain.wallets.map(async (wallet) => {
-                const walletId = cosmosChains.find(w => w.wallet === wallet)?.id;
-
-                if (walletId) {
+            await Promise.all(chain.wallets.map(async (wallet, index) => {
+                console.log(wallet)
+                console.log(16 +index)
                     await WalletTokenModel.upsert({
-                        wallet_id: walletId,
+                        wallet_id: 16 + index,
                         token_id: dbToken.id,
                         amount,
                         usd_value: totalValue
@@ -146,7 +144,6 @@ export const fetchCosmosTokens = async () => {
                         conflictFields: ['wallet_id', 'token_id'],
                         returning: true
                     });
-                }
             }));
 
 
@@ -160,27 +157,3 @@ export const fetchCosmosTokens = async () => {
     }
 };
 
-
-
-// Helper to fetch balances for derived addresses
-// const fetchBalancesForDerived = async (derivedAddresses, chain) => {
-//     const balances = {};
-//
-//     await Promise.all(Object.entries(derivedAddresses).map(async ([symbol, addressArray]) => {
-//         const balanceData = await Promise.all(addressArray.map(async (address) => {
-//             try {
-//                 const { data: { balances } } = await axios.get(`${chain.endpoint}/cosmos/bank/v1beta1/balances/${address}`);
-//                 return balances.map(b => ({
-//                     denom: b.denom,
-//                     amount: parseInt(b.amount, 10) / Math.pow(10, chain.decimals)
-//                 })).filter(b => !b.denom.startsWith('ibc/') && !b.denom.startsWith('factory/'));
-//             } catch (error) {
-//                 return [];
-//             }
-//         }));
-//
-//         balances[symbol] = balanceData.flat(); // Flatten the balance data for each symbol
-//     }));
-//
-//     return balances;
-// };

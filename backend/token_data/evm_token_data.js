@@ -11,6 +11,7 @@ const fetchAndSaveEvmTokenData = async (walletId, walletAddress) => {
 
         for (const token of tokens) {
             const {id, chain, name, symbol, decimals, logo_url, amount, raw_amount, price, price_24h_change} = token;
+
             const logoPath = logo_url ? await downloadLogo(logo_url, id) : null;
 
             const [dbToken, created] = await TokenModel.upsert({

@@ -12,6 +12,8 @@ import WalletTokenModel from "./models/WalletTokenModel.js";
 import transactionsRoutes from './api/transactions.js';
 import path from "path";
 import { fileURLToPath } from 'url';
+import { fetchAndSaveEvmTokenDataForAllWallets } from "./token_data/evm_token_data.js";
+import { fetchCosmosTokens } from "./token_data/cosmos_token_data.js";
 
 dotenv.config();
 
@@ -77,7 +79,7 @@ initDb().then(() => {
         //     .catch((err) => console.error('Failed to fetch Tokens:', err));
 
 
-        // const test = await fetchCosmosTokens()
+        const test = await fetchCosmosTokens()
         // console.log(test)
 
         // fetchAndSaveCosmosTokenData()

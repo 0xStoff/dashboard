@@ -54,95 +54,135 @@ router.get('/chains1', async (req, res) => {
 });
 
 
+
+const fetchChains = async (req) => {
+
+
+  const [evmChains, nonEvmChains] = await Promise.all([
+    EvmChains.findAll({ order: [['chain_id', 'ASC']] }),
+    NonEvmChains.findAll({ order: [['chain_id', 'ASC']] }),
+  ]);
+
+  return [
+    ...evmChains.map(chain => ({
+      ...chain.dataValues,
+      type: 'evm', // Add 'type: evm' for EVM chains
+    })),
+    ...nonEvmChains.map(chain => ({
+      ...chain.dataValues,
+      type: 'non-evm', // Add 'type: non-evm' for non-EVM chains
+    })),
+  ];
+};
+
+
+const fetchWallets = async (req) => {
+  // const { chain, usd_value } = req.query;
+  //
+  //
+  // const whereClause = {};
+  // if (chain) whereClause.chain = chain;
+  //
+  // const includeClause = [{
+  //   model: TokenModel,
+  //   through: {
+  //     model: WalletTokenModel,
+  //     attributes: ['amount', 'raw_amount', 'usd_value'],
+  //     where: usd_value ? { usd_value: { [Op.gt]: usd_value } } : {},
+  //   },
+  //   attributes: ['name', 'symbol', 'decimals', 'price', 'logo_path', 'chain_id'],
+  // }];
+  //
+  // const wallets = await WalletModel.findAll({
+  //   // where: whereClause,
+  //   include: includeClause,
+  //   order: [['id', 'ASC']],
+  // });
+  //
+  // console.log(wallets)
+  const wallets = await WalletModel.findAll({
+    include: [{
+      model: TokenModel,
+      through: { model: WalletTokenModel, attributes: ['amount', 'raw_amount', 'usd_value'] },
+      attributes: ['name', 'symbol', 'decimals', 'price', 'logo_path', 'chain_id'],
+    }],
+    order: [['id', 'ASC']],
+  });
+
+  return wallets.map(wallet => {
+    const tokens = wallet.tokens.map(token => ({
+      ...token.get(),
+      amount: token.wallets_tokens.amount,
+      raw_amount: token.wallets_tokens.raw_amount,
+      usd_value: parseFloat(token.wallets_tokens.usd_value || 0),
+      wallets_tokens: undefined // Explicitly remove the wallets_tokens field
+    }));
+
+    const totalUsdValue = tokens.reduce((sum, token) => sum + token.usd_value, 0);
+
+    return {
+      ...wallet.get(),
+      tokens,
+      total_usd_value: parseFloat(totalUsdValue.toFixed(2)),
+    };
+  });
+};
+
+ function mergeAndAggregateChains(accounts) {
+  const chainMap = new Map();
+  accounts.forEach(account => {
+    account.chains?.chain_list.forEach(chain => {
+      const existingChain = chainMap.get(chain.id);
+      if (existingChain) {
+        existingChain.usd_value += chain.usd_value;
+      } else {
+        chainMap.set(chain.id, {...chain});
+      }
+    });
+  });
+  return Array.from(chainMap.values());
+}
+
 router.get('/chains', async (req, res) => {
-    try {
-        // Include clause for WalletModel to fetch associated tokens
-        const includeClause = [{
-            model: TokenModel,
-            through: {
-                model: WalletTokenModel,
-                attributes: ['amount', 'raw_amount', 'usd_value'],
-            },
-            attributes: ['name', 'symbol', 'decimals', 'price', 'logo_path', 'chain_id'],
-        }];
+  try {
+    // Fetch chains and wallets concurrently
+    const [chains, wallets] = await Promise.all([fetchChains(), fetchWallets(req)]);
 
-        // Fetch wallets with tokens
-        const unflattedWallets = await WalletModel.findAll({
-            include: includeClause,
-            order: [['id', 'ASC']],
-        });
+    // Aggregate USD values by chain
+    const walletUsdValues = wallets.reduce((acc, wallet) => {
+      wallet.tokens.forEach(token => {
+        const chainId = token.chain_id;
+        const usdValue = token.usd_value || 0;
 
-        // Helper to flatten token data
-        const flattenAmount = (tokens) => tokens.map(token => {
-            const { wallets_tokens, ...tokenData } = token.get();
-            return {
-                ...tokenData,
-                amount: wallets_tokens.amount,
-                raw_amount: wallets_tokens.raw_amount,
-                usd_value: wallets_tokens.usd_value
-            };
-        });
+        if (!acc[chainId]) {
+          acc[chainId] = { chain_id: chainId, total_usd_value: 0 };
+        }
+        acc[chainId].total_usd_value += usdValue;
+      });
+      return acc;
+    }, {});
 
-        // Flatten wallets and calculate total USD value
-        const flattenAllWallets = (wallets) => wallets.map(wallet => {
-            const modifiedTokens = flattenAmount(wallet.tokens);
-            return {
-                ...wallet.get(),
-                tokens: modifiedTokens,
-            };
-        });
+    // Enrich chains with USD values
+    const enrichedChains = chains.map(chain => {
+      const usdValue = walletUsdValues[chain.chain_id]?.total_usd_value || 0;
 
-        const wallets = flattenAllWallets(unflattedWallets);
+      return {
+        id: chain.id,
+        chain_id: chain.chain_id,
+        name: chain.name,
+        native_token_id: chain.native_token_id,
+        wrapped_token_id: chain.wrapped_token_id,
+        logo_path: chain.logo_path,
+        type: chain.type,
+        usd_value: parseFloat(usdValue.toFixed(2)), // Ensure two decimal places
+      };
+    });
 
-        // Helper to calculate total USD value per wallet
-        const calculateTotalUsdValue = (wallets) => {
-            return wallets.map(wallet => {
-                const totalUsdValue = wallet.tokens.reduce((sum, token) => {
-                    return sum + parseFloat(token.usd_value || 0); // Ensure usd_value is a number
-                }, 0);
-
-                return {
-                    ...wallet, // Spread existing wallet properties
-                    total_usd_value: totalUsdValue.toFixed(2), // Add the aggregated USD value
-                };
-            });
-        };
-
-        const enrichedWallets = calculateTotalUsdValue(wallets);
-
-
-        // Fetch chains
-        const [evmChains, nonEvmChains] = await Promise.all([
-            EvmChains.findAll({ order: [['chain_id', 'ASC']] }),
-            NonEvmChains.findAll({ order: [['chain_id', 'ASC']] }),
-        ]);
-
-        // Combine chains
-        const combinedChains = [
-            ...evmChains.map(chain => ({ ...chain.dataValues})),
-            ...nonEvmChains.map(chain => ({ ...chain.dataValues })),
-        ];
-
-        // Enrich chains with total USD value by filtering wallets
-        const enrichedChains = combinedChains.map((chain) => {
-            const chainWallets = enrichedWallets.filter(wallet => wallet.chain === chain.chain_id);
-
-            const totalUsdValue = chainWallets.reduce((sum, wallet) => {
-                return sum + parseFloat(wallet.total_usd_value || 0);
-            }, 0);
-
-            console.log(chainWallets)
-
-            return {
-                ...chain, // Spread existing chain properties
-                usd_value: totalUsdValue.toFixed(2), // Add aggregated USD value
-            };
-        });
-
-        res.json(enrichedChains); // Return enriched chains
-    } catch (err) {
-        console.error('Error fetching chains:', err);
-        res.status(500).json({ error: 'Failed to fetch chains' });
-    }
+    res.json(enrichedChains);
+  } catch (err) {
+    console.error('Error fetching chains:', err);
+    res.status(500).json({ error: 'Failed to fetch chains' });
+  }
 });
+
 export default router;
