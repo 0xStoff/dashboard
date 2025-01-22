@@ -7,15 +7,17 @@ import { ChipWithTooltip } from "../utils/ChipWithTooltip";
 import { Chain, ChainIdState } from "../../interfaces/chain";
 import { fetchTokenData } from "../../api/fetchTokenData";
 import { ProtocolList } from "../../interfaces/protocol";
+import { useFetchChains } from "../../hooks/useFetchChains";
 
 const WalletTable: React.FC<{
   data: Account; chainIdState: ChainIdState; hideSmallBalances: number;
 }> = ({ data, chainIdState, hideSmallBalances }) => {
   const [selectedChainId] = chainIdState;
+  const chainList = useFetchChains()
 
   const filterAndSortData = useCallback((data: WalletList) => data
     // .filter((item) => item.amount * item.price > hideSmallBalances && item.is_core && (selectedChainId === "all" || item.chain === selectedChainId))
-    .filter((item) => item.amount * item.price > hideSmallBalances && (selectedChainId === "all" || item.chain === selectedChainId))
+    .filter((item) => item.amount * item.price > hideSmallBalances && (selectedChainId === "all" || item.chain_id === selectedChainId))
     .sort((a, b) => b.amount * b.price - a.amount * a.price), [hideSmallBalances, selectedChainId]);
 
 
@@ -26,7 +28,9 @@ const WalletTable: React.FC<{
 
   if (!sortedData.length) return null;
 
-  const getChainLogo = (chainId: string) => chainList.chain_list.find((c) => c.id === chainId)?.logo_url || "";
+
+  console.log(chainList)
+  const getChainLogo = (chainId: string) => chainList.find((c) => c.chain_id === chainId)?.logo_path || "";
 
 
 
@@ -81,7 +85,7 @@ const WalletTable: React.FC<{
                   />
                   {item.chain_id && (<Avatar
                     alt={item.chain_id}
-                    src={getChainLogo(item.chain_id)}
+                    src={"http://localhost:3000/logos/" + getChainLogo(item.chain_id)}
                     sx={styles.chainLogo}
                   />)}
                 </Box>
@@ -110,7 +114,7 @@ const WalletTable: React.FC<{
                 $ {item.price >= 0.1 ? parseFloat(item.price).toFixed(2) : parseFloat(item.price).toFixed(6)}
               </TableCell>
               <TableCell sx={styles.tableCell} align="right">
-                {item.amount.toLocaleString("de-CH")} {item.symbol}
+                {parseFloat(item.amount).toFixed(2)} {item.symbol}
               </TableCell>
               <TableCell sx={{ ...styles.tableCell, fontWeight: "bold", whiteSpace: "nowrap" }}
                          align="right">

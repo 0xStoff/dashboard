@@ -35,7 +35,110 @@ const createChainData = (chainId, chainList, tag, tokens, walletAddress) => {
 };
 
 
+export const writeAptosDataToDB = async () => {
+  try {
+    // Fetch Aptos token data
+    const aptosData = await fetchAptosData();
+    const { tokens, wallet: walletAddress } = aptosData;
+
+
+    const wallets = await WalletModel.findAll({
+      order: [['id', 'ASC']],
+      where: { chain: 'aptos' }
+    });
+
+
+    // Iterate through tokens and write them to the database
+    for (const token of tokens) {
+      const { name, symbol, decimals, logo_url, price, amount } = token;
+      const logoPath = logo_url ? await downloadLogo(logo_url, symbol) : null;
+
+      // Insert or update token data in the TokenModel
+      const [dbToken] = await TokenModel.upsert({
+        chain_id: "aptos",
+        name,
+        symbol,
+        decimals,
+        logo_path: logoPath,
+        price
+      }, { conflictFields: ["chain_id", "symbol"], returning: true });
+
+      // Calculate raw_amount and USD value
+      const raw_amount = amount * 10 ** decimals;
+      const usd_value = amount * price;
+
+      // Insert or update wallet token data
+      await WalletTokenModel.upsert({
+        wallet_id: wallets[0].id,
+        token_id: dbToken.id,
+        amount,
+        raw_amount,
+        usd_value
+      });
+    }
+
+    console.log(`Aptos token data successfully saved/updated for wallet ${walletAddress}`);
+  } catch (error) {
+    console.error("Error saving Aptos token data:", error.message);
+  }
+};
+
+export const writeStaticDataToDB = async () => {
+  try {
+    // Fetch Static token data
+    const staticData = await fetchStaticData();
+
+    for (const chainData of staticData) {
+      const { tokens, wallet: walletAddress, id: chainId } = chainData;
+
+      const wallets = await WalletModel.findAll({
+        order: [['id', 'ASC']],
+        where: { chain: chainId }
+      });
+
+
+      // Iterate through tokens and write them to the database
+      for (const token of tokens) {
+        const { name, symbol, decimals, logo_url, price, amount } = token;
+        const logoPath = logo_url ? await downloadLogo(logo_url, symbol) : null;
+      console.log(logoPath)
+
+        // Insert or update token data in the TokenModel
+        const [dbToken] = await TokenModel.upsert({
+          chain_id: chainId,
+          name,
+          symbol,
+          decimals,
+          logo_path: logoPath,
+          price
+        }, { conflictFields: ["chain_id", "symbol"], returning: true });
+
+        // Calculate raw_amount and USD value
+        const raw_amount = amount * 10 ** decimals;
+        const usd_value = amount * price;
+
+        console.log(chainId)
+        console.log(wallets)
+
+        // Insert or update wallet token data
+        await WalletTokenModel.upsert({
+          wallet_id: wallets[0]?.id || null,
+          token_id: dbToken.id,
+          amount,
+          raw_amount,
+          usd_value
+        });
+      }
+
+      console.log(`Static token data successfully saved/updated for chain ${chainId} and wallet ${walletAddress}`);
+    }
+  } catch (error) {
+    console.error("Error saving Static token data:", error.message);
+  }
+};
+
 export const writeSuiDataToDB = async () => {
+
   try {
     // Fetch Sui token data
     const suiData = await fetchSuiData();
@@ -156,7 +259,7 @@ export const fetchStaticData = async () => {
     logo_url: "https://cryptologos.cc/logos/starknet-token-strk-logo.png?v=040",
     priceKey: "starknet",
     amount: 890,
-    wallet: "14MVcXjexqZTnqz4zSBhEbTzMdCL6mSVnVhsVMdKgx2Jvue2"
+    wallet: "0x0266289d06695abf63A6a962F7671437086824F1C3C87b009e1eD3d89404Efef"
   }, {
     id: "bvm",
     name: "BVM",
@@ -165,7 +268,7 @@ export const fetchStaticData = async () => {
     logo_url: "https://cryptologos.cc/logos/bitcoin-plus-xbc-logo.png?v=040",
     priceKey: "bvm",
     amount: 1400,
-    wallet: "14MVcXjexqZTnqz4zSBhEbTzMdCL6mSVnVhsVMdKgx2Jvue2"
+    wallet: "0x41eD1e75d836C5C974030432fDB222f30A274f90"
   }, {
     id: "magic",
     name: "MAGIC",

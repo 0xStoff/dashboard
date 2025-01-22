@@ -85,6 +85,31 @@ INSERT INTO wallets (id, wallet, tag, chain)
 VALUES (15, 'BnEzyR69UfNAaSi45KB5rkXjXekE7ErHEnVWNgYqFPzq', 'Sol', 'sol');
 
 
+INSERT INTO wallets (id, wallet, tag, chain)
+VALUES (23, 'DRbbCDmZKR6p8xwx2926iM6BuPnxTS7reV', 'Dogecoin', 'doge');
+
+INSERT INTO wallets (id, wallet, tag, chain)
+VALUES (24, '14MVcXjexqZTnqz4zSBhEbTzMdCL6mSVnVhsVMdKgx2Jvue2', 'Polkadot', 'dot');
+
+INSERT INTO wallets (id, wallet, tag, chain)
+VALUES (25, 'flow0x0', 'Flow', 'flow');
+
+INSERT INTO wallets (id, wallet, tag, chain)
+VALUES (26, '0x0266289d06695abf63A6a962F7671437086824F1C3C87b009e1eD3d89404Efef', 'Starknet', 'strk');
+
+INSERT INTO wallets (id, wallet, tag, chain)
+VALUES (27, '0x41eD1e75d836C5C974030432fDB222f30A274f90', 'BVM', 'bvm');
+
+INSERT INTO wallets (id, wallet, tag, chain)
+VALUES (28, 'magic0x770353615119F0f701118d3A4eaf1FE57fA00F84', 'MAGIC', 'magic');
+
+INSERT INTO wallets (id, wallet, tag, chain)
+VALUES (29, '0x0', 'KRAKEN', 'kraken');
+
+INSERT INTO wallets (id, wallet, tag, chain)
+VALUES (30, '0x0', 'NFT', 'nft');
+
+
 -- Insert user coin holdings
 INSERT INTO user_coins (user_id, coin_id, amount)
 VALUES (1, 1, 5.0), -- User1 holds 5 SOL

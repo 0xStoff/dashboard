@@ -58,24 +58,26 @@ const deriveCorrespondingAddresses = (cosmosAddresses) => {
     };
 
     const manualDeriveMap = {
-        DYM: () => 'dym1qla0rgq3wv69z7uzv32z7l4p3advhw8wh8rzlp', INJ: () => 'inj1tlr42l84gs4tmgq4kwytaz7n08hd08c7ncc6p5'
+        DYM: () => 'dym1qla0rgq3wv69z7uzv32z7l4p3advhw8wh8rzlp',
+        INJ: () => 'inj1tlr42l84gs4tmgq4kwytaz7n08hd08c7ncc6p5'
     };
 
-    return cosmosAddresses.reduce((acc, baseAddress) => {
-        const {data} = fromBech32(baseAddress);
+    const derivedAddresses = cosmosAddresses.reduce((acc, baseAddress) => {
+        const { data } = fromBech32(baseAddress);
 
         Object.entries(symbolPrefixMap).forEach(([symbol, prefix]) => {
             acc[symbol] = acc[symbol] || [];
             acc[symbol].push(toBech32(prefix, data));
         });
 
-        Object.entries(manualDeriveMap).forEach(([symbol, deriveFn]) => {
-            acc[symbol] = acc[symbol] || [];
-            acc[symbol].push(deriveFn());
-        });
-
         return acc;
     }, {});
+
+    Object.entries(manualDeriveMap).forEach(([symbol, deriveFn]) => {
+        derivedAddresses[symbol] = [deriveFn()];
+    });
+
+    return derivedAddresses;
 };
 
 // Function to fetch and return the chains with derived addresses
@@ -98,7 +100,6 @@ const chains = (wallets) => {
         }));
 };
 
-// Fetch data from node and combine balance and staking results
 const fetchNode = async (wallets) => {
     const cosmosChains = chains(wallets);
     const promises = cosmosChains.flatMap(chain => [fetchBalances(chain), fetchStakings(chain)]);
@@ -117,12 +118,12 @@ export const fetchCosmosTokens = async () => {
         const cosmosBalances = await fetchNode(cosmosWallets);
 
 
+
         let total = 0;
         return await Promise.all(cosmosChains.map(async (chain, i) => {
 
             const {id, name, symbol, decimals, logo_url} = chain;
             const price = await fetchTokenPrice(id);
-
 
             const logoPath = logo_url ? await downloadLogo(logo_url, symbol) : null;
 
@@ -132,11 +133,10 @@ export const fetchCosmosTokens = async () => {
 
             const {totalValue, amount} = aggregateChainData(chain.name, cosmosBalances, price);
 
+
             await Promise.all(chain.wallets.map(async (wallet, index) => {
-                console.log(wallet)
-                console.log(16 +index)
                     await WalletTokenModel.upsert({
-                        wallet_id: 16 + index,
+                        wallet_id: 16,
                         token_id: dbToken.id,
                         amount,
                         usd_value: totalValue

@@ -14,6 +14,10 @@ import path from "path";
 import { fileURLToPath } from 'url';
 import { fetchAndSaveEvmTokenDataForAllWallets } from "./token_data/evm_token_data.js";
 import { fetchCosmosTokens } from "./token_data/cosmos_token_data.js";
+import { writeAptosDataToDB, writeStaticDataToDB, writeSuiDataToDB } from "./token_data/sui_data.js";
+import { updateChainsData, updateNonEvmChainsData } from "./utils/chain_data.js";
+import { evmChains, nonEvmChains } from "./utils/chainlist.js";
+import { fetchAndSaveSolTokenDataForAllWallets } from "./token_data/sol_token_data.js";
 
 dotenv.config();
 
@@ -54,6 +58,16 @@ initDb().then(() => {
     app.listen(port, async () => {
         console.log('Server running on port 3000');
 
+        // writeStaticDataToDB()
+        //     .then(() => console.log('Token Data for static wallets fetched'))
+        //     .catch((err) => console.error('Failed to fetch static Tokens:', err));
+
+
+
+        // writeAptosDataToDB()
+        //     .then(() => console.log('Token Data for aptos wallets fetched'))
+        //     .catch((err) => console.error('Failed to fetch aptos Tokens:', err));
+
 
         // writeSuiDataToDB()
         //     .then(() => console.log('Token Data for sui wallets fetched'))
@@ -77,9 +91,9 @@ initDb().then(() => {
         // fetchAndSaveEvmTokenDataForAllWallets()
         //     .then(() => console.log('Token Data for all Wallets fetched'))
         //     .catch((err) => console.error('Failed to fetch Tokens:', err));
-
-
-        const test = await fetchCosmosTokens()
+        //
+        //
+        // const test = await fetchCosmosTokens()
         // console.log(test)
 
         // fetchAndSaveCosmosTokenData()
