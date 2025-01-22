@@ -14,7 +14,9 @@ const ChainList: React.FC<{
     ?.filter((chain) => chain.usd_value > hideSmallBalances)
     ?.sort((a, b) => b.usd_value - a.usd_value) || [];
 
-  // console.log("sortedData", sortedData);
+  // console.log("sortedData", sortedData)
+  // console.log("Total USD Value:", sortedData.reduce((sum, item) => sum + item.usd_value, 0));
+  // console.log("sortedData", sortedData.reduce((item,sum) => item.usd_value += sum ));
   if (!sortedData.length) return null;
 
   const handleRowClick = (chain: ChainListInterface) => {
