@@ -136,11 +136,29 @@ function App() {
     fetchAccountsData();
   }, [wallets]);
 
+  const runAllFunctions = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/runAllTokenDataFunctions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await response.json();
+      if (data.status === 'success') {
+        alert(data.message);
+      } else {
+        alert('Something went wrong: ' + data.message);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to execute functions.');
+    }
+  };
+
+
 
   return (<ThemeProvider theme={theme}>
     <CssBaseline />
     <NavHeader isCryptoView={isCryptoView} setIsCryptoView={setIsCryptoView} />
-
     <Container sx={{ marginY: 10 }}>
       {loading ? (<CircularProgress />) : selectedItem ? (<>
         {!isCryptoView && <Transactions />}

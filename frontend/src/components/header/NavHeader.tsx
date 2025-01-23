@@ -83,21 +83,47 @@ const NavHeader: React.FC<{ isCryptoView: boolean; setIsCryptoView: React.Dispat
     const toggleView = () => {
         setIsCryptoView(!isCryptoView);
     };
+
+    const runAllFunctions = async () => {
+        try {
+            const response = await fetch('http://localhost:3000/api/runAllTokenDataFunctions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                alert(data.message);
+            } else {
+                alert('Something went wrong: ' + data.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to execute functions.');
+        }
+    };
+
     return (
         <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
             <IconButton onClick={toggleView} color="primary" sx={{fontSize: '2rem'}}>
                 {isCryptoView ? <CurrencyBitcoinIcon fontSize="large"/> : <MonetizationOnIcon fontSize="large"/>}
             </IconButton>
             <IconButton
-                onClick={clearCache}
-                color="primary"
-                sx={{
-                    fontSize: '2rem', opacity: countdown ? 0.3 : 1, pointerEvents: countdown ? 'none' : 'auto', // Prevent interaction if disabled
-                }}
-                disabled={!!countdown}
+              onClick={clearCache}
+              color="primary"
+              sx={{
+                  fontSize: '2rem', opacity: countdown ? 0.3 : 1, pointerEvents: countdown ? 'none' : 'auto', // Prevent interaction if disabled
+              }}
+              disabled={!!countdown}
             >
                 <RefreshIcon fontSize="large"/>
                 <Typography variant='caption'>{countdown}</Typography>
+            </IconButton>
+            <IconButton
+                onClick={runAllFunctions}
+                color="primary"
+                sx={{ fontSize: '2rem' }}
+            >
+                <RefreshIcon fontSize="large"/>
             </IconButton>
         </Box>
     );

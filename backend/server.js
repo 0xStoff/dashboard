@@ -42,6 +42,33 @@ app.use('/api', nonEvmRoutes);
 app.use('/api', tokensRoutes);
 app.use('/api', transactionsRoutes);
 app.use('/logos', express.static(path.join(__dirname, 'logos')));
+
+const runAllTokenDataFunctions = async () => {
+    try {
+        const promises = [
+            writeStaticDataToDB(),
+            writeAptosDataToDB(),
+            writeSuiDataToDB(),
+            fetchAndSaveSolTokenDataForAllWallets(),
+            fetchAndSaveEvmTokenDataForAllWallets(),
+            fetchCosmosTokens()
+        ];
+
+        await Promise.all(promises);
+        console.log('All token data functions executed successfully.');
+        return { status: 'success', message: 'All token data functions executed successfully.' };
+    } catch (error) {
+        console.error('Error executing token data functions:', error);
+        return { status: 'error', message: 'Error executing token data functions.', error };
+    }
+};
+
+// Expose an API endpoint for the frontend to call this function
+app.post('/api/runAllTokenDataFunctions', async (req, res) => {
+    const result = await runAllTokenDataFunctions();
+    res.json(result);
+});
+
 // Set up associations after all models are defined
 const setupAssociations = () => {
     WalletModel.belongsToMany(TokenModel, {through: WalletTokenModel, foreignKey: 'wallet_id'});
@@ -58,12 +85,11 @@ initDb().then(() => {
     app.listen(port, async () => {
         console.log('Server running on port 3000');
 
+
         // writeStaticDataToDB()
         //     .then(() => console.log('Token Data for static wallets fetched'))
         //     .catch((err) => console.error('Failed to fetch static Tokens:', err));
-        //
-        //
-        //
+
         // writeAptosDataToDB()
         //     .then(() => console.log('Token Data for aptos wallets fetched'))
         //     .catch((err) => console.error('Failed to fetch aptos Tokens:', err));
@@ -72,6 +98,19 @@ initDb().then(() => {
         // writeSuiDataToDB()
         //     .then(() => console.log('Token Data for sui wallets fetched'))
         //     .catch((err) => console.error('Failed to fetch sui Tokens:', err));
+        //
+        // fetchAndSaveSolTokenDataForAllWallets()
+        //     .then(() => console.log('Token Data for sol Wallets fetched'))
+        //     .catch((err) => console.error('Failed to fetch Tokens:', err));
+
+        // fetchAndSaveEvmTokenDataForAllWallets()
+        //      .then(() => console.log('Token Data for all Wallets fetched'))
+        //      .catch((err) => console.error('Failed to fetch Tokens:', err));
+
+        // fetchCosmosTokens()
+        //      .then(() => console.log('Token Data for cosmos Wallets fetched'))
+        //      .catch((err) => console.error('Failed to fetch cosmos Tokens:', err));
+
 
         //
         // updateNonEvmChainsData(nonEvmChains)
@@ -82,23 +121,6 @@ initDb().then(() => {
         // updateChainsData(await evmChains())
         //     .then(() => console.log('Initial chain data update complete'))
         //     .catch((err) => console.error('Failed to update chains on startup:', err));
-        //
-        // fetchAndSaveSolTokenDataForAllWallets()
-        //     .then(() => console.log('Token Data for sol Wallets fetched'))
-        //     .catch((err) => console.error('Failed to fetch Tokens:', err));
-
-
-       // fetchAndSaveEvmTokenDataForAllWallets()
-       //      .then(() => console.log('Token Data for all Wallets fetched'))
-       //      .catch((err) => console.error('Failed to fetch Tokens:', err));
-
-
-        // const test = await fetchCosmosTokens()
-        // console.log(test)
-
-        // fetchAndSaveCosmosTokenData()
-        //     .then(() => console.log('Token Data for cosmos wallets fetched'))
-        //     .catch((err) => console.error('Failed to fetch cosmos Tokens:', err));
 
 
     });
