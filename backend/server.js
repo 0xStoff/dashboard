@@ -61,18 +61,18 @@ initDb().then(() => {
         // writeStaticDataToDB()
         //     .then(() => console.log('Token Data for static wallets fetched'))
         //     .catch((err) => console.error('Failed to fetch static Tokens:', err));
-
-
-
+        //
+        //
+        //
         // writeAptosDataToDB()
         //     .then(() => console.log('Token Data for aptos wallets fetched'))
         //     .catch((err) => console.error('Failed to fetch aptos Tokens:', err));
-
-
+        //
+        //
         // writeSuiDataToDB()
         //     .then(() => console.log('Token Data for sui wallets fetched'))
         //     .catch((err) => console.error('Failed to fetch sui Tokens:', err));
-        //
+
         //
         // updateNonEvmChainsData(nonEvmChains)
         //     .then(() => console.log('Non-EVM chains updated'))
@@ -86,13 +86,13 @@ initDb().then(() => {
         // fetchAndSaveSolTokenDataForAllWallets()
         //     .then(() => console.log('Token Data for sol Wallets fetched'))
         //     .catch((err) => console.error('Failed to fetch Tokens:', err));
-        //
-        //
-        // fetchAndSaveEvmTokenDataForAllWallets()
-        //     .then(() => console.log('Token Data for all Wallets fetched'))
-        //     .catch((err) => console.error('Failed to fetch Tokens:', err));
-        //
-        //
+
+
+       // fetchAndSaveEvmTokenDataForAllWallets()
+       //      .then(() => console.log('Token Data for all Wallets fetched'))
+       //      .catch((err) => console.error('Failed to fetch Tokens:', err));
+
+
         // const test = await fetchCosmosTokens()
         // console.log(test)
 

@@ -12,10 +12,11 @@ const fetchAndSaveEvmTokenData = async (walletId, walletAddress) => {
         for (const token of tokens) {
             const {id, chain, name, symbol, decimals, logo_url, amount, raw_amount, price, price_24h_change} = token;
 
+
             const logoPath = logo_url ? await downloadLogo(logo_url, id) : null;
 
             const [dbToken, created] = await TokenModel.upsert({
-                chain_id: chain, name, symbol, decimals, logo_path: logoPath, price, price_24h_change
+                chain_id: chain, name, symbol, decimals, logo_path: logoPath, price, price_24h_change: price_24h_change*100
             }, {
                 conflictFields: ['chain_id', 'symbol'], returning: true
             });

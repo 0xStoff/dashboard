@@ -7,7 +7,6 @@ import {
   Container,
   CssBaseline,
   IconButton,
-  TextField,
   ThemeProvider,
   Typography
 } from "@mui/material";
@@ -24,71 +23,6 @@ import {
 } from "./api";
 import { ChainList, NavHeader, ProtocolTable, SettingsDialog, Transactions, WalletTable } from "./components";
 import { useFetchChains } from "./hooks/useFetchChains";
-import { Account } from "../../interfaces/account";
-import { ChainIdState } from "../../interfaces/chain";
-
-
-// const Dashboard: React.FC<{
-//   accountData: Account;
-//   chainIdState: ChainIdState;
-//   hideSmallBalances: number;
-// }> = ({ accountData, chainIdState, hideSmallBalances }) => {
-//   const [searchQuery, setSearchQuery] = useState("");
-//
-//
-//   const filteredProtocols = accountData.protocols?.filter((protocol) =>
-//     protocol.name.toLowerCase().includes(searchQuery.toLowerCase())
-//   );
-//
-//
-//   const filteredWallets = searchQuery
-//     ? {
-//       ...accountData,
-//       tokens: accountData.tokens?.filter((token) =>
-//         token.name.toLowerCase().includes(searchQuery.toLowerCase())
-//       )
-//     }
-//     : accountData;
-//
-//   // console.log("filteredWallets", filteredWallets);
-//
-//
-//   // console.log("accountData", filteredWallets);
-//
-//   return (
-//     <>
-//       <TextField
-//         // label="Search"
-//
-//         variant="standard"
-//         // fullWidth
-//         margin="normal"
-//         size="small"
-//         value={searchQuery}
-//         onChange={(e) => setSearchQuery(e.target.value)}
-//         placeholder="search"
-//       />
-//       <Container sx={{ display: "flex", gap: 3, marginY: 5 }}>
-//       <ChainList
-//         chainIdState={chainIdState}
-//         data={accountData}
-//         hideSmallBalances={hideSmallBalances}
-//       />
-//         <WalletTable
-//           chainIdState={chainIdState}
-//           data={filteredWallets}
-//           hideSmallBalances={hideSmallBalances}
-//         />
-//
-//       </Container>
-//         <ProtocolTable
-//           data={{ protocols: filteredProtocols, wallets: accountData.wallets }}
-//           chainIdState={chainIdState}
-//           hideSmallBalances={hideSmallBalances}
-//         />
-//     </>
-//   );
-// };
 
 function App() {
   const [selectedItem, setSelectedItem] = useState(null);
@@ -117,88 +51,77 @@ function App() {
         fetchAptosData(),
         fetchStaticData()]);
 
-      const allTokens1 = wallets
+      const allTokens12 = wallets
         .map((wallet) => wallet.tokens || [])
         .flat();
 
-      // console.log(evmData.allChains);
-      // console.log(solData?.solMetadata);
-      // console.log(chains);
-      // console.log("allTokens1", allTokens1)
-      // console.log("evmData.allTokens", evmData.allTokens)
+      function transformData(wallets) {
+        const tokenMap = new Map();
+
+        wallets.forEach((wallet) => {
+          const { id: walletId, wallet: walletAddress, tag, chain, tokens } = wallet;
+
+          tokens.forEach((token) => {
+            const tokenKey = `${token.name}-${token.chain_id}`; // Unique key for each token by name and chain
+
+            if (!tokenMap.has(tokenKey)) {
+              // If token doesn't exist, add it
+              tokenMap.set(tokenKey, {
+                // id: token.chain_id,
+                chain_id: token.chain_id,
+                name: token.name,
+                symbol: token.symbol,
+                decimals: token.decimals,
+                logo_path: token.logo_path,
+                price: parseFloat(token.price),
+                price_24h_change: token.price_24h_change || null,
+                amount: parseFloat(token.amount),
+                is_core: token.is_core,
+                wallets: [
+                  {
+                    tag,
+                    id: walletId,
+                    wallet: walletAddress,
+                    amount: parseFloat(token.amount)
+                  }
+                ]
+              });
+            } else {
+              // If token exists, update the amount and add wallet data
+              const existingToken = tokenMap.get(tokenKey);
+              existingToken.amount += parseFloat(token.amount);
+              existingToken.wallets.push({
+                tag,
+                id: walletId,
+                wallet: walletAddress,
+                amount: parseFloat(token.amount)
+              });
+            }
+          });
+        });
+
+        return Array.from(tokenMap.values());
+      }
+
+      const allTokens1 = transformData(wallets);
 
 
-      const totalUSDValue = [
-        ...evmData.allChains,
-        solData?.solMetadata,
-        ...cosmosData?.chainMetadata,
-        suiData.chains,
-        aptosData.chains,
-        ...staticData.map((data) => data.chains)]
+      const totalUSDValue = [...chains]
         .filter(Boolean)
         .reduce((sum, chain) => sum + (chain?.usd_value || chain?.total_usd_value || 0), 0);
-
-      const allTokens = [
-        ...evmData.allTokens,
-        ...(solData?.sol.tokens || []),
-        ...(cosmosData?.mergedCosmos || []),
-        ...suiData.tokens,
-        ...aptosData.tokens,
-        ...staticData.flatMap((data) => data.tokens || [])];
-
-
-      const unifiedCosmosList = cosmosData.chainMetadata.reduce((acc, item) => {
-        acc.usd_value += item.usd_value;
-        acc.addresses.push(item.address);
-        acc.symbols.push(item.symbol);
-        return acc;
-      }, {
-        id: "cosmos",
-        name: "Cosmos",
-        chain: "cosmos",
-        logo_url: cosmosData.chainMetadata[3]?.logo_url || "",
-        usd_value: 0,
-        addresses: [],
-        symbols: []
-      });
-
-      console.log(evmData.allChains)
 
 
       const allItem = {
         id: 0, tag: "all",
         chains: {
           total_usd_value: totalUSDValue,
-          // chain_list: [...evmData.allChains, solData?.solMetadata, unifiedCosmosList]
           chain_list: [...chains]
         },
         tokens: allTokens1, protocols: evmData.allProtocols
       };
 
-      const safeItems = evmData.updated.filter((item) => item.tag === "Safe");
 
-      const unifiedSafeItem = safeItems.reduce((acc, item, index) => {
-        acc.chains.total_usd_value += item.chains.total_usd_value || 0;
-        acc.tokens.push(...(item.tokens || []));
-        acc.protocols.push(...(item.protocols || []));
-
-        if (index === 0 && item.chains.chain_list) {
-          acc.chains.chain_list = item.chains.chain_list.map((chain) => {
-            const totalChainUSD = safeItems.reduce((sum, safeItem) => {
-              const matchingChain = safeItem.chains.chain_list.find((c) => c.id === chain.id);
-              return sum + (matchingChain?.usd_value || 0);
-            }, 0);
-            return { ...chain, usd_value: totalChainUSD };
-          });
-        }
-
-        return acc;
-      }, {
-        id: "safe", tag: "Safe", chains: { total_usd_value: 0, chain_list: [] }, tokens: [], protocols: []
-      });
-
-      // console.log([allItem, unifiedSafeItem, ...evmData.updated.filter((item) => item.tag !== "Safe")])
-      setList([allItem, unifiedSafeItem, ...evmData.updated.filter((item) => item.tag !== "Safe")]);
+      setList([allItem, ...wallets]);
       setSelectedItem(allItem);
 
     } catch (error) {
@@ -213,9 +136,6 @@ function App() {
     fetchAccountsData();
   }, [wallets]);
 
-  const formatUSD = (value) => value?.toLocaleString("de-CH", {
-    minimumFractionDigits: 2, maximumFractionDigits: 2
-  }) || "0.00";
 
   return (<ThemeProvider theme={theme}>
     <CssBaseline />
@@ -224,33 +144,33 @@ function App() {
     <Container sx={{ marginY: 10 }}>
       {loading ? (<CircularProgress />) : selectedItem ? (<>
         {!isCryptoView && <Transactions />}
-        {isCryptoView && (<Container sx={{ display: "flex" }}>
-          <Card sx={{ padding: 3, width: "65%", borderRadius: 10, marginRight: 3 }}>
-            <Typography variant="h5" fontWeight="bold">Net Worth</Typography>
-            <Typography variant="h2" fontWeight="bold">
-              $ {formatUSD(selectedChainId === "all" ? selectedItem.chains.total_usd_value : selectedItem.chains.chain_list.find(
-              (c) => c.id === selectedChainId)?.usd_value)}
-            </Typography>
-          </Card>
-          <Box>
-            {list.map((acc, i) => (<Chip
-              key={`${acc.id}-${i}`}
-              sx={{ margin: 1 }}
-              onClick={() => setSelectedItem(acc)}
-              label={acc.tag}
-              variant={selectedItem === acc ? "outlined" : "filled"}
-            />))}
-            <IconButton color="primary" onClick={() => setOpenSettings(true)}>
-              <Settings />
-            </IconButton>
-          </Box>
-        </Container>)}
+        {isCryptoView && (
+          <Container>
+            <Card sx={{ marginY: 3, padding: 3, borderRadius: 10, width: 'fit-content' }}>
+              <Typography variant="h5" fontWeight="bold">Net Worth</Typography>
+              <Typography
+                variant="h2"
+                fontWeight="bold"
+              >
+                $ {selectedItem && (+selectedItem.tokens.reduce((acc, item) => acc + item.amount * item.price, 0)
+                .toFixed(2)).toLocaleString("de-CH")}
+              </Typography>
+            </Card>
+            <Box>
+              {list.map((acc, i) => (<Chip
+                key={`${acc.id}-${i}`}
+                sx={{ margin: 1 }}
+                onClick={() => setSelectedItem(acc)}
+                label={acc.tag}
+                variant={selectedItem === acc ? "outlined" : "filled"}
+              />))}
+              <IconButton color="primary" onClick={() => setOpenSettings(true)}>
+                <Settings />
+              </IconButton>
+            </Box>
+          </Container>
+        )}
         {isCryptoView && (<>
-          {/*<Dashboard*/}
-          {/*  chainIdState={[selectedChainId, setSelectedChainId]}*/}
-          {/*  accountData={selectedItem}*/}
-          {/*  hideSmallBalances={hideSmallBalances}*/}
-          {/*/>*/}
           <Container sx={{ display: "flex", gap: 3, marginY: 3 }}>
             <ChainList
               chainIdState={[selectedChainId, setSelectedChainId]}

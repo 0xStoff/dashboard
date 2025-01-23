@@ -128,7 +128,7 @@ export const fetchCosmosTokens = async () => {
             const logoPath = logo_url ? await downloadLogo(logo_url, symbol) : null;
 
             const [dbToken] = await TokenModel.upsert({
-                chain_id: 'cosmos', name, symbol, decimals, logo_path: logoPath, price: price.usd,
+                chain_id: 'cosmos', name, symbol, decimals, logo_path: logoPath, price: price.usd, price_24h_change: price.usd_24h_change
             }, {conflictFields: ['chain_id', 'symbol'], returning: true});
 
             const {totalValue, amount} = aggregateChainData(chain.name, cosmosBalances, price);

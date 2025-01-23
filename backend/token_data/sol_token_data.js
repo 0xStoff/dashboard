@@ -20,7 +20,10 @@ export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
     const solPrice = await fetchTokenPrice('solana') || {usd: 0};
 
     let tokenData = [{
-        amount: balance / 10 ** 9, usd: solPrice.usd, ...nonEvmChains.find(chain => chain.id === 'sol')
+        amount: balance / 10 ** 9,
+        usd: solPrice.usd,
+        price_24h_change: solPrice.usd_24h_change,
+        ...nonEvmChains.find(chain => chain.id === 'sol')
     }];
 
     const raydium = await Raydium.load({
@@ -35,9 +38,10 @@ export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
 
         if (tokenInfo) {
             const tokenPrice = await fetchTokenPrice(tokenInfo.extensions.coingeckoId || '');
+            console.log(tokenPrice)
             if (tokenPrice) {
                 tokenData.push({
-                    ...tokenInfo, amount: parsedAccountInfo.tokenAmount.uiAmount, usd: tokenPrice.usd
+                    ...tokenInfo, amount: parsedAccountInfo.tokenAmount.uiAmount, usd: tokenPrice.usd, price_24h_change: tokenPrice.usd_24h_change
                 });
             }
         }
@@ -46,12 +50,13 @@ export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
     tokenData = tokenData.filter(token => token.amount > 0);
 
     for (const token of tokenData) {
-        const {name, symbol, decimals, logoURI, amount, usd} = token;
+        const {name, symbol, decimals, logoURI, amount, usd, price_24h_change} = token;
 
         const logoPath = logoURI ? await downloadLogo(logoURI, symbol) : null;
 
+
         const [dbToken] = await TokenModel.upsert({
-            chain_id: 'sol', name, symbol, decimals, logo_path: logoPath, price: usd,
+            chain_id: 'sol', name, symbol, decimals, logo_path: logoPath, price: usd, price_24h_change
         }, {conflictFields: ['chain_id', 'symbol'], returning: true});
 
 

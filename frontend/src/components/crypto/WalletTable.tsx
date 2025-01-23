@@ -29,7 +29,6 @@ const WalletTable: React.FC<{
   if (!sortedData.length) return null;
 
 
-  console.log(chainList)
   const getChainLogo = (chainId: string) => chainList.find((c) => c.chain_id === chainId)?.logo_path || "";
 
 
@@ -54,6 +53,8 @@ const WalletTable: React.FC<{
     }
   };
 
+
+  console.log("data", data)
 
 
   return (<Box sx={styles.container}>
@@ -86,6 +87,7 @@ const WalletTable: React.FC<{
                   {item.chain_id && (<Avatar
                     alt={item.chain_id}
                     src={"http://localhost:3000/logos/" + getChainLogo(item.chain_id)}
+                    // src={getChainLogo(item.chain)}
                     sx={styles.chainLogo}
                   />)}
                 </Box>
@@ -96,15 +98,17 @@ const WalletTable: React.FC<{
                 </Typography>
               </TableCell>
               <TableCell sx={styles.tableCell} align="left">
-                {item.price_24h_change !== undefined && (<Typography
-                  fontWeight="bold"
-                  marginLeft={2}
-                  variant="body2"
-                  noWrap
-                  sx={{ color: item.price_24h_change >= 0 ? "success.main" : "error.main" }}
-                >
-                  {(item.price_24h_change * 100).toFixed(2)} %
-                </Typography>)}
+                {item.price_24h_change && (
+                  <Typography
+                    fontWeight="bold"
+                    marginLeft={2}
+                    variant="body2"
+                    noWrap
+                    sx={{ color: item.price_24h_change >= 0 ? "success.main" : "error.main" }}
+                  >
+                    {parseFloat(item.price_24h_change).toFixed(2)} %
+                  </Typography>
+                )}
               </TableCell>
               <TableCell sx={styles.tableCell} align="right">
                 {item.wallets?.map((wallet) => (<ChipWithTooltip key={wallet.id} item={item} wallet={wallet} />))}

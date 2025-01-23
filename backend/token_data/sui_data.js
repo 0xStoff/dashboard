@@ -14,7 +14,7 @@ const createTokenData = (id, name, symbol, decimals, logoUrl, price, amount, wal
     decimals,
     logo_url: logoUrl,
     price: price.usd || 0,
-    price_24h_change: price.price_24h_change,
+    price_24h_change: price.price_24h_change*100,
     amount: amount || 0,
     is_core: true,
     wallets: [{ tag: walletTag, id: walletId, wallet: walletAddress, amount: amount || 0 }]
@@ -50,7 +50,7 @@ export const writeAptosDataToDB = async () => {
 
     // Iterate through tokens and write them to the database
     for (const token of tokens) {
-      const { name, symbol, decimals, logo_url, price, amount } = token;
+      const { name, symbol, decimals, logo_url, price, price_24h_change, amount } = token;
       const logoPath = logo_url ? await downloadLogo(logo_url, symbol) : null;
 
       // Insert or update token data in the TokenModel
@@ -60,7 +60,8 @@ export const writeAptosDataToDB = async () => {
         symbol,
         decimals,
         logo_path: logoPath,
-        price
+        price,
+        price_24h_change
       }, { conflictFields: ["chain_id", "symbol"], returning: true });
 
       // Calculate raw_amount and USD value
@@ -99,9 +100,8 @@ export const writeStaticDataToDB = async () => {
 
       // Iterate through tokens and write them to the database
       for (const token of tokens) {
-        const { name, symbol, decimals, logo_url, price, amount } = token;
+        const { name, symbol, decimals, logo_url, price, price_24h_change, amount } = token;
         const logoPath = logo_url ? await downloadLogo(logo_url, symbol) : null;
-      console.log(logoPath)
 
         // Insert or update token data in the TokenModel
         const [dbToken] = await TokenModel.upsert({
@@ -109,6 +109,7 @@ export const writeStaticDataToDB = async () => {
           name,
           symbol,
           decimals,
+          price_24h_change,
           logo_path: logoPath,
           price
         }, { conflictFields: ["chain_id", "symbol"], returning: true });
@@ -117,8 +118,8 @@ export const writeStaticDataToDB = async () => {
         const raw_amount = amount * 10 ** decimals;
         const usd_value = amount * price;
 
-        console.log(chainId)
-        console.log(wallets)
+        // console.log(chainId)
+        // console.log(wallets)
 
         // Insert or update wallet token data
         await WalletTokenModel.upsert({
@@ -152,13 +153,13 @@ export const writeSuiDataToDB = async () => {
 
     // Iterate through tokens and write them to the database
     for (const token of tokens) {
-      const { name, symbol, decimals, logo_url, price, amount } = token;
+      const { name, symbol, decimals, logo_url, price, amount, price_24h_change } = token;
       const logoPath = logo_url ? await downloadLogo(logo_url, symbol) : null;
 
 
       // Insert or update token data in the TokenModel
       const [dbToken] = await TokenModel.upsert({
-        chain_id: "sui", name, symbol, decimals, logo_path: logoPath, price
+        chain_id: "sui", name, symbol, decimals, logo_path: logoPath, price, price_24h_change
       }, { conflictFields: ["chain_id", "symbol"], returning: true });
 
       // Calculate raw_amount and USD value
@@ -286,7 +287,7 @@ export const fetchStaticData = async () => {
     logo_url: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=040",
     priceKey: "usd-coin",
     amount: 1500,
-    wallet: "0x0"
+    wallet: "0x01"
   }, {
     id: "nft",
     name: "NFT",
@@ -295,7 +296,7 @@ export const fetchStaticData = async () => {
     logo_url: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=040",
     priceKey: "usd-coin",
     amount: 5000,
-    wallet: "0x0"
+    wallet: "0x02"
   }];
 
   return Promise.all(chains.map(async chain => {

@@ -168,10 +168,15 @@ CREATE TABLE tokens
     symbol           VARCHAR(255)  NOT NULL,
     decimals         INT          NOT NULL,
     price            DECIMAL(20, 8),
-    price_24h_change DECIMAL(10, 8),
+    price_24h_change DECIMAL(20, 16),
     logo_path        VARCHAR(255),
     UNIQUE (chain_id, symbol)
 );
+
+ALTER TABLE tokens
+    MODIFY COLUMN price DECIMAL(30, 16);
+
+ALTER TABLE tokens MODIFY COLUMN price_24h_change DECIMAL(20, 16);
 
 CREATE TABLE wallets_tokens
 (

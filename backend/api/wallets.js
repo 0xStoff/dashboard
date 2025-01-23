@@ -47,7 +47,7 @@ router.get('/wallets', async (req, res) => {
                 attributes: ['amount', 'raw_amount', 'usd_value'],
                 where: usd_value ? { usd_value: { [Op.gt]: usd_value } } : {},
             },
-            attributes: ['name', 'symbol', 'decimals', 'price', 'logo_path', 'chain_id'],
+            attributes: ['name', 'symbol', 'decimals', 'price', 'logo_path', 'chain_id', "price_24h_change"],
         }];
 
         const wallets = await WalletModel.findAll({
