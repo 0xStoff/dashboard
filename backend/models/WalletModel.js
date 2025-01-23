@@ -1,7 +1,5 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../sequelize.js';
-import TokenModel from './TokenModel.js';
-import WalletTokenModel from './WalletTokenModel.js';
 
 const WalletModel = sequelize.define('wallets', {
     id: {

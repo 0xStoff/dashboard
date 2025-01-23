@@ -45,6 +45,8 @@ export function mergeProtocols(accounts: Account[]): Protocol[] {
     const protocolMap = new Map<string, Protocol>();
 
     accounts.forEach(account => {
+
+        // console.log(account.protocols)
         (account.protocols ?? []).forEach(protocol => {
             const { portfolio_item_list, ...protocolWithoutItems } = protocol;
             let existingProtocol = protocolMap.get(protocol.id);

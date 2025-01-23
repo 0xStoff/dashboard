@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import nonEvmRoutes from "./api/chains.js";
 import walletRoutes from "./api/wallets.js";
 import chainsRoutes from "./api/chains.js";
+import protocolsRoutes from "./api/protocols.js";
 import tokensRoutes from "./api/tokens.js";
 import sequelize from "./sequelize.js";
 import WalletModel from "./models/WalletModel.js";
@@ -12,12 +13,12 @@ import WalletTokenModel from "./models/WalletTokenModel.js";
 import transactionsRoutes from './api/transactions.js';
 import path from "path";
 import { fileURLToPath } from 'url';
-import { fetchAndSaveEvmTokenDataForAllWallets } from "./token_data/evm_token_data.js";
+import { fetchAndSaveEvmTokenData, fetchAndSaveEvmTokenDataForAllWallets } from "./token_data/evm_token_data.js";
 import { fetchCosmosTokens } from "./token_data/cosmos_token_data.js";
 import { writeAptosDataToDB, writeStaticDataToDB, writeSuiDataToDB } from "./token_data/sui_data.js";
-import { updateChainsData, updateNonEvmChainsData } from "./utils/chain_data.js";
-import { evmChains, nonEvmChains } from "./utils/chainlist.js";
 import { fetchAndSaveSolTokenDataForAllWallets } from "./token_data/sol_token_data.js";
+import ProtocolModel from "./models/ProtocolModel.js";
+import WalletProtocolModel from "./models/WalletProtocolModel.js";
 
 dotenv.config();
 
@@ -40,11 +41,20 @@ app.use('/api', chainsRoutes);
 app.use('/api', walletRoutes);
 app.use('/api', nonEvmRoutes);
 app.use('/api', tokensRoutes);
+app.use('/api', protocolsRoutes);
 app.use('/api', transactionsRoutes);
 app.use('/logos', express.static(path.join(__dirname, 'logos')));
 
 const runAllTokenDataFunctions = async () => {
     try {
+        // Drop tables first
+        await sequelize.query("DROP TABLE IF EXISTS wallets_tokens;");
+        console.log("Dropped table: wallets_tokens");
+
+        await sequelize.query("DROP TABLE IF EXISTS tokens;");
+        console.log("Dropped table: tokens");
+
+        // Recreate tables and execute token data functions
         const promises = [
             writeStaticDataToDB(),
             writeAptosDataToDB(),
@@ -63,6 +73,7 @@ const runAllTokenDataFunctions = async () => {
     }
 };
 
+
 // Expose an API endpoint for the frontend to call this function
 app.post('/api/runAllTokenDataFunctions', async (req, res) => {
     const result = await runAllTokenDataFunctions();
@@ -73,6 +84,8 @@ app.post('/api/runAllTokenDataFunctions', async (req, res) => {
 const setupAssociations = () => {
     WalletModel.belongsToMany(TokenModel, {through: WalletTokenModel, foreignKey: 'wallet_id'});
     TokenModel.belongsToMany(WalletModel, {through: WalletTokenModel, foreignKey: 'token_id'});
+    WalletModel.belongsToMany(ProtocolModel, {through: WalletProtocolModel, foreignKey: 'wallet_id'});
+    ProtocolModel.belongsToMany(WalletModel, {through: WalletProtocolModel, foreignKey: 'protocol_id'});
 };
 
 const initDb = async () => {
@@ -103,9 +116,16 @@ initDb().then(() => {
         //     .then(() => console.log('Token Data for sol Wallets fetched'))
         //     .catch((err) => console.error('Failed to fetch Tokens:', err));
 
+
         // fetchAndSaveEvmTokenDataForAllWallets()
         //      .then(() => console.log('Token Data for all Wallets fetched'))
         //      .catch((err) => console.error('Failed to fetch Tokens:', err));
+
+        //
+        //
+
+        fetchAndSaveEvmTokenData(6, "0xa8d58cd36835970af11be0ff1f9e2d66c79417cb")
+             .then(() => console.log('Token Data for l 1.25 fetched'))
 
         // fetchCosmosTokens()
         //      .then(() => console.log('Token Data for cosmos Wallets fetched'))

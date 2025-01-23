@@ -54,8 +54,6 @@ const WalletTable: React.FC<{
   };
 
 
-  console.log("data", data)
-
 
   return (<Box sx={styles.container}>
     <Card sx={styles.card}>

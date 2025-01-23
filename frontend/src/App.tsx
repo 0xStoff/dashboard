@@ -36,6 +36,18 @@ function App() {
   const wallets = useFetchWallets();
   const chains = useFetchChains();
 
+  function calculateTotalUSD(data) {
+    return data.reduce((protocolSum, protocol) => {
+      const walletsSum = protocol.wallets.reduce((walletSum, wallet) => {
+        const portfolioSum = wallet.portfolio_items.reduce((itemSum, item) => {
+          return itemSum + (item.stats.net_usd_value || 0); // Add net USD value of each portfolio item
+        }, 0);
+        return walletSum + portfolioSum; // Sum across all portfolio items in the wallet
+      }, 0);
+      return protocolSum + walletsSum; // Sum across all wallets in the protocol
+    }, 0);
+  }
+
   const fetchAccountsData = async () => {
     if (!wallets.length) return;
 
@@ -43,17 +55,8 @@ function App() {
     try {
       setLoading(true);
 
-      const [evmData, solData, cosmosData, suiData, aptosData, staticData] = await Promise.all([
-        fetchEvmAccounts(wallets),
-        fetchSolanaData(wallets.filter((w) => w.chain === "sol")),
-        fetchCosmosTokens(wallets.filter((w) => w.chain === "cosmos")),
-        fetchSuiData(),
-        fetchAptosData(),
-        fetchStaticData()]);
+      const evmData = await fetchEvmAccounts(wallets);
 
-      const allTokens12 = wallets
-        .map((wallet) => wallet.tokens || [])
-        .flat();
 
       function transformData(wallets) {
         const tokenMap = new Map();
@@ -103,21 +106,20 @@ function App() {
         return Array.from(tokenMap.values());
       }
 
-      const allTokens1 = transformData(wallets);
 
+      const totalTokenUSD = transformData(wallets).reduce((acc, item) => acc + item.amount * item.price, 0) || 0;
+      const totalProtocolUSD = calculateTotalUSD(evmData.allProtocols);
 
-      const totalUSDValue = [...chains]
-        .filter(Boolean)
-        .reduce((sum, chain) => sum + (chain?.usd_value || chain?.total_usd_value || 0), 0);
-
+      console.log(evmData.allProtocols)
 
       const allItem = {
         id: 0, tag: "all",
         chains: {
-          total_usd_value: totalUSDValue,
+          total_usd_value: totalTokenUSD + totalProtocolUSD,
           chain_list: [...chains]
         },
-        tokens: allTokens1, protocols: evmData.allProtocols
+        tokens: transformData(wallets),
+        protocols: evmData.allProtocols
       };
 
 
@@ -136,24 +138,6 @@ function App() {
     fetchAccountsData();
   }, [wallets]);
 
-  const runAllFunctions = async () => {
-    try {
-      const response = await fetch('http://localhost:3000/api/runAllTokenDataFunctions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      const data = await response.json();
-      if (data.status === 'success') {
-        alert(data.message);
-      } else {
-        alert('Something went wrong: ' + data.message);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Failed to execute functions.');
-    }
-  };
-
 
 
   return (<ThemeProvider theme={theme}>
@@ -170,8 +154,7 @@ function App() {
                 variant="h2"
                 fontWeight="bold"
               >
-                $ {selectedItem && (+selectedItem.tokens.reduce((acc, item) => acc + item.amount * item.price, 0)
-                .toFixed(2)).toLocaleString("de-CH")}
+                $ {Number(selectedItem.chains.total_usd_value.toFixed(2)).toLocaleString("de-CH")}
               </Typography>
             </Card>
             <Box>

@@ -118,6 +118,7 @@ const ProtocolTable: React.FC<{
 
     if (!sortedGroupedProtocols.length) return null;
 
+    // console.log(sortedGroupedProtocols)
 
     return <Container>
             {sortedGroupedProtocols.map((protocol) => (

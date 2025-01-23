@@ -4,6 +4,8 @@ import WalletModel from "../models/WalletModel.js";
 import TokenModel from "../models/TokenModel.js";
 import WalletTokenModel from "../models/WalletTokenModel.js";
 import {Op} from "sequelize";
+import ProtocolModel from "../models/ProtocolModel.js";
+import WalletProtocolModel from "../models/WalletProtocolModel.js";
 
 const router = express.Router();
 
@@ -48,6 +50,14 @@ router.get('/wallets', async (req, res) => {
                 where: usd_value ? { usd_value: { [Op.gt]: usd_value } } : {},
             },
             attributes: ['name', 'symbol', 'decimals', 'price', 'logo_path', 'chain_id', "price_24h_change"],
+        },{
+            model: ProtocolModel,
+            through: {
+                model: WalletProtocolModel,
+                attributes: ['wallet_id', 'protocol_id', 'portfolio_item_list'],
+                // where: usd_value ? { usd_value: { [Op.gt]: usd_value } } : {},
+            },
+            attributes: ['name', 'total_usd', 'logo_path', 'chain_id'],
         }];
 
         const wallets = await WalletModel.findAll({
