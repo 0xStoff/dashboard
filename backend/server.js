@@ -47,12 +47,18 @@ app.use('/logos', express.static(path.join(__dirname, 'logos')));
 
 const runAllTokenDataFunctions = async () => {
     try {
-        // Drop tables first
-        await sequelize.query("DROP TABLE IF EXISTS wallets_tokens;");
-        console.log("Dropped table: wallets_tokens");
+        await sequelize.query("DELETE FROM wallets_tokens;");
+        console.log("Cleared table: wallets_tokens");
 
-        await sequelize.query("DROP TABLE IF EXISTS tokens;");
-        console.log("Dropped table: tokens");
+        await sequelize.query("DELETE FROM tokens;");
+        console.log("Cleared table: tokens");
+
+        await sequelize.query("DELETE FROM wallets_protocols;");
+        console.log("Cleared table: wallets_protocols");
+
+        await sequelize.query("DELETE FROM protocols;");
+        console.log("Cleared table: protocols");
+
 
         // Recreate tables and execute token data functions
         const promises = [
@@ -124,8 +130,8 @@ initDb().then(() => {
         //
         //
 
-        fetchAndSaveEvmTokenData(6, "0xa8d58cd36835970af11be0ff1f9e2d66c79417cb")
-             .then(() => console.log('Token Data for l 1.25 fetched'))
+        // fetchAndSaveEvmTokenData(6, "0xa8d58cd36835970af11be0ff1f9e2d66c79417cb")
+        //      .then(() => console.log('Token Data for l 1.25 fetched'))
 
         // fetchCosmosTokens()
         //      .then(() => console.log('Token Data for cosmos Wallets fetched'))
