@@ -1,47 +1,19 @@
 import express from "express";
-import TokenModel from "../models/TokenModel.js";
+import { fetchWalletData, transformData } from "./utils.js";
 
 const router = express.Router();
 
 router.get('/tokens', async (req, res) => {
     try {
-        // const tokens = await TokenModel.findAll({
-        //     include: [{
-        //         model: WalletModel,
-        //         through: {
-        //             model: WalletTokenModel,
-        //             attributes: ['amount', 'raw_amount'],
-        //         },
-        //         attributes: ['wallet'],
-        //     }],
-        //     order: [['name', 'ASC']],
-        // });
-        //
-        // const result = tokens.map(token => {
-        //     const modifiedWallets = token.wallets.map(wallet => {
-        //         const { wallets_tokens, ...walletData } = wallet.get();
-        //
-        //         return {
-        //             ...walletData,
-        //             amount: wallets_tokens.amount,
-        //             raw_amount: wallets_tokens.raw_amount,
-        //         };
-        //     });
-        //
-        //     return {
-        //         ...token.get(),
-        //         wallets: modifiedWallets,
-        //     };
-        // });
+        const { chain, usd_value } = req.query;
+        const wallets = await fetchWalletData(chain, usd_value);
+        const result = transformData(wallets);
 
-        const tokens = await TokenModel.findAll({
-            order: [['id', 'ASC']],
-        });
 
-        res.json(tokens);
+        res.json(result);
     } catch (err) {
-        console.error('Error fetching tokens:', err);
-        res.status(500).json({ error: 'Failed to fetch tokens' });
+        console.error('Error fetching wallets:', err);
+        res.status(500).json({ error: 'Failed to fetch wallets' });
     }
 });
 

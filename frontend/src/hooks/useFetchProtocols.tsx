@@ -22,5 +22,19 @@ export const useFetchProtocols = (chain = null) => {
     loadProtocols();
   }, [chain]); // Add chain to the dependency array to reload when chain changes
 
-  return protocols;
+  function calculateTotalUSD(data) {
+    return data.reduce((protocolSum, protocol) => {
+      const walletsSum = protocol.wallets.reduce((walletSum, wallet) => {
+        const portfolioSum = wallet.portfolio_item_list.reduce((itemSum, item) => {
+          return itemSum + (item.stats.net_usd_value || 0); // Add net USD value of each portfolio item
+        }, 0);
+        return walletSum + portfolioSum; // Sum across all portfolio items in the wallet
+      }, 0);
+      return protocolSum + walletsSum; // Sum across all wallets in the protocol
+    }, 0);
+  }
+
+  const totalProtocolUSD = calculateTotalUSD(protocols)
+
+  return { protocols, totalProtocolUSD };
 };
