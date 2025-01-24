@@ -5,6 +5,7 @@ const API_BASE_URL = 'http://localhost:3000/api'; // Base URL for your API
 
 export const useFetchWallets = (chain = null) => {
     const [wallets, setWallets] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const loadWallets = async () => {
@@ -16,11 +17,13 @@ export const useFetchWallets = (chain = null) => {
                 setWallets(response.data);
             } catch (error) {
                 console.error('Failed to load wallets:', error);
+            } finally {
+                setLoading(false);
             }
         };
 
         loadWallets();
     }, [chain]); // Add chain to the dependency array to reload when chain changes
 
-    return wallets;
+    return { wallets, loading };
 };

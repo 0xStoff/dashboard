@@ -5,6 +5,7 @@ const API_BASE_URL = 'http://localhost:3000/api'; // Base URL for your API
 
 export const useFetchTokens = (chain = null) => {
   const [tokens, setTokens] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadTokens = async () => {
@@ -16,6 +17,8 @@ export const useFetchTokens = (chain = null) => {
         setTokens(response.data);
       } catch (error) {
         console.error('Failed to load tokens:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -24,5 +27,5 @@ export const useFetchTokens = (chain = null) => {
 
   const totalTokenUSD = (tokens).reduce((acc, item) => acc + item.amount * item.price, 0) || 0;
 
-  return { tokens, totalTokenUSD };
+  return { tokens, totalTokenUSD, loading };
 };

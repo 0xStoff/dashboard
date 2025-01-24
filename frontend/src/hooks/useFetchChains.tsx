@@ -5,6 +5,7 @@ const API_BASE_URL = 'http://localhost:3000/api';
 
 export const useFetchChains = (chain = null) => {
   const [chains, setChains] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadChains = async () => {
@@ -14,11 +15,13 @@ export const useFetchChains = (chain = null) => {
         setChains(response.data);
       } catch (error) {
         console.error('Failed to load chains:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
     loadChains();
   }, [chain]);
 
-  return chains;
+  return { chains, loading };
 };
