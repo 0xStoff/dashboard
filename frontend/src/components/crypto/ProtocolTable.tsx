@@ -10,119 +10,15 @@ import {ChainIdState} from "../../interfaces/chain";
 
 
 const ProtocolTable: React.FC<{
-    data: Account;
-    chainIdState: ChainIdState;
     hideSmallBalances: number;
-}> = ({ data, chainIdState, hideSmallBalances }) => {
-    const [selectedChainId] = chainIdState;
+    protocols: any;
+}> = ({   hideSmallBalances, protocols }) => {
 
-    const addPosition = (
-        protocolName: string,
-        acc: GroupedProtocols,
-        tokens: SupplyTokenList[],
-        itemName: string,
-        walletTag: string | undefined,
-        walletAmount: number | undefined
-    ) => {
-        const validTokens = tokens.filter(
-            (token) =>
-                token.amount * token.price > hideSmallBalances &&
-                (selectedChainId === 'all' || token.chain === selectedChainId)
-        );
+    if (!protocols.length) return null;
 
-        if (!validTokens.length) return;
-
-        const tokenNames = validTokens.map((t) => t.name).join(' + ');
-        const logoUrls = validTokens.map((t) => t.logo_url);
-        const totalAmount = validTokens.reduce((sum, token) => sum + token.amount, 0);
-        const totalUsdValue = validTokens.reduce((sum, token) => sum + token.amount * token.price, 0);
-        const avgPrice = totalUsdValue / totalAmount;
-
-        const protocol = acc[protocolName];
-        const existingPositionIndex = protocol.positions.findIndex(
-            (p) => p.tokenNames === tokenNames && p.chain === validTokens[0].chain && p.type === itemName
-        );
-
-        if (existingPositionIndex > -1) {
-            const existingPosition = protocol.positions[existingPositionIndex];
-            if (walletTag && walletAmount !== undefined) {
-                existingPosition.wallets.push({ tag: walletTag, amount: walletAmount });
-            }
-        } else {
-            protocol.positions.push({
-                type: itemName,
-                chain: validTokens[0].chain,
-                tokenNames,
-                logoUrls,
-                price: avgPrice,
-                amount: totalAmount,
-                usdValue: totalUsdValue,
-                wallets: walletTag && walletAmount !== undefined ? [{ tag: walletTag, amount: walletAmount }] : [],
-            });
-        }
-
-        protocol.totalUSD += totalUsdValue;
-    };
-
-    const groupedByProtocol: GroupedProtocols =
-        data.protocols?.reduce<GroupedProtocols>((acc, protocol) => {
-            if (!acc[protocol.name]) {
-                acc[protocol.name] = { name: protocol.name, positions: [], totalUSD: 0 };
-            }
-
-            const addWalletPositions = (item: any, walletTag: string) => {
-                const walletAmount = item.detail.supply_token_list?.[0]?.amount || 0;
-                addPosition(
-                    protocol.name,
-                    acc,
-                    item.detail.supply_token_list || [],
-                    item.name,
-                    walletTag,
-                    walletAmount
-                );
-            };
-
-
-            protocol.wallets
-                ? protocol.wallets.forEach((wallet) =>
-                    wallet.portfolio_item_list.forEach((item) => addWalletPositions(item, wallet.tag))
-                )
-                : protocol.portfolio_item_list.forEach((item) => addWalletPositions(item, ''));
-
-            return acc;
-        }, {}) || {};
-
-    const unifyPositions = (positions: Position[]): Position[] => {
-        const unified: { [key: string]: Position } = {};
-
-        positions.forEach((position) => {
-            const key = `${position.tokenNames}-${position.type}-${position.chain}`;
-            if (unified[key]) {
-                unified[key].amount += position.amount;
-                unified[key].usdValue += position.usdValue;
-                unified[key].wallets = [...unified[key].wallets, ...position.wallets];
-            } else {
-                unified[key] = { ...position, wallets: [...position.wallets] };
-            }
-        });
-
-        return Object.values(unified).sort((a, b) => b.usdValue - a.usdValue); // Sort by USD value
-    };
-
-    const sortedGroupedProtocols = Object.values(groupedByProtocol)
-        .map((protocol) => ({
-            ...protocol,
-            positions: unifyPositions(protocol.positions), // Unify positions here
-        }))
-        .sort((a, b) => b.totalUSD - a.totalUSD)
-        .filter((protocol) => protocol.totalUSD > hideSmallBalances);
-
-    if (!sortedGroupedProtocols.length) return null;
-
-    // console.log(sortedGroupedProtocols)
 
     return <Container>
-            {sortedGroupedProtocols.map((protocol) => (
+            {protocols.map((protocol) => (
                 protocol.totalUSD > hideSmallBalances && (
                     <Card sx={{ marginY: 5, borderRadius: 10 }} key={protocol.name}>
                         <CardContent sx={{ padding: 3 }}>

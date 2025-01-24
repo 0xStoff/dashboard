@@ -8,9 +8,8 @@ import { useFetchChains } from "../../hooks/useFetchChains";
 
 const WalletTable: React.FC<{
   data: Account; chainIdState: ChainIdState; hideSmallBalances: number;
-}> = ({ data, chainIdState, hideSmallBalances }) => {
+}> = ({ data, chainIdState, hideSmallBalances, chainList }) => {
   const [selectedChainId] = chainIdState;
-  const { chains: chainList } = useFetchChains()
 
   const filterAndSortData = useCallback((data: WalletList) => data
     // .filter((item) => item.amount * item.price > hideSmallBalances && item.is_core && (selectedChainId === "all" || item.chain === selectedChainId))

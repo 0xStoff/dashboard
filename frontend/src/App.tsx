@@ -8,6 +8,7 @@ import { Card, Chip, CircularProgress, Container, CssBaseline, IconButton, Typog
 import { Box, ThemeProvider } from "@mui/system";
 import { theme } from "./utils/theme";
 import { Settings } from "@mui/icons-material";
+import { useFetchProtocolsTable } from "./hooks/useFetchProtocolsTable";
 
 function App() {
   const [selectedItem, setSelectedItem] = useState(null);
@@ -22,9 +23,10 @@ function App() {
   const { chains, loading: chainsLoading } = useFetchChains();
   const { protocols, totalProtocolUSD, loading: protocolsLoading } = useFetchProtocols();
   const { tokens, totalTokenUSD, loading: tokensLoading } = useFetchTokens();
+  const { protocolsTable, loading: protocolsTableLoading } = useFetchProtocolsTable(selectedChainId);
 
   const fetchAccountsData = async () => {
-    if (walletsLoading || chainsLoading || protocolsLoading || tokensLoading) {
+    if (walletsLoading || chainsLoading || protocolsLoading || tokensLoading || protocolsTableLoading) {
       return;
     }
 
@@ -49,9 +51,9 @@ function App() {
 
   useEffect(() => {
     fetchAccountsData();
-  }, [walletsLoading, chainsLoading, protocolsLoading, tokensLoading]);
+  }, [walletsLoading, chainsLoading, protocolsLoading, tokensLoading, protocolsTableLoading]);
 
-  const isLoading = loading || walletsLoading || chainsLoading || protocolsLoading || tokensLoading;
+  const isLoading = loading || walletsLoading || chainsLoading || protocolsLoading || tokensLoading || protocolsTableLoading;
 
 
   return (<ThemeProvider theme={theme}>
@@ -96,12 +98,14 @@ function App() {
 
                   <WalletTable
                     chainIdState={[selectedChainId, setSelectedChainId]}
+                    chainList={chains}
                     data={selectedItem}
                     hideSmallBalances={hideSmallBalances}
                   />
                 </Container>
 
                 <ProtocolTable
+                  protocols={protocolsTable}
                   chainIdState={[selectedChainId, setSelectedChainId]}
                   data={selectedItem}
                   hideSmallBalances={hideSmallBalances}
