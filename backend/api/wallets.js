@@ -67,7 +67,57 @@ router.get('/wallets', async (req, res) => {
         });
 
         const result = flattenAllWallets(wallets);
-        res.json(result);
+
+
+        // function transformData(wallets) {
+        //     const tokenMap = new Map();
+        //
+        //     wallets.forEach((wallet) => {
+        //         const { id: walletId, wallet: walletAddress, tag, chain, tokens } = wallet;
+        //
+        //         tokens.forEach((token) => {
+        //             const tokenKey = `${token.name}-${token.chain_id}`; // Unique key for each token by name and chain
+        //
+        //             if (!tokenMap.has(tokenKey)) {
+        //                 // If token doesn't exist, add it
+        //                 tokenMap.set(tokenKey, {
+        //                     // id: token.chain_id,
+        //                     chain_id: token.chain_id,
+        //                     name: token.name,
+        //                     symbol: token.symbol,
+        //                     decimals: token.decimals,
+        //                     logo_path: token.logo_path,
+        //                     price: parseFloat(token.price),
+        //                     price_24h_change: token.price_24h_change || null,
+        //                     amount: parseFloat(token.amount),
+        //                     is_core: token.is_core,
+        //                     wallets: [
+        //                         {
+        //                             tag,
+        //                             id: walletId,
+        //                             wallet: walletAddress,
+        //                             amount: parseFloat(token.amount)
+        //                         }
+        //                     ]
+        //                 });
+        //             } else {
+        //                 const existingToken = tokenMap.get(tokenKey);
+        //                 existingToken.amount += parseFloat(token.amount);
+        //                 existingToken.wallets.push({
+        //                     tag,
+        //                     id: walletId,
+        //                     wallet: walletAddress,
+        //                     amount: parseFloat(token.amount)
+        //                 });
+        //             }
+        //         });
+        //     });
+        //
+        //     return Array.from(tokenMap.values());
+        // }
+
+
+        res.json(result)
     } catch (err) {
         console.error('Error fetching wallets:', err);
         res.status(500).json({ error: 'Failed to fetch wallets' });
@@ -92,53 +142,6 @@ router.get('/wallets/:walletId', async (req, res) => {
         }
 
         const result = flattenSingleWallet(wallet);
-
-        function transformData(wallets) {
-            const tokenMap = new Map();
-
-            wallets.forEach((wallet) => {
-                const { id: walletId, wallet: walletAddress, tag, chain, tokens } = wallet;
-
-                tokens.forEach((token) => {
-                    const tokenKey = `${token.name}-${token.chain_id}`; // Unique key for each token by name and chain
-
-                    if (!tokenMap.has(tokenKey)) {
-                        // If token doesn't exist, add it
-                        tokenMap.set(tokenKey, {
-                            // id: token.chain_id,
-                            chain_id: token.chain_id,
-                            name: token.name,
-                            symbol: token.symbol,
-                            decimals: token.decimals,
-                            logo_path: token.logo_path,
-                            price: parseFloat(token.price),
-                            price_24h_change: token.price_24h_change || null,
-                            amount: parseFloat(token.amount),
-                            is_core: token.is_core,
-                            wallets: [
-                                {
-                                    tag,
-                                    id: walletId,
-                                    wallet: walletAddress,
-                                    amount: parseFloat(token.amount)
-                                }
-                            ]
-                        });
-                    } else {
-                        const existingToken = tokenMap.get(tokenKey);
-                        existingToken.amount += parseFloat(token.amount);
-                        existingToken.wallets.push({
-                            tag,
-                            id: walletId,
-                            wallet: walletAddress,
-                            amount: parseFloat(token.amount)
-                        });
-                    }
-                });
-            });
-
-            return Array.from(tokenMap.values());
-        }
 
 
         res.json(result);

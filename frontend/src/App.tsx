@@ -13,14 +13,6 @@ import {
 import { Settings } from "@mui/icons-material";
 import { theme } from "./utils/theme";
 import { useFetchWallets } from "./hooks/useFetchWallets";
-import {
-  fetchAptosData,
-  fetchCosmosTokens,
-  fetchEvmAccounts,
-  fetchSolanaData,
-  fetchStaticData,
-  fetchSuiData
-} from "./api";
 import { ChainList, NavHeader, ProtocolTable, SettingsDialog, Transactions, WalletTable } from "./components";
 import { useFetchChains } from "./hooks/useFetchChains";
 import { useFetchProtocols } from "./hooks/useFetchProtocols";
@@ -50,61 +42,57 @@ function App() {
     }, 0);
   }
 
+  function transformData(wallets) {
+    const tokenMap = new Map();
+
+    wallets.forEach((wallet) => {
+      const { id: walletId, wallet: walletAddress, tag, tokens } = wallet;
+
+      tokens.forEach((token) => {
+        const tokenKey = `${token.name}-${token.chain_id}`;
+
+        if (!tokenMap.has(tokenKey)) {
+          tokenMap.set(tokenKey, {
+            chain_id: token.chain_id,
+            name: token.name,
+            symbol: token.symbol,
+            decimals: token.decimals,
+            logo_path: token.logo_path,
+            price: parseFloat(token.price),
+            price_24h_change: token.price_24h_change || null,
+            amount: parseFloat(token.amount),
+            is_core: token.is_core,
+            wallets: [
+              {
+                tag,
+                id: walletId,
+                wallet: walletAddress,
+                amount: parseFloat(token.amount)
+              }
+            ]
+          });
+        } else {
+          const existingToken = tokenMap.get(tokenKey);
+          existingToken.amount += parseFloat(token.amount);
+          existingToken.wallets.push({
+            tag,
+            id: walletId,
+            wallet: walletAddress,
+            amount: parseFloat(token.amount)
+          });
+        }
+      });
+    });
+
+    return Array.from(tokenMap.values());
+  }
+
   const fetchAccountsData = async () => {
     if (!wallets.length) return;
 
 
     try {
       setLoading(true);
-
-
-      function transformData(wallets) {
-        const tokenMap = new Map();
-
-        wallets.forEach((wallet) => {
-          const { id: walletId, wallet: walletAddress, tag, chain, tokens } = wallet;
-
-          tokens.forEach((token) => {
-            const tokenKey = `${token.name}-${token.chain_id}`;
-
-            if (!tokenMap.has(tokenKey)) {
-              tokenMap.set(tokenKey, {
-                chain_id: token.chain_id,
-                name: token.name,
-                symbol: token.symbol,
-                decimals: token.decimals,
-                logo_path: token.logo_path,
-                price: parseFloat(token.price),
-                price_24h_change: token.price_24h_change || null,
-                amount: parseFloat(token.amount),
-                is_core: token.is_core,
-                wallets: [
-                  {
-                    tag,
-                    id: walletId,
-                    wallet: walletAddress,
-                    amount: parseFloat(token.amount)
-                  }
-                ]
-              });
-            } else {
-              const existingToken = tokenMap.get(tokenKey);
-              existingToken.amount += parseFloat(token.amount);
-              existingToken.wallets.push({
-                tag,
-                id: walletId,
-                wallet: walletAddress,
-                amount: parseFloat(token.amount)
-              });
-            }
-          });
-        });
-
-        return Array.from(tokenMap.values());
-      }
-
-      console.log(transformData(wallets))
-
 
       const totalTokenUSD = transformData(wallets).reduce((acc, item) => acc + item.amount * item.price, 0) || 0;
       const totalProtocolUSD = calculateTotalUSD(protocols);
@@ -134,7 +122,7 @@ function App() {
 
   useEffect(() => {
     fetchAccountsData();
-  }, [wallets]);
+  }, [wallets, fetchAccountsData]);
 
 
 

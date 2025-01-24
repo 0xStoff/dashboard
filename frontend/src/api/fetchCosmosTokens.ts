@@ -4,7 +4,6 @@ import {
 import axios from "axios";
 import {fetchTokenPriceCoingecko} from "./fetchTokenPriceCoingecko";
 import {fromBech32, toBech32} from "@cosmjs/encoding";
-import {useFetchWallets} from "../hooks/useFetchWallets";
 
 // Helper to calculate total value of items
 const calculateTotalValue = (items: any[], priceField: string) => items.reduce((sum, item) => {
