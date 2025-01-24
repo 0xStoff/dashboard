@@ -1,12 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Avatar, Box, Card, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
-import chainList from "../../data/chain_list.json";
 import { WalletList } from "../../interfaces/tokens";
 import { Account } from "../../interfaces/account";
 import { ChipWithTooltip } from "../utils/ChipWithTooltip";
 import { Chain, ChainIdState } from "../../interfaces/chain";
-import { fetchTokenData } from "../../api/fetchTokenData";
-import { ProtocolList } from "../../interfaces/protocol";
 import { useFetchChains } from "../../hooks/useFetchChains";
 
 const WalletTable: React.FC<{

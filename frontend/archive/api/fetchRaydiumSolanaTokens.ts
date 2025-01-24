@@ -2,7 +2,7 @@ import { Connection, ParsedAccountData, PublicKey } from '@solana/web3.js';
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { fetchTokenPriceCoingecko } from "./fetchTokenPriceCoingecko";
-import { SolToken } from "../interfaces/solana";
+import { SolToken } from "../../src/interfaces/solana";
 
 // Fetch token balances and metadata with caching
 const fetchRaydiumData = async (wallet): Promise<SolToken[]> => {
