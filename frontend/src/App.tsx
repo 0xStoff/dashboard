@@ -23,6 +23,7 @@ import {
 } from "./api";
 import { ChainList, NavHeader, ProtocolTable, SettingsDialog, Transactions, WalletTable } from "./components";
 import { useFetchChains } from "./hooks/useFetchChains";
+import { useFetchProtocols } from "./hooks/useFetchProtocols";
 
 function App() {
   const [selectedItem, setSelectedItem] = useState(null);
@@ -35,11 +36,12 @@ function App() {
 
   const wallets = useFetchWallets();
   const chains = useFetchChains();
+  const protocols = useFetchProtocols();
 
   function calculateTotalUSD(data) {
     return data.reduce((protocolSum, protocol) => {
       const walletsSum = protocol.wallets.reduce((walletSum, wallet) => {
-        const portfolioSum = wallet.portfolio_items.reduce((itemSum, item) => {
+        const portfolioSum = wallet.portfolio_item_list.reduce((itemSum, item) => {
           return itemSum + (item.stats.net_usd_value || 0); // Add net USD value of each portfolio item
         }, 0);
         return walletSum + portfolioSum; // Sum across all portfolio items in the wallet
@@ -55,8 +57,6 @@ function App() {
     try {
       setLoading(true);
 
-      const evmData = await fetchEvmAccounts(wallets);
-
 
       function transformData(wallets) {
         const tokenMap = new Map();
@@ -65,12 +65,10 @@ function App() {
           const { id: walletId, wallet: walletAddress, tag, chain, tokens } = wallet;
 
           tokens.forEach((token) => {
-            const tokenKey = `${token.name}-${token.chain_id}`; // Unique key for each token by name and chain
+            const tokenKey = `${token.name}-${token.chain_id}`;
 
             if (!tokenMap.has(tokenKey)) {
-              // If token doesn't exist, add it
               tokenMap.set(tokenKey, {
-                // id: token.chain_id,
                 chain_id: token.chain_id,
                 name: token.name,
                 symbol: token.symbol,
@@ -90,7 +88,6 @@ function App() {
                 ]
               });
             } else {
-              // If token exists, update the amount and add wallet data
               const existingToken = tokenMap.get(tokenKey);
               existingToken.amount += parseFloat(token.amount);
               existingToken.wallets.push({
@@ -106,11 +103,12 @@ function App() {
         return Array.from(tokenMap.values());
       }
 
+      console.log(transformData(wallets))
+
 
       const totalTokenUSD = transformData(wallets).reduce((acc, item) => acc + item.amount * item.price, 0) || 0;
-      const totalProtocolUSD = calculateTotalUSD(evmData.allProtocols);
+      const totalProtocolUSD = calculateTotalUSD(protocols);
 
-      console.log(evmData.allProtocols)
 
       const allItem = {
         id: 0, tag: "all",
@@ -119,7 +117,7 @@ function App() {
           chain_list: [...chains]
         },
         tokens: transformData(wallets),
-        protocols: evmData.allProtocols
+        protocols
       };
 
 

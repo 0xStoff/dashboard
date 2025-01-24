@@ -52,12 +52,12 @@ router.get('/wallets', async (req, res) => {
             attributes: ['name', 'symbol', 'decimals', 'price', 'logo_path', 'chain_id', "price_24h_change"],
         },{
             model: ProtocolModel,
-            through: {
-                model: WalletProtocolModel,
-                attributes: ['wallet_id', 'protocol_id', 'portfolio_item_list'],
-                // where: usd_value ? { usd_value: { [Op.gt]: usd_value } } : {},
-            },
-            attributes: ['name', 'total_usd', 'logo_path', 'chain_id'],
+            // through: {
+            //     model: WalletProtocolModel,
+            //     attributes: ['wallet_id', 'protocol_id'],
+            //     // where: usd_value ? { usd_value: { [Op.gt]: usd_value } } : {},
+            // },
+            attributes: ['name', 'total_usd', 'logo_path', 'chain_id', 'portfolio_item_list'],
         }];
 
         const wallets = await WalletModel.findAll({
@@ -92,6 +92,55 @@ router.get('/wallets/:walletId', async (req, res) => {
         }
 
         const result = flattenSingleWallet(wallet);
+
+        function transformData(wallets) {
+            const tokenMap = new Map();
+
+            wallets.forEach((wallet) => {
+                const { id: walletId, wallet: walletAddress, tag, chain, tokens } = wallet;
+
+                tokens.forEach((token) => {
+                    const tokenKey = `${token.name}-${token.chain_id}`; // Unique key for each token by name and chain
+
+                    if (!tokenMap.has(tokenKey)) {
+                        // If token doesn't exist, add it
+                        tokenMap.set(tokenKey, {
+                            // id: token.chain_id,
+                            chain_id: token.chain_id,
+                            name: token.name,
+                            symbol: token.symbol,
+                            decimals: token.decimals,
+                            logo_path: token.logo_path,
+                            price: parseFloat(token.price),
+                            price_24h_change: token.price_24h_change || null,
+                            amount: parseFloat(token.amount),
+                            is_core: token.is_core,
+                            wallets: [
+                                {
+                                    tag,
+                                    id: walletId,
+                                    wallet: walletAddress,
+                                    amount: parseFloat(token.amount)
+                                }
+                            ]
+                        });
+                    } else {
+                        const existingToken = tokenMap.get(tokenKey);
+                        existingToken.amount += parseFloat(token.amount);
+                        existingToken.wallets.push({
+                            tag,
+                            id: walletId,
+                            wallet: walletAddress,
+                            amount: parseFloat(token.amount)
+                        });
+                    }
+                });
+            });
+
+            return Array.from(tokenMap.values());
+        }
+
+
         res.json(result);
     } catch (err) {
         console.error(`Error fetching tokens for wallet ${walletId}:`, err);

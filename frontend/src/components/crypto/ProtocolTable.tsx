@@ -82,9 +82,10 @@ const ProtocolTable: React.FC<{
                 );
             };
 
+
             protocol.wallets
                 ? protocol.wallets.forEach((wallet) =>
-                    wallet.portfolio_items.forEach((item) => addWalletPositions(item, wallet.tag))
+                    wallet.portfolio_item_list.forEach((item) => addWalletPositions(item, wallet.tag))
                 )
                 : protocol.portfolio_item_list.forEach((item) => addWalletPositions(item, ''));
 

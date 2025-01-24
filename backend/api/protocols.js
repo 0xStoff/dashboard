@@ -17,19 +17,33 @@ router.get("/protocols", async (req, res) => {
       order: [["id", "ASC"]],
     });
 
-    // Transform the response to be more meaningful
-    // const response = protocols.map((protocol) => {
-    //   const protocolData = protocol.get();
-    //   protocolData.wallets = protocolData.Wallets.map((wallet) => {
-    //     const walletData = wallet.get();
-    //     walletData.tokens = walletData.Tokens || []; // Populate tokens within each wallet
-    //     return walletData;
-    //   });
-    //   delete protocolData.Wallets; // Remove raw Sequelize relation data
-    //   return protocolData;
-    // });
+    const response = protocols.map((protocol) => {
+      const protocolData = protocol.get();
 
-    res.json(protocols);
+      // Map through wallets and merge wallets_protocols into wallets
+      protocolData.wallets = protocolData.wallets.map((wallet) => {
+        const walletData = wallet.get();
+
+        // Flatten wallets_protocols into the wallet
+        if (walletData.wallets_protocols && walletData.wallets_protocols.portfolio_item_list) {
+          walletData.portfolio_item_list = walletData.wallets_protocols.portfolio_item_list;
+        }
+
+        // Remove wallets_protocols if it exists
+        delete walletData.wallets_protocols;
+
+        // Ensure tokens is present (default to empty array if undefined)
+        walletData.tokens = walletData.tokens || [];
+        return walletData;
+      });
+
+      // Remove portfolio_item_list at the protocol level (if it exists)
+      delete protocolData.portfolio_item_list;
+
+      return protocolData;
+    });
+
+    res.json(response);
   } catch (err) {
     console.error("Error fetching protocols:", err);
     res.status(500).json({ error: "Failed to fetch protocols" });
