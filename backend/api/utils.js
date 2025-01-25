@@ -10,7 +10,7 @@ const TOKEN_ATTRIBUTES = [
 
 export const fetchWalletData = async (chain, usd_value) => {
   const whereClause = {};
-  if (chain) whereClause.chain = chain;
+  if (chain && chain !== 'all') whereClause.chain = chain;
 
   return await WalletModel.findAll({
     where: whereClause,

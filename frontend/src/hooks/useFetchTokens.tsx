@@ -11,7 +11,7 @@ export const useFetchTokens = (chain = null) => {
     const loadTokens = async () => {
       try {
         // Build the URL conditionally based on whether the chain is provided
-        const url = `${API_BASE_URL}/tokens`;
+        const url = `${API_BASE_URL}/tokens?${chain}`;
 
         const response = await axios.get(url);
         setTokens(response.data);

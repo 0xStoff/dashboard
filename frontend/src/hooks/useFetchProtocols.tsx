@@ -11,7 +11,7 @@ export const useFetchProtocols = (chain = null) => {
     const loadProtocols = async () => {
       try {
         // Build the URL conditionally based on whether the chain is provided
-        const url = `${API_BASE_URL}/protocols`;
+        const url = `${API_BASE_URL}/protocols?chain=${chain}`;
 
         const response = await axios.get(url);
         setProtocols(response.data);
