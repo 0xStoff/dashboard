@@ -17,7 +17,7 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress) => {
     for (const token of tokens) {
         const { id, chain, name, symbol, decimals, logo_url, amount, raw_amount, price, price_24h_change } = token;
 
-        const logoPath = logo_url ? await downloadLogo(logo_url, id) : null;
+        // const logoPath = logo_url ? await downloadLogo(logo_url, id) : null;
 
         const [dbToken] = await TokenModel.upsert(
           {
@@ -25,7 +25,7 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress) => {
               name,
               symbol,
               decimals,
-              logo_path: logoPath,
+              logo_path: logo_url,
               price,
               price_24h_change: price_24h_change * 100,
           },
@@ -54,12 +54,12 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress) => {
     for (const protocol of protocols) {
       const { id, chain, name, logo_url, portfolio_item_list } = protocol;
 
-      const logoPath = logo_url ? await downloadLogo(logo_url, id) : null;
+      // const logoPath = logo_url ? await downloadLogo(logo_url, id) : null;
 
       const [dbProtocol] = await ProtocolModel.upsert({
         chain_id: chain,
         name,
-        logo_path: logoPath,
+        logo_path: logo_url,
         portfolio_item_list,
         total_usd: portfolio_item_list.reduce((sum, item) => sum + item.stats.asset_usd_value, 0)
       }, {

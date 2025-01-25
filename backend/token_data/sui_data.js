@@ -51,7 +51,7 @@ export const writeAptosDataToDB = async () => {
     // Iterate through tokens and write them to the database
     for (const token of tokens) {
       const { name, symbol, decimals, logo_url, price, price_24h_change, amount } = token;
-      const logoPath = logo_url ? await downloadLogo(logo_url, symbol) : null;
+      // const logoPath = logo_url ? await downloadLogo(logo_url, symbol) : null;
 
       // Insert or update token data in the TokenModel
       const [dbToken] = await TokenModel.upsert({
@@ -59,7 +59,7 @@ export const writeAptosDataToDB = async () => {
         name,
         symbol,
         decimals,
-        logo_path: logoPath,
+        logo_path: logo_url,
         price,
         price_24h_change
       }, { conflictFields: ["chain_id", "symbol"], returning: true });
@@ -101,7 +101,7 @@ export const writeStaticDataToDB = async () => {
       // Iterate through tokens and write them to the database
       for (const token of tokens) {
         const { name, symbol, decimals, logo_url, price, price_24h_change, amount } = token;
-        const logoPath = logo_url ? await downloadLogo(logo_url, symbol) : null;
+        // const logoPath = logo_url ? await downloadLogo(logo_url, symbol) : null;
 
         // Insert or update token data in the TokenModel
         const [dbToken] = await TokenModel.upsert({
@@ -110,7 +110,7 @@ export const writeStaticDataToDB = async () => {
           symbol,
           decimals,
           price_24h_change,
-          logo_path: logoPath,
+          logo_path: logo_url,
           price
         }, { conflictFields: ["chain_id", "symbol"], returning: true });
 
@@ -154,12 +154,12 @@ export const writeSuiDataToDB = async () => {
     // Iterate through tokens and write them to the database
     for (const token of tokens) {
       const { name, symbol, decimals, logo_url, price, amount, price_24h_change } = token;
-      const logoPath = logo_url ? await downloadLogo(logo_url, symbol) : null;
+      // const logoPath = logo_url ? await downloadLogo(logo_url, symbol) : null;
 
 
       // Insert or update token data in the TokenModel
       const [dbToken] = await TokenModel.upsert({
-        chain_id: "sui", name, symbol, decimals, logo_path: logoPath, price, price_24h_change
+        chain_id: "sui", name, symbol, decimals, logo_path: logo_url, price, price_24h_change
       }, { conflictFields: ["chain_id", "symbol"], returning: true });
 
       // Calculate raw_amount and USD value
