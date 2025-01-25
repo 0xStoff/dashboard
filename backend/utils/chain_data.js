@@ -17,22 +17,21 @@ const updateChainData = async (chains, model) => {
     try {
         const updatePromises = chains.map(async (chain) => {
             const {id, name, native_token_id, wrapped_token_id, symbol, decimals, endpoint, logo_url} = chain;
-            // const logo_path = await downloadLogo(logo_url, id);
-
+            const logo_path = await downloadLogo(logo_url, id);
 
             const data = model.name === 'evm_chains' ? {
                 chain_id: id,
                 name,
                 native_token_id,
                 wrapped_token_id,
-                logo_path: logo_url,
+                logo_path,
             } : {
                 chain_id: id,
                 name,
                 symbol,
                 decimals,
                 endpoint,
-                logo_path: logo_url,
+                logo_path,
             };
 
             await insertOrUpdateChain(model, data);
