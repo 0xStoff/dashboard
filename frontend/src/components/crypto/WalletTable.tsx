@@ -67,7 +67,7 @@ const WalletTable: React.FC<{
                     src={"http://localhost:3000/logos/" + item.logo_path || ""}
                     sx={{ width: 35, height: 35, marginRight: 1 }}
                   />
-                  {item.chain_id && (<Avatar
+                  {getChainLogo(item.chain_id) && (<Avatar
                     alt={item.chain_id}
                     src={"http://localhost:3000/logos/" + getChainLogo(item.chain_id)}
                     sx={styles.chainLogo}
