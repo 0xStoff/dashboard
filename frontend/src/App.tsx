@@ -68,8 +68,8 @@ const App = () => {
           sx={{ margin: 1 }}
           onClick={() => setSelectedItem(acc)}
           label={acc.tag}
-          variant={selectedItem === acc ? "outlined" : "filled"}
-        />))}
+          variant={selectedItem?.id === acc.id ? "outlined" : "filled"}
+      />))}
       <IconButton color="primary" onClick={() => setOpenSettings(true)}>
         <Settings />
       </IconButton>
