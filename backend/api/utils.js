@@ -90,11 +90,19 @@ export const transformData = (wallets) => {
     });
   });
 
-  // Sorting as we finalize the tokens
+  const hideSmallBalances = 10;
+
   return [...tokenMap.values()]
-    .map((token) => ({
-      ...token,
-      total_usd_value: token.amount * token.price,
-    }))
+    .reduce((acc, token) => {
+      const total_usd_value = token.amount * token.price;
+      if (total_usd_value > hideSmallBalances) {
+        acc.push({
+          ...token,
+          total_usd_value,
+        });
+      }
+      return acc;
+    }, [])
     .sort((a, b) => b.total_usd_value - a.total_usd_value);
+
 };

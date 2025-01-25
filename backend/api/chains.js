@@ -46,11 +46,19 @@ const fetchChains = async (req) => {
 
 
 const fetchWallets = async (req) => {
+  const walletId = req.query.wallet_id || "all";
+
+  const walletWhereClause = walletId !== "all" ? { id: walletId } : {};
+
   const wallets = await WalletModel.findAll({
+    where: walletWhereClause, // Apply wallet ID filter here
     include: [
       {
         model: TokenModel,
-        through: { model: WalletTokenModel, attributes: ["amount", "raw_amount", "usd_value"] },
+        through: {
+          model: WalletTokenModel,
+          attributes: ["amount", "raw_amount", "usd_value"]
+        },
         attributes: ["name", "symbol", "decimals", "price", "logo_path", "chain_id"]
       },
       {
@@ -73,7 +81,6 @@ const fetchWallets = async (req) => {
     const totalTokenUsdValue = tokens.reduce((sum, token) => sum + token.usd_value, 0);
     const totalProtocolUsdValue = wallet.protocols.reduce((sum, protocol) => sum + (protocol.total_usd || 0), 0);
 
-
     return {
       ...wallet.get(),
       tokens,
@@ -81,6 +88,7 @@ const fetchWallets = async (req) => {
     };
   });
 };
+
 router.get("/chains", async (req, res) => {
   try {
     const [chains, wallets] = await Promise.all([fetchChains(req), fetchWallets(req)]);
@@ -126,7 +134,13 @@ router.get("/chains", async (req, res) => {
       };
     });
 
-    res.json(enrichedChains);
+    const hideSmallBalances = 20
+    const sortedData = enrichedChains
+      .filter((chain) => chain.usd_value > hideSmallBalances)
+      .sort((a, b) => b.usd_value - a.usd_value) || [];
+
+
+    res.json(sortedData);
   } catch (err) {
     console.error("Error fetching chains:", err);
     res.status(500).json({ error: "Failed to fetch chains" });

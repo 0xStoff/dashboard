@@ -33,23 +33,12 @@ const WalletTable: React.FC<{
   tokens: Account;
 }> = ({ tokens, chainList }) => {
 
-  // const filterAndSortData = useCallback((tokens: WalletList) => tokens
-  //   // .filter((item) => item.amount * item.price > hideSmallBalances && item.is_core && (selectedChainId === "all" || item.chain === selectedChainId))
-  //   .filter((item) => item.amount * item.price > hideSmallBalances && (selectedChainId === "all" || item.chain_id === selectedChainId))
-  //   .sort((a, b) => b.amount * b.price - a.amount * a.price), [hideSmallBalances, selectedChainId]);
-  //
-  //
-  // const sortedData = useMemo(() => (tokens.tokens ? filterAndSortData(tokens.tokens) : []),
-  //   [tokens.tokens, filterAndSortData]);
-
   const totalUSD = useMemo(() => tokens.reduce((acc, item) => acc + item.amount * item.price, 0), [tokens]);
 
   if (!tokens.length) return null;
 
 
   const getChainLogo = (chainId: string) => chainList.find((c) => c.chain_id === chainId)?.logo_path || "";
-
-
 
 
   return (<Box sx={styles.container}>
@@ -76,13 +65,11 @@ const WalletTable: React.FC<{
                   <Avatar
                     alt={item.name}
                     src={"http://localhost:3000/logos/" + item.logo_path || ""}
-                    // src={item.logo_url || ""}
                     sx={{ width: 35, height: 35, marginRight: 1 }}
                   />
                   {item.chain_id && (<Avatar
                     alt={item.chain_id}
                     src={"http://localhost:3000/logos/" + getChainLogo(item.chain_id)}
-                    // src={getChainLogo(item.chain)}
                     sx={styles.chainLogo}
                   />)}
                 </Box>
@@ -109,7 +96,6 @@ const WalletTable: React.FC<{
                 {item.wallets?.map((wallet) => (<ChipWithTooltip key={wallet.id} item={item} wallet={wallet} />))}
               </TableCell>
               <TableCell sx={{ ...styles.tableCell, whiteSpace: "nowrap" }} align="right">
-                {/*$ {item.price >= 0.1 ? item.price.toFixed(2) : item.price.toFixed(6)}*/}
                 $ {item.price >= 0.1 ? parseFloat(item.price).toFixed(2) : parseFloat(item.price).toFixed(6)}
               </TableCell>
               <TableCell sx={styles.tableCell} align="right">

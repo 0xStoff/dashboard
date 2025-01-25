@@ -3,14 +3,14 @@ import axios from "axios";
 
 const API_BASE_URL = 'http://localhost:3000/api';
 
-export const useFetchChains = (chain = null) => {
+export const useFetchChains = (walletId = 'all') => {
   const [chains, setChains] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadChains = async () => {
       try {
-        const url = `${API_BASE_URL}/chains`;
+        const url = `${API_BASE_URL}/chains?wallet_id=${walletId}`;
         const response = await axios.get(url);
         setChains(response.data);
       } catch (error) {
@@ -21,7 +21,7 @@ export const useFetchChains = (chain = null) => {
     };
 
     loadChains();
-  }, [chain]);
+  }, [walletId]);
 
   return { chains, loading };
 };
