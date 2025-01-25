@@ -118,8 +118,6 @@ router.get("/protocols-table", async (req, res) => {
     const walletId = req.query.wallet_id || "all";
     const hideSmallBalances = parseFloat(req.query.hideSmallBalances) || 10;
 
-    console.log(walletId);
-
     const groupedByProtocol = (await fetchProtocolData()).reduce((acc, protocol) => {
       if (!acc[protocol.name]) {
         acc[protocol.name] = { name: protocol.name, positions: [], totalUSD: 0 };

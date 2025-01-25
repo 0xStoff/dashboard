@@ -6,48 +6,49 @@ import { ChipWithTooltip } from "../utils/ChipWithTooltip";
 import { Chain, ChainIdState } from "../../interfaces/chain";
 import { useFetchChains } from "../../hooks/useFetchChains";
 
+
+
+const styles = {
+  container: {
+    flex: 1
+  }, card: {
+    borderRadius: 10
+  }, tableRow: {
+    "&:last-child td, &:last-child th": { border: 0 }
+  }, tableCell: { border: 0 }, avatarWrapper: {
+    display: "flex", alignItems: "center", position: "relative", width: "fit-content"
+  }, chainLogo: {
+    width: 20,
+    height: 20,
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    border: "1px solid",
+    borderColor: "background.paper"
+  }
+};
+
+
 const WalletTable: React.FC<{
-  data: Account; chainIdState: ChainIdState; hideSmallBalances: number;
-}> = ({ data, chainIdState, hideSmallBalances, chainList }) => {
-  const [selectedChainId] = chainIdState;
+  tokens: Account;
+}> = ({ tokens, chainList }) => {
 
-  const filterAndSortData = useCallback((data: WalletList) => data
-    // .filter((item) => item.amount * item.price > hideSmallBalances && item.is_core && (selectedChainId === "all" || item.chain === selectedChainId))
-    .filter((item) => item.amount * item.price > hideSmallBalances && (selectedChainId === "all" || item.chain_id === selectedChainId))
-    .sort((a, b) => b.amount * b.price - a.amount * a.price), [hideSmallBalances, selectedChainId]);
+  // const filterAndSortData = useCallback((tokens: WalletList) => tokens
+  //   // .filter((item) => item.amount * item.price > hideSmallBalances && item.is_core && (selectedChainId === "all" || item.chain === selectedChainId))
+  //   .filter((item) => item.amount * item.price > hideSmallBalances && (selectedChainId === "all" || item.chain_id === selectedChainId))
+  //   .sort((a, b) => b.amount * b.price - a.amount * a.price), [hideSmallBalances, selectedChainId]);
+  //
+  //
+  // const sortedData = useMemo(() => (tokens.tokens ? filterAndSortData(tokens.tokens) : []),
+  //   [tokens.tokens, filterAndSortData]);
 
+  const totalUSD = useMemo(() => tokens.reduce((acc, item) => acc + item.amount * item.price, 0), [tokens]);
 
-  const sortedData = useMemo(() => (data.tokens ? filterAndSortData(data.tokens) : []),
-    [data.tokens, filterAndSortData]);
-
-  const totalUSD = useMemo(() => sortedData.reduce((acc, item) => acc + item.amount * item.price, 0), [sortedData]);
-
-  if (!sortedData.length) return null;
+  if (!tokens.length) return null;
 
 
   const getChainLogo = (chainId: string) => chainList.find((c) => c.chain_id === chainId)?.logo_path || "";
 
-
-
-  const styles = {
-    container: {
-      flex: 1
-    }, card: {
-      borderRadius: 10
-    }, tableRow: {
-      "&:last-child td, &:last-child th": { border: 0 }
-    }, tableCell: { border: 0 }, avatarWrapper: {
-      display: "flex", alignItems: "center", position: "relative", width: "fit-content"
-    }, chainLogo: {
-      width: 20,
-      height: 20,
-      position: "absolute",
-      bottom: 0,
-      right: 0,
-      border: "1px solid",
-      borderColor: "background.paper"
-    }
-  };
 
 
 
@@ -68,7 +69,7 @@ const WalletTable: React.FC<{
       <Box sx={{ height: 600, maxHeight: "fit-content", overflow: "auto" }}>
         <Table sx={{ maxHeight: "fit-content" }}>
           <TableBody>
-            {sortedData.map((item, index) => (
+            {tokens.map((item, index) => (
               <TableRow key={index} sx={styles.tableRow}>
               <TableCell sx={styles.tableCell}>
                 <Box sx={styles.avatarWrapper}>

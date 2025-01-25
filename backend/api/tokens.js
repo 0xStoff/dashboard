@@ -7,10 +7,10 @@ router.get('/tokens', async (req, res) => {
     try {
         const { usd_value } = req.query;
         const chain = req.query.chain || "all";
+        const walletId = req.query.wallet_id || "all";
 
-        const wallets = await fetchWalletData(chain, usd_value);
+        const wallets = await fetchWalletData(chain, usd_value, walletId);
         const result = transformData(wallets);
-
 
         res.json(result);
     } catch (err) {

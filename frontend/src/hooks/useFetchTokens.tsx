@@ -3,15 +3,14 @@ import axios from "axios";
 
 const API_BASE_URL = 'http://localhost:3000/api'; // Base URL for your API
 
-export const useFetchTokens = (chain = null) => {
+export const useFetchTokens = (chain = 'all', walletId = 'all') => {
   const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadTokens = async () => {
       try {
-        // Build the URL conditionally based on whether the chain is provided
-        const url = `${API_BASE_URL}/tokens?${chain}`;
+        const url = `${API_BASE_URL}/tokens?chain=${chain}&wallet_id=${walletId}`;
 
         const response = await axios.get(url);
         setTokens(response.data);
@@ -23,7 +22,7 @@ export const useFetchTokens = (chain = null) => {
     };
 
     loadTokens();
-  }, [chain]); // Add chain to the dependency array to reload when chain changes
+  }, [chain, walletId]);
 
   const totalTokenUSD = (tokens).reduce((acc, item) => acc + item.amount * item.price, 0) || 0;
 

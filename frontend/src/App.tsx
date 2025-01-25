@@ -39,7 +39,7 @@ const App = () => {
 
   const { wallets, loading: walletsLoading } = useFetchWallets();
   const { chains, loading: chainsLoading } = useFetchChains();
-  const { tokens, totalTokenUSD, loading: tokensLoading } = useFetchTokens(selectedChainId);
+  const { tokens, totalTokenUSD, loading: tokensLoading } = useFetchTokens(selectedChainId, walletId);
   const { protocolsTable, totalProtocolUSD, loading: protocolsTableLoading } = useFetchProtocolsTable(selectedChainId, walletId);
 
   const allItem = useMemo(() => {
@@ -131,16 +131,12 @@ const App = () => {
                     hideSmallBalances={hideSmallBalances}
                   />
                   <WalletTable
-                    chainIdState={[selectedChainId, setSelectedChainId]}
                     chainList={chains}
-                    data={selectedItem}
-                    hideSmallBalances={hideSmallBalances}
+                    tokens={tokens}
                   />
                 </Container>
                 <ProtocolTable
                   protocols={protocolsTable}
-                  chainIdState={[selectedChainId, setSelectedChainId]}
-                  data={selectedItem}
                   hideSmallBalances={hideSmallBalances}
                 />
               </>
