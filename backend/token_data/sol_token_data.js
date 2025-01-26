@@ -79,7 +79,6 @@ export const fetchAndSaveSolTokenDataForAllWallets = async () => {
             await fetchAndSaveSolTokenData(wallet.id, wallet.wallet);
         }
 
-        console.log('Token data for all Solana wallets successfully updated');
     } catch (error) {
         console.error('Error fetching Solana token data for all wallets:', error.message);
     }

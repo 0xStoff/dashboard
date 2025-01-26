@@ -14,6 +14,7 @@ if (!fs.existsSync(LOGO_DIR)) {
 
 export const downloadLogo = async (logoUrl, id) => {
     const logoPath = path.join(LOGO_DIR, `${id}.png`);
+
     const writer = fs.createWriteStream(logoPath);
 
     try {

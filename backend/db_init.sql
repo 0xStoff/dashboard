@@ -297,3 +297,13 @@ VALUES (1, '2023-01-01', 15.0),
 INSERT INTO wallets_tokens (wallet_id, token_id, amount, raw_amount, usd_value)
 VALUES (1, 1, 5.0, 500000000, 102.5),  -- 5 SOL for wallet 1
        (2, 2, 0.1, 10000000, 3000.0); -- 0.1 BTC for wallet 2
+
+
+
+-- Create the net_worth table
+CREATE TABLE net_worth (
+                           id         SERIAL PRIMARY KEY,        -- Unique identifier for each entry
+                           date       DATE NOT NULL,             -- The date when the net worth was calculated
+                           total_usd  DECIMAL(20, 8) NOT NULL,   -- The total net worth in USD
+                           UNIQUE (date)                         -- Ensure only one entry per date
+);

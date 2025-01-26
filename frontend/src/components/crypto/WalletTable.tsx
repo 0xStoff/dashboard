@@ -41,6 +41,21 @@ const WalletTable: React.FC<{
   const getChainLogo = (chainId: string) => chainList.find((c) => c.chain_id === chainId)?.logo_path || "";
 
 
+  const formatNumber = (value, type) => {
+    switch (type) {
+      case "amount":
+        if (value >= 100) return parseFloat(value).toFixed(0);
+        if (value >= 1) return parseFloat(value).toFixed(2);
+        return parseFloat(value).toFixed(5);
+      case "price":
+        return value >= 0.1 ? parseFloat(value).toFixed(2) : parseFloat(value).toFixed(6);
+      case "percentage":
+        return parseFloat(value).toFixed(2) + " %";
+      default:
+        return value;
+    }
+  };
+
   return (<Box sx={styles.container}>
     <Card sx={styles.card}>
       <Table>
@@ -96,14 +111,14 @@ const WalletTable: React.FC<{
                 {item.wallets?.map((wallet) => (<ChipWithTooltip key={wallet.id} item={item} wallet={wallet} />))}
               </TableCell>
               <TableCell sx={{ ...styles.tableCell, whiteSpace: "nowrap" }} align="right">
-                $ {item.price >= 0.1 ? parseFloat(item.price).toFixed(2) : parseFloat(item.price).toFixed(6)}
+                $ {formatNumber(item.price, 'price')}
               </TableCell>
-              <TableCell sx={styles.tableCell} align="right">
-                {parseFloat(item.amount).toFixed(2)} {item.symbol}
-              </TableCell>
+                <TableCell sx={styles.tableCell} align="right">
+                  {formatNumber(item.amount, "amount")} {item.symbol}
+                </TableCell>
               <TableCell sx={{ ...styles.tableCell, fontWeight: "bold", whiteSpace: "nowrap" }}
                          align="right">
-                $ {(item.amount * item.price).toFixed(2)}
+                $ {(item.amount * item.price).toFixed(0)}
               </TableCell>
             </TableRow>))}
           </TableBody>
