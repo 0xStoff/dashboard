@@ -8,59 +8,8 @@ import { useFetchChains } from "./hooks/useFetchChains";
 import { useFetchTokens } from "./hooks/useFetchTokens";
 import { useFetchProtocolsTable } from "./hooks/useFetchProtocolsTable";
 import { theme } from "./utils/theme";
-import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import axios from "axios";
-
-
-const NetWorthChart = ({ data }) => {
-  const startDate = "2025-01-25";
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toISOString().split("T")[0];
-  };
-
-  return (
-    <ResponsiveContainer width="100%" height={400}>
-      <LineChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis
-          dataKey="date"
-          tickFormatter={(date) => formatDate(date)}
-        />
-        <YAxis
-          tickFormatter={(value) => `$ ${(value / 1000).toLocaleString("de-CH")}k`}
-        />
-        <Tooltip
-          content={({ payload, label }) => {
-            if (payload && payload.length) {
-              const value = payload[0].value;
-              return (
-                <Card sx={{ borderRadius: "10px", padding: "15px" }}>
-                  <Typography fontWeight="bold" sx={{ lineHeight: 0.9 }}>{`$ ${Number(value).toLocaleString("de-CH")}`}</Typography>
-                  <Typography variant="caption">
-                    {formatDate(label)}
-                  </Typography>
-                </Card>
-              );
-            }
-            return null;
-          }}
-        />
-        <ReferenceLine x={startDate} stroke="#8884d8" />
-        <Line
-          type="monotone"
-          dataKey="totalNetWorth"
-          stroke="#8884d8"
-          strokeWidth={2}
-          dot={{ r: 4 }}
-          activeDot={{ r: 6 }}
-        />
-      </LineChart>
-    </ResponsiveContainer>
-  );
-};
-
-
+import { NetWorthChart } from "./components/crypto/NetWorthChart";
 
 
 const App = () => {
@@ -70,7 +19,7 @@ const App = () => {
   const [hideSmallBalances, setHideSmallBalances] = useState(10);
   const [openSettings, setOpenSettings] = useState(false);
   const [isCryptoView, setIsCryptoView] = useState(true);
-  const [netWorthData, setNetWorthData] = useState([]); // Start with an empty array
+  const [netWorthData, setNetWorthData] = useState([]);
 
   const walletId = selectedItem ? selectedItem.id : "all";
 
@@ -154,7 +103,7 @@ const App = () => {
       Net Worth
     </Typography>
     <Typography variant="h2" fontWeight="bold">
-      $ {Number((totalTokenUSD + totalProtocolUSD).toFixed(2)).toLocaleString("de-CH")}
+      $ {Number((totalTokenUSD + totalProtocolUSD).toFixed(0)).toLocaleString("de-CH")}
     </Typography>
   </Card>);
 
