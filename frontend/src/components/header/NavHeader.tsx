@@ -1,131 +1,116 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Box, CircularProgress, IconButton } from "@mui/material";
 import CurrencyBitcoinIcon from "@mui/icons-material/CurrencyBitcoin";
 import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import { io } from "socket.io-client";
+import { useSnackbar } from "@mui/base/useSnackbar";
+import { ClickAwayListener } from "@mui/base/ClickAwayListener";
+import { css, keyframes, styled } from "@mui/system";
 
-const NavHeader: React.FC<{
-  isCryptoView: boolean;
-  setIsCryptoView: React.Dispatch<React.SetStateAction<boolean>>
-}> = ({ isCryptoView, setIsCryptoView }) => {
+const socket = io("http://localhost:3000");
 
-  // const [, setNextClearTime] = useState<number | null>(null);
-  // const [countdown, setCountdown] = useState<string>("");  // Timer for next cache clear
-  const [loading, setLoading] = useState<boolean>(false); // Loading state
+const TokenDataUpdater = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState("");
 
-  // useEffect(() => {
-  //   const cacheClears = JSON.parse(localStorage.getItem("cacheClears") || "[]");
-  //   const now = Date.now();
-  //
-  //   // Check if we need to show the countdown timer
-  //   if (cacheClears.length > 0) {
-  //     const lastClearTime = cacheClears[cacheClears.length - 1];
-  //     const nextClear = lastClearTime + 8 * 60 * 60 * 1000;
-  //     setNextClearTime(nextClear);
-  //
-  //     // Start countdown timer
-  //     if (nextClear > now) {
-  //       const remainingTime = nextClear - now;
-  //       setCountdown(formatTime(remainingTime));
-  //       const timer = setInterval(() => {
-  //         const newRemainingTime = nextClear - Date.now();
-  //         if (newRemainingTime <= 0) {
-  //           clearInterval(timer);
-  //           setCountdown("");
-  //         } else {
-  //           setCountdown(formatTime(newRemainingTime));
-  //         }
-  //       }, 1000);
-  //       return () => clearInterval(timer);
-  //     }
-  //   }
-  // }, []);
-  //
-  //
-  // // Helper function to format the countdown time
-  // const formatTime = (time: number) => {
-  //   const hours = Math.floor((time / (1000 * 60 * 60)) % 24);
-  //   const minutes = Math.floor((time / (1000 * 60)) % 60);
-  //   const seconds = Math.floor((time / 1000) % 60);
-  //   return `${hours}h ${minutes}m ${seconds}s`;
-  // };
-  //
-  // const clearCache = () => {
-  //   const now = Date.now();
-  //   const cacheClears = JSON.parse(localStorage.getItem("cacheClears") || "[]");
-  //
-  //   // Filter out clears older than 24 hours
-  //   const recentClears = cacheClears.filter((clearTime: number) => now - clearTime < 24 * 60 * 60 * 1000);
-  //
-  //   // Check if we've cleared the cache more than 3 times in the last 24 hours or in the last 8 hours
-  //   if (recentClears.length >= 3) {
-  //     alert("Cache can only be cleared 3 times in 24 hours.");
-  //     return;
-  //   }
-  //
-  //   if (recentClears.length > 0 && now - recentClears[recentClears.length - 1] < 8 * 60 * 60 * 1000) {
-  //     alert("Cache can only be cleared once every 8 hours.");
-  //     return;
-  //   }
-  //
-  //   // Clear the cache
-  //   localStorage.clear();
-  //   window.location.reload();
-  //
-  //   // Add current timestamp to cacheClears
-  //   recentClears.push(now);
-  //   localStorage.setItem("cacheClears", JSON.stringify(recentClears));
-  //
-  //   // Update nextClearTime
-  //   const nextClear = now + 8 * 60 * 60 * 1000;
-  //   setNextClearTime(nextClear);
-  //   setCountdown(formatTime(nextClear - now));
-  // };
-
-  const toggleView = () => {
-    setIsCryptoView(!isCryptoView);
+  const handleClose = () => {
+    setOpen(false);
   };
 
-  const runAllFunctions = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch("http://localhost:3000/api/runAllTokenDataFunctions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
-      });
-      const data = await response.json();
-      if (data.status === "success") {
-        alert(data.message);
-      } else {
-        alert("Something went wrong: " + data.message);
+  const { getRootProps, onClickAway } = useSnackbar({
+    onClose: handleClose,
+    open,
+    autoHideDuration: 5000,
+  });
+
+  useEffect(() => {
+    socket.on("progress", (data) => {
+
+      if (data.status) {
+        setMessage(data.status);
+        setOpen(true);
       }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Failed to execute functions.");
-    } finally {
-      setLoading(false);
-    }
+
+      if (data.status === "🎉 All Token Data Fetched Successfully!") {
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      socket.off("progress");
+    };
+  }, []);
+
+  const handleUpdate = () => {
+    setIsLoading(true);
+    setMessage("🔄 Starting Token Data Update...");
+    setOpen(true);
+    socket.emit("runAllTokenDataFunctions");
   };
 
   return (
+    <>
+      <IconButton onClick={handleUpdate} color="primary" disabled={isLoading}>
+        {isLoading ? <CircularProgress size={24} /> : <RefreshIcon fontSize="large" />}
+      </IconButton>
+
+      {open && (
+        <ClickAwayListener onClickAway={onClickAway}>
+          <CustomSnackbar {...getRootProps()}>{message}</CustomSnackbar>
+        </ClickAwayListener>
+      )}
+    </>
+  );
+};
+
+const NavHeader: React.FC<{
+  isCryptoView: boolean;
+  setIsCryptoView: React.Dispatch<React.SetStateAction<boolean>>;
+}> = ({ isCryptoView, setIsCryptoView }) => {
+  return (
     <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
-      <IconButton onClick={toggleView} color="primary" sx={{ fontSize: "2rem" }}>
+      <IconButton onClick={() => setIsCryptoView(!isCryptoView)} color="primary" sx={{ fontSize: "2rem" }}>
         {isCryptoView ? <CurrencyBitcoinIcon fontSize="large" /> : <MonetizationOnIcon fontSize="large" />}
       </IconButton>
-      {loading ? (
-        <CircularProgress color="primary" size={40} />
-      ) : (
-        <IconButton
-          onClick={runAllFunctions}
-          color="primary"
-          sx={{ fontSize: "2rem" }}
-        >
-          <RefreshIcon fontSize="large" />
-          {/*<Typography variant="caption">{countdown}</Typography>*/}
-        </IconButton>
-      )}
+      <TokenDataUpdater />
     </Box>
   );
 };
 
 export default NavHeader;
+
+// Snackbar Styling
+const snackbarInRight = keyframes`
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+`;
+
+const CustomSnackbar = styled("div")(
+  ({ theme }) => css`
+    position: fixed;
+    z-index: 5500;
+    display: flex;
+    right: 16px;
+    bottom: 16px;
+    left: auto;
+    justify-content: start;
+    max-width: 560px;
+    min-width: 300px;
+    background-color: ${theme.palette.mode === "dark" ? "#1C2025" : "#fff"};
+    border-radius: 8px;
+    border: 1px solid ${theme.palette.mode === "dark" ? "#434D5B" : "#DAE2ED"};
+    box-shadow: ${theme.palette.mode === "dark" ? `0 4px 8px rgb(0 0 0 / 0.7)` : `0 4px 8px rgb(0 0 0 / 0.1)`};
+    padding: 0.75rem;
+    color: ${theme.palette.mode === "dark" ? "#99CCF3" : "#007FFF"};
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 500;
+    animation: ${snackbarInRight} 200ms;
+    transition: transform 0.2s ease-out;
+  `
+);

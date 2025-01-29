@@ -10,6 +10,7 @@ import { useFetchProtocolsTable } from "./hooks/useFetchProtocolsTable";
 import { theme } from "./utils/theme";
 import axios from "axios";
 import { NetWorthChart } from "./components/crypto/NetWorthChart";
+import { useFetchNetWorth } from "./hooks/useFetchNetWorth";
 
 
 const App = () => {
@@ -19,12 +20,12 @@ const App = () => {
   const [hideSmallBalances, setHideSmallBalances] = useState(10);
   const [openSettings, setOpenSettings] = useState(false);
   const [isCryptoView, setIsCryptoView] = useState(true);
-  const [netWorthData, setNetWorthData] = useState([]);
 
   const walletId = selectedItem ? selectedItem.id : "all";
 
   const API_BASE_URL = "http://localhost:3000/api";
 
+  const { netWorth, loading: netWorthLoading } = useFetchNetWorth();
   const { wallets, loading: walletsLoading } = useFetchWallets();
   const { chains, loading: chainsLoading } = useFetchChains(walletId);
   const { tokens, totalTokenUSD, loading: tokensLoading } = useFetchTokens(selectedChainId, walletId);
@@ -42,7 +43,6 @@ const App = () => {
 
   const saveNetWorthToDB = async (totalNetWorth) => {
     try {
-      // const date = new Date().toISOString().split("T")[0];
       const date = new Date().toISOString();
 
       const historyData = {
@@ -53,6 +53,7 @@ const App = () => {
         totalProtocolUSD,
         totalTokenUSD,
       };
+
       const payload = { date, totalNetWorth, historyData };
 
       await axios.post(`${API_BASE_URL}/net-worth`, payload);
@@ -61,17 +62,6 @@ const App = () => {
     }
   };
 
-  const fetchNetWorthData = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/net-worth`);
-      setNetWorthData(response.data);
-    } catch (error) {
-      console.error("Error fetching net worth data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchAccountsData = async () => {
     setLoading(true);
@@ -80,7 +70,6 @@ const App = () => {
       const totalNetWorth = totalTokenUSD + totalProtocolUSD;
       setSelectedItem(allItem);
       await saveNetWorthToDB(totalNetWorth.toFixed(0));
-      await fetchNetWorthData();
     } catch (error) {
       console.error("Error fetching account data:", error);
     } finally {
@@ -88,9 +77,6 @@ const App = () => {
     }
   };
 
-  useEffect(() => {
-    fetchNetWorthData();
-  }, []);
 
   useEffect(() => {
     fetchAccountsData();
@@ -131,7 +117,7 @@ const App = () => {
     <NavHeader isCryptoView={isCryptoView} setIsCryptoView={setIsCryptoView} />
     <Container sx={{ marginY: 10 }}>
       {isLoading ? renderIsLoading() : selectedItem ? (<>
-        {!isCryptoView && <><NetWorthChart data={netWorthData} /><Transactions /></>}
+        {!isCryptoView && <><NetWorthChart data={netWorth} /><Transactions /></>}
         {isCryptoView && (<>
           <Container>
             {renderNetWorth()}

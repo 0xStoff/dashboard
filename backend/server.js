@@ -21,6 +21,8 @@ import { fetchAndSaveSolTokenDataForAllWallets } from "./token_data/sol_token_da
 import ProtocolModel from "./models/ProtocolModel.js";
 import WalletProtocolModel from "./models/WalletProtocolModel.js";
 import NetWorth from "./models/NetWorthModel.js";
+import { Server as SocketServer } from "socket.io";
+import http from "http";
 
 
 
@@ -63,10 +65,23 @@ const performanceData = [
     { date: "2025-01-20", totalNetWorth: 43000 },
 ];
 
+
+
+
+
 dotenv.config();
 
 const app = express();
 const port = 3000;
+
+const server = http.createServer(app);
+const io = new SocketServer(server, {
+    cors: {
+        origin: "http://localhost:8080",
+        methods: ["GET", "POST"],
+    },
+});
+
 
 // Get the current directory
 const __filename = fileURLToPath(import.meta.url);
@@ -89,47 +104,49 @@ app.use('/api', transactionsRoutes);
 app.use("/api", netWorthRoutes);
 app.use('/logos', express.static(path.join(__dirname, 'logos')));
 
-const runAllTokenDataFunctions = async () => {
+const runAllTokenDataFunctions = async (socket) => {
     try {
-        await sequelize.query("DELETE FROM wallets_tokens;");
-        console.log("Cleared table: wallets_tokens");
+        socket.emit("progress", { status: "Starting token data updates..." });
 
-        await sequelize.query("DELETE FROM tokens;");
-        console.log("Cleared table: tokens");
+        await Promise.all([
+            (async () => {
+                socket.emit("progress", { status: "Fetching other token data..." });
+                await writeStaticDataToDB();
+                await writeAptosDataToDB();
+                await writeSuiDataToDB();
+                await fetchAndSaveSolTokenDataForAllWallets();
+                await fetchCosmosTokens();
 
-        await sequelize.query("DELETE FROM wallets_protocols;");
-        console.log("Cleared table: wallets_protocols");
-
-        await sequelize.query("DELETE FROM protocols;");
-        console.log("Cleared table: protocols");
-
-
-        // Recreate tables and execute token data functions
-        const promises = [
-            writeStaticDataToDB(),
-            writeAptosDataToDB(),
-            writeSuiDataToDB(),
-            fetchAndSaveSolTokenDataForAllWallets(),
-            fetchAndSaveEvmTokenDataForAllWallets(),
-            fetchCosmosTokens()
-        ];
+                socket.emit("progress", { status: "✅ Other token data fetched" });
+            })(),
+             (async () => {
+                socket.emit("progress", { status: "Fetching EVM token data..." });
+                await fetchAndSaveEvmTokenDataForAllWallets();
+                socket.emit("progress", { status: "✅ EVM token data fetched" });
+            })(),
+        ]);
 
 
-        await Promise.all(promises);
-        console.log('All token data functions executed successfully.');
-        return { status: 'success', message: 'All token data functions executed successfully.' };
+        socket.emit("progress", { status: "🎉 All Token Data Fetched Successfully!" });
     } catch (error) {
-        console.error('Error executing token data functions:', error);
-        return { status: 'error', message: 'Error executing token data functions.', error };
+        socket.emit("progress", { status: "Error executing token data functions.", error: error.message });
+        console.error("Error executing token data functions:", error);
     }
 };
 
+io.on("connection", (socket) => {
+    console.log("A client connected:", socket.id);
 
-// Expose an API endpoint for the frontend to call this function
-app.post('/api/runAllTokenDataFunctions', async (req, res) => {
-    const result = await runAllTokenDataFunctions();
-    res.json(result);
+    socket.on("runAllTokenDataFunctions", async () => {
+        await runAllTokenDataFunctions(socket);
+    });
+
+    socket.on("disconnect", () => {
+        console.log("A client disconnected:", socket.id);
+    });
 });
+
+
 
 // Set up associations after all models are defined
 const setupAssociations = () => {
@@ -146,8 +163,12 @@ const initDb = async () => {
 
 initDb().then(() => {
     console.log('Database synced');
-    app.listen(port, async () => {
-        console.log('Server running on port 3000');
+    // app.listen(port, async () => {
+    //     console.log('Server running on port 3000');
+
+        server.listen(port, () => {
+            console.log(`Server running on port ${port}`);
+        });
 
 
         //
@@ -208,7 +229,7 @@ initDb().then(() => {
         //     .catch((err) => console.error('Failed to update chains on startup:', err));
 
 
-    });
+    // });
 }).catch(error => {
     console.error('Failed to sync database:', error);
 });
