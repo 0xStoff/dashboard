@@ -222,8 +222,6 @@ CREATE TABLE protocols
     chain_id         VARCHAR(255) NOT NULL,
     name             VARCHAR(255) NOT NULL,
     logo_path        VARCHAR(255),
-    total_usd        DECIMAL(20, 8) DEFAULT 0,
-    portfolio_item_list JSON, -- New column to store portfolio item list
     UNIQUE (chain_id, name)
 );
 -- Create the wallets table with a foreign key to protocols

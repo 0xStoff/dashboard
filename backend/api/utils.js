@@ -3,6 +3,7 @@ import TokenModel from "../models/TokenModel.js";
 import WalletTokenModel from "../models/WalletTokenModel.js";
 import WalletModel from "../models/WalletModel.js";
 import ProtocolModel from "../models/ProtocolModel.js";
+import WalletProtocolModel from "../models/WalletProtocolModel.js";
 
 const TOKEN_ATTRIBUTES = [
   "name", "symbol", "decimals", "price", "logo_path", "chain_id", "price_24h_change"
@@ -30,8 +31,12 @@ export const fetchWalletData = async (chain, usd_value, walletId) => {
       },
       {
         model: ProtocolModel,
-        attributes: ["name", "total_usd", "logo_path", "chain_id", "portfolio_item_list"],
-      },
+        through: {
+          model: WalletProtocolModel,
+          attributes: ["portfolio_item_list"]
+        },
+        attributes: ["name", "logo_path", "chain_id"]
+      }
     ],
     nest: true,
   });
@@ -90,7 +95,7 @@ export const transformData = (wallets) => {
     });
   });
 
-  const hideSmallBalances = 10;
+  const hideSmallBalances = 0;
 
   return [...tokenMap.values()]
     .reduce((acc, token) => {

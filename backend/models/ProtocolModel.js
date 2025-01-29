@@ -23,14 +23,6 @@ const ProtocolModel = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
-    total_usd: {
-      type: DataTypes.DECIMAL(20, 8),
-      defaultValue: 0,
-    },
-    portfolio_item_list: {
-      type: DataTypes.JSON, // JSON type to store a list of items
-      allowNull: true,
-    },
   },
   {
     timestamps: false,

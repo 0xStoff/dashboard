@@ -116,7 +116,8 @@ router.get("/protocols-table", async (req, res) => {
   try {
     const selectedChainId = req.query.chain || "all";
     const walletId = req.query.wallet_id || "all";
-    const hideSmallBalances = parseFloat(req.query.hideSmallBalances) || 10;
+    // const hideSmallBalances = parseFloat(req.query.hideSmallBalances) || 0;
+    const hideSmallBalances = 0;
 
     const groupedByProtocol = (await fetchProtocolData()).reduce((acc, protocol) => {
       if (!acc[protocol.name]) {

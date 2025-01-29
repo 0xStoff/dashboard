@@ -17,7 +17,7 @@ const App = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedChainId, setSelectedChainId] = useState("all");
   const [loading, setLoading] = useState(true);
-  const [hideSmallBalances, setHideSmallBalances] = useState(10);
+  // const [hideSmallBalances, setHideSmallBalances] = useState(10);
   const [openSettings, setOpenSettings] = useState(false);
   const [isCryptoView, setIsCryptoView] = useState(true);
 
@@ -140,8 +140,8 @@ const App = () => {
       </>) : (<Typography>No data available</Typography>)}
     </Container>
     <SettingsDialog
-      hideSmallBalances={hideSmallBalances}
-      setHideSmallBalances={setHideSmallBalances}
+      // hideSmallBalances={hideSmallBalances}
+      // setHideSmallBalances={setHideSmallBalances}
       openSettings={openSettings}
       setOpenSettings={setOpenSettings}
     />

@@ -24,6 +24,8 @@ const ChainList: React.FC<{
 
   if (!data.length) return null;
 
+  console.log(data)
+
   const handleRowClick = (chain: ChainListInterface) => {
     setSelectedChainId(selectedChainId === chain.chain_id ? "all" : chain.chain_id);
   };
@@ -59,7 +61,7 @@ const ChainList: React.FC<{
                     />
                   </TableCell>
                   <TableCell sx={{ fontWeight: "bold", ...styles.tableCell }} align="right">
-                    $ {(+chain.usd_value.toFixed(2)).toLocaleString("de-CH")}
+                    $ {(+chain.usd_value).toLocaleString("de-CH")}
                   </TableCell>
                 </TableRow>))}
             </TableBody>
