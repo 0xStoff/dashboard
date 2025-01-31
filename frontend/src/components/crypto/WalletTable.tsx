@@ -1,13 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Avatar, Box, Card, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
-import { WalletList } from "../../../archive/interfaces/tokens";
-import { Account } from "../../../archive/interfaces/account";
 import { ChipWithTooltip } from "../utils/ChipWithTooltip";
-import { Chain, ChainIdState } from "../../../archive/interfaces/chain";
-import { useFetchChains } from "../../hooks/useFetchChains";
 import { formatNumber, toFixedString } from "../../utils/number-utils";
-
-
+import { Token } from "../../interfaces";
 
 const styles = {
   container: {
@@ -31,7 +26,7 @@ const styles = {
 
 
 const WalletTable: React.FC<{
-  tokens: any;
+  tokens: Token[];
 }> = ({ tokens, chainList }) => {
 
   const totalUSD = useMemo(() => tokens.reduce((acc, item) => acc + item.amount * item.price, 0), [tokens]);

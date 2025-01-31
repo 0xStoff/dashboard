@@ -21,7 +21,7 @@ export interface Wallet {
 
 export interface NetWorthData {
   date: string;
-  value: number;
+  totalNetWorth: number;
 }
 
 export interface HistoryData {

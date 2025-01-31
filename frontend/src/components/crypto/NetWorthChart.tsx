@@ -2,6 +2,7 @@ import React from "react";
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, Typography } from "@mui/material";
 import { toFixedString } from "../../utils/number-utils";
+import { NetWorthData } from "../../interfaces";
 
 const processDailyData = (data) => {
   const groupedData = {};
@@ -15,14 +16,15 @@ const processDailyData = (data) => {
     groupedData[date].count += 1;
   });
 
-  return Object.entries(groupedData).map(([date, { totalNetWorth, count }]) => ({
+  return Object.entries(groupedData).map(([date, values]: [string, { totalNetWorth: number, count: number }]) => ({
     date,
-    totalNetWorth: totalNetWorth / count,
+    totalNetWorth: values.totalNetWorth / values.count,
   }));
+
 };
 
 export const NetWorthChart = ({ data }) => {
-  const processedData = processDailyData(data);
+  const processedData: NetWorthData[] = processDailyData(data);
 
   const startDate = new Date("2025-01-25T23:33:42.697Z").toISOString().split("T")[0];
 

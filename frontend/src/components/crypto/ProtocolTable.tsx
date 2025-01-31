@@ -2,10 +2,11 @@ import React from "react";
 import { Avatar, Card, CardContent, Chip, Container, Grid, Typography } from "@mui/material";
 import { ColoredChip } from "../utils/ChipWithTooltip";
 import { formatNumber, toFixedString } from "../../utils/number-utils";
+import { Protocol } from "../../interfaces";
 
 
 const ProtocolTable: React.FC<{
-  protocols: any;
+  protocols: Protocol[];
 }> = ({ protocols }) => {
 
   if (!protocols.length) return null;

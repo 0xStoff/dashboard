@@ -1,7 +1,7 @@
 import React from "react";
 import { Avatar, Box, Card, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
-import { ChainIdState, ChainListInterface } from "../../../archive/interfaces/chain";
-import { Account } from "../../../archive/interfaces/account";
+import { ChainIdState, ChainListInterface } from "../../../.archive/interfaces/chain";
+import { Chain } from "../../interfaces";
 
 
 const styles = {
@@ -19,7 +19,7 @@ const styles = {
 
 
 const ChainList: React.FC<{
-  chains: any; chainIdState: ChainIdState;
+  chains: Chain[]; chainIdState: ChainIdState;
 }> = ({ chains, chainIdState }) => {
   const [selectedChainId, setSelectedChainId] = chainIdState;
 
