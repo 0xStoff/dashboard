@@ -10,8 +10,6 @@ export const formatNumber = (value, type) => {
       if (value >= 100) return toFixedString(value, 0);
       if (value >= 0.1) return toFixedString(value);
       return toFixedString(value, 6);
-    // case "price":
-    //   return value >= 0.1 ? toFixedString(value) : toFixedString(value, 6);
     case "percentage":
       return toFixedString(value) + " %";
     default:

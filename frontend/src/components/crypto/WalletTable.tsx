@@ -31,7 +31,7 @@ const styles = {
 
 
 const WalletTable: React.FC<{
-  tokens: Account;
+  tokens: any;
 }> = ({ tokens, chainList }) => {
 
   const totalUSD = useMemo(() => tokens.reduce((acc, item) => acc + item.amount * item.price, 0), [tokens]);
