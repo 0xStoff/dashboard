@@ -35,6 +35,7 @@ router.post("/net-worth", async (req, res) => {
       order: [["date", "DESC"]],
     });
 
+
     if (lastEntry && parseFloat(lastEntry.totalNetWorth) === parseFloat(totalNetWorth.toFixed(8))) {
       return res.status(200).json({
         message: "Net worth not changed",

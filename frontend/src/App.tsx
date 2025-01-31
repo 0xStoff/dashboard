@@ -22,7 +22,6 @@ import { theme } from "./utils/theme";
 import { NetWorthChart } from "./components/crypto/NetWorthChart";
 import { useFetchNetWorth } from "./hooks/useFetchNetWorth";
 import Header from "./components/header/Header";
-import { saveNetWorthToDB } from "./api/net-worth";
 
 const App = () => {
   const [selectedItem, setSelectedItem] = useState(null);
@@ -32,7 +31,7 @@ const App = () => {
 
   const walletId = selectedItem?.id || "all";
 
-  const { netWorth, loading: netWorthLoading } = useFetchNetWorth();
+  const { netWorth, loading: netWorthLoading, saveNetWorth } = useFetchNetWorth();
   const { wallets, loading: walletsLoading } = useFetchWallets();
   const { chains, loading: chainsLoading } = useFetchChains(walletId);
   const { tokens, totalTokenUSD, loading: tokensLoading } = useFetchTokens(
@@ -64,7 +63,7 @@ const App = () => {
     setLoading(true);
     try {
       setSelectedItem(allItem);
-      await saveNetWorthToDB(totalUSDValue, {
+      await saveNetWorth(totalUSDValue, {
         wallets,
         chains,
         tokens,
@@ -86,7 +85,7 @@ const App = () => {
 
   useEffect(() => {
     fetchAccountsData();
-  }, [fetchAccountsData]);
+  }, [walletsLoading, chainsLoading, tokensLoading, protocolsTableLoading, fetchAccountsData]);
 
   const isLoading = loading || walletsLoading || chainsLoading || tokensLoading || protocolsTableLoading;
 
@@ -94,19 +93,19 @@ const App = () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <NavHeader isCryptoView={isCryptoView} setIsCryptoView={setIsCryptoView} />
+
       <Container sx={{ marginY: 10 }}>
-        {isLoading ? (
+        {isLoading && (
           <Box display="flex" justifyContent="center" alignItems="center">
             <CircularProgress />
           </Box>
-        ) : selectedItem ? (
+        )}
+
+        {!isLoading && !selectedItem && <Typography>No data available</Typography>}
+
+        {!isLoading && selectedItem && (
           <>
-            {!isCryptoView ? (
-              <>
-                <NetWorthChart data={netWorth} />
-                <Transactions />
-              </>
-            ) : (
+            {isCryptoView ? (
               <>
                 <Header
                   wallets={wallets}
@@ -122,10 +121,13 @@ const App = () => {
                 </Container>
                 <ProtocolTable protocols={protocolsTable} />
               </>
+            ) : (
+              <>
+                <NetWorthChart data={netWorth} />
+                <Transactions />
+              </>
             )}
           </>
-        ) : (
-          <Typography>No data available</Typography>
         )}
       </Container>
     </ThemeProvider>
