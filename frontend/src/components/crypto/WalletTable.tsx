@@ -5,6 +5,7 @@ import { Account } from "../../interfaces/account";
 import { ChipWithTooltip } from "../utils/ChipWithTooltip";
 import { Chain, ChainIdState } from "../../interfaces/chain";
 import { useFetchChains } from "../../hooks/useFetchChains";
+import { formatNumber, toFixedString } from "../../utils/number-utils";
 
 
 
@@ -41,20 +42,8 @@ const WalletTable: React.FC<{
   const getChainLogo = (chainId: string) => chainList.find((c) => c.chain_id === chainId)?.logo_path || "";
 
 
-  const formatNumber = (value, type) => {
-    switch (type) {
-      case "amount":
-        if (value >= 100) return parseFloat(value).toFixed(0);
-        if (value >= 1) return parseFloat(value).toFixed(2);
-        return parseFloat(value).toFixed(5);
-      case "price":
-        return value >= 0.1 ? parseFloat(value).toFixed(2) : parseFloat(value).toFixed(6);
-      case "percentage":
-        return parseFloat(value).toFixed(2) + " %";
-      default:
-        return value;
-    }
-  };
+
+
 
   return (<Box sx={styles.container}>
     <Card sx={styles.card}>
@@ -64,7 +53,7 @@ const WalletTable: React.FC<{
             <TableCell sx={{ border: 0, padding: 3 }} colSpan={6}>
               <Typography variant="h5" fontWeight="bold">Wallet</Typography>
               <Typography variant="body2" fontWeight="bold">
-                $ {(+totalUSD.toFixed(2)).toLocaleString("de-CH")}
+                $ {toFixedString(totalUSD)}
               </Typography>
             </TableCell>
           </TableRow>
@@ -74,6 +63,7 @@ const WalletTable: React.FC<{
         <Table sx={{ maxHeight: "fit-content" }}>
           <TableBody>
             {tokens.map((item, index) => (
+              item.amount * item.price > 10 &&
               <TableRow key={index} sx={styles.tableRow}>
               <TableCell sx={styles.tableCell}>
                 <Box sx={styles.avatarWrapper}>
@@ -103,7 +93,7 @@ const WalletTable: React.FC<{
                     noWrap
                     sx={{ color: item.price_24h_change >= 0 ? "success.main" : "error.main" }}
                   >
-                    {parseFloat(item.price_24h_change).toFixed(2)} %
+                    {toFixedString(item.price_24h_change)} %
                   </Typography>
                 )}
               </TableCell>
@@ -118,7 +108,7 @@ const WalletTable: React.FC<{
                 </TableCell>
               <TableCell sx={{ ...styles.tableCell, fontWeight: "bold", whiteSpace: "nowrap" }}
                          align="right">
-                $ {(item.amount * item.price).toFixed(0)}
+                $ {toFixedString(item.amount * item.price)}
               </TableCell>
             </TableRow>))}
           </TableBody>

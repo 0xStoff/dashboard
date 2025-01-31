@@ -11,6 +11,7 @@ import { theme } from "./utils/theme";
 import axios from "axios";
 import { NetWorthChart } from "./components/crypto/NetWorthChart";
 import { useFetchNetWorth } from "./hooks/useFetchNetWorth";
+import { toFixedString } from "./utils/number-utils";
 
 
 const App = () => {
@@ -29,29 +30,24 @@ const App = () => {
   const { wallets, loading: walletsLoading } = useFetchWallets();
   const { chains, loading: chainsLoading } = useFetchChains(walletId);
   const { tokens, totalTokenUSD, loading: tokensLoading } = useFetchTokens(selectedChainId, walletId);
-  const { protocolsTable, totalProtocolUSD, loading: protocolsTableLoading } = useFetchProtocolsTable(selectedChainId,
-    walletId);
+  const { protocolsTable, totalProtocolUSD, loading: protocolsTableLoading } = useFetchProtocolsTable(selectedChainId, walletId);
+
+  const totalUSDValue = totalTokenUSD + totalProtocolUSD;
 
   const allItem = useMemo(() => {
-    const totalUSDValue = totalTokenUSD + totalProtocolUSD;
     return {
       id: "all", tag: "all", chains: {
         total_usd_value: totalUSDValue, chain_list: chains
       }, tokens, protocolsTable
     };
-  }, [chains, protocolsTable, tokens, totalProtocolUSD, totalTokenUSD]);
+  }, [chains, protocolsTable, tokens, totalUSDValue]);
 
   const saveNetWorthToDB = async (totalNetWorth) => {
     try {
       const date = new Date().toISOString();
 
       const historyData = {
-        wallets,
-        chains,
-        tokens,
-        protocolsTable,
-        totalProtocolUSD,
-        totalTokenUSD,
+        wallets, chains, tokens, protocolsTable, totalProtocolUSD, totalTokenUSD
       };
 
       const payload = { date, totalNetWorth, historyData };
@@ -63,13 +59,13 @@ const App = () => {
   };
 
 
+
   const fetchAccountsData = async () => {
     setLoading(true);
     if (walletsLoading || chainsLoading || tokensLoading || protocolsTableLoading) return;
     try {
-      const totalNetWorth = totalTokenUSD + totalProtocolUSD;
       setSelectedItem(allItem);
-      await saveNetWorthToDB(totalNetWorth.toFixed(0));
+      await saveNetWorthToDB(totalUSDValue);
     } catch (error) {
       console.error("Error fetching account data:", error);
     } finally {
@@ -84,12 +80,13 @@ const App = () => {
 
   const isLoading = loading || walletsLoading || chainsLoading || tokensLoading || protocolsTableLoading;
 
+
   const renderNetWorth = () => (<Card sx={{ marginY: 3, padding: 3, borderRadius: 10, width: "fit-content" }}>
     <Typography variant="h5" fontWeight="bold">
       Net Worth
     </Typography>
     <Typography variant="h2" fontWeight="bold">
-      $ {Number((totalTokenUSD + totalProtocolUSD).toFixed(0)).toLocaleString("de-CH")}
+      $ {toFixedString(totalUSDValue, 0)}
     </Typography>
   </Card>);
 

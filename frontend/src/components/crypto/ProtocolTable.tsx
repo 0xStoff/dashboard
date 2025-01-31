@@ -1,6 +1,7 @@
 import React from "react";
 import { Avatar, Card, CardContent, Chip, Container, Grid, Typography } from "@mui/material";
 import { ColoredChip } from "../utils/ChipWithTooltip";
+import { formatNumber, toFixedString } from "../../utils/number-utils";
 
 
 const ProtocolTable: React.FC<{
@@ -11,13 +12,13 @@ const ProtocolTable: React.FC<{
 
 
   return <Container>
-    {protocols.map((protocol) => ((<Card sx={{ marginY: 5, borderRadius: 10 }} key={protocol.name}>
+    {protocols.map((protocol) => ((protocol.totalUSD > 10 && <Card sx={{ marginY: 5, borderRadius: 10 }} key={protocol.name}>
       <CardContent sx={{ padding: 3 }}>
         <Typography variant="h6" fontWeight="bold" color="text.primary">
           {protocol.name}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          $ {protocol.totalUSD.toFixed(2)}
+          $ {toFixedString(protocol.totalUSD)}
         </Typography>
         {protocol.positions.map((position, index) => (<Grid key={index} container marginTop={2}>
           <Grid sx={{ display: "flex" }} item xs={1}>
@@ -28,7 +29,7 @@ const ProtocolTable: React.FC<{
             <Typography sx={{ marginLeft: 2 }}>{position.tokenNames}</Typography>
           </Grid>
           <Grid item xs={2}>
-            <Typography>$ {position.price.toFixed(2)}</Typography>
+            <Typography>$ {formatNumber(position.price, 'price')}</Typography>
           </Grid>
           <Grid item xs={2}>
             <Chip label={position.type} variant="filled" />
@@ -41,11 +42,11 @@ const ProtocolTable: React.FC<{
             />))}
           </Grid>
           <Grid item xs={2}>
-            <Typography align="right">{position.amount.toFixed(5)}</Typography>
+            <Typography align="right">{formatNumber(position.amount, 'amount')}</Typography>
           </Grid>
           <Grid item xs={2}>
             <Typography align="right" fontWeight="bold">
-              $ {position.usdValue.toFixed(2)}
+              $ {toFixedString(position.usdValue)}
             </Typography>
           </Grid>
         </Grid>))}

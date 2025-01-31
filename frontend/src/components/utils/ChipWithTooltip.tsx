@@ -1,6 +1,7 @@
 import React from "react";
 import {Chip, ChipProps, Tooltip} from "@mui/material";
 import {styled} from "@mui/system";
+import { formatNumber, toFixedString } from "../../utils/number-utils";
 
 interface ColoredChipProps extends ChipProps {
     label: string;
@@ -27,9 +28,9 @@ export const ChipWithTooltip: React.FC<{ item: any, wallet: any }> = ({item, wal
 
     return (<Tooltip key={wallet.tag}
                      title={`
-                     ${fillPercentage.toFixed(2)}% / 
-                     ${wallet.amount.toFixed(5)} ${item.symbol || item.tokenNames} / 
-                     ${dollarAmount.toFixed(2)} $ `}
+                     ${toFixedString(fillPercentage)}% / 
+                     ${formatNumber(wallet.amount, 'amount')} ${item.symbol || item.tokenNames} / 
+                     ${toFixedString(dollarAmount)} $ `}
                      placement="top"
     >
         <span>

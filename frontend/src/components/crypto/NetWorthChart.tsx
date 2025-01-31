@@ -1,6 +1,7 @@
 import React from "react";
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, Typography } from "@mui/material";
+import { toFixedString } from "../../utils/number-utils";
 
 const processDailyData = (data) => {
   const groupedData = {};
@@ -34,7 +35,7 @@ export const NetWorthChart = ({ data }) => {
           tickFormatter={(date) => date}
         />
         <YAxis
-          tickFormatter={(value) => `$ ${(value / 1000).toLocaleString("de-CH")}k`}
+          tickFormatter={(value) => `$ ${toFixedString(value / 1000, 0)}k`}
         />
         <Tooltip
           content={({ payload, label }) => {
@@ -42,8 +43,7 @@ export const NetWorthChart = ({ data }) => {
               const value = payload[0].value;
               return (
                 <Card sx={{ borderRadius: "10px", padding: "15px" }}>
-                  <Typography fontWeight="bold" sx={{ lineHeight: 0.9 }}>{`$ ${Number(value)
-                    .toLocaleString("de-CH")}`}</Typography>
+                  <Typography fontWeight="bold" sx={{ lineHeight: 0.9 }}>{`$ ${toFixedString(value, 0)}`}</Typography>
                   <Typography variant="caption">{label}</Typography>
                 </Card>
               );

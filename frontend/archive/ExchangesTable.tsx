@@ -3,6 +3,7 @@ import axios from "axios";
 import {
     Container, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, Typography,
 } from "@mui/material";
+import { toFixedString } from "../src/utils/number-utils";
 
 const ExchangesTable = () => {
     const [transactions, setTransactions] = useState([]);
@@ -164,13 +165,13 @@ const ExchangesTable = () => {
             Transactions
         </Typography>
         <Typography variant="h6" gutterBottom>
-            Total Deposits: {(totalDeposits + 6715.00).toFixed(2)}
+            Total Deposits: {toFixedString(totalDeposits + 6715.00)}
         </Typography>
         <Typography variant="h6" gutterBottom>
-            Total Withdrawals: {(totalWithdrawals - 1460.00).toFixed(2)}
+            Total Withdrawals: {toFixedString(totalWithdrawals - 1460.00)}
         </Typography>
         <Typography variant="h6" gutterBottom>
-            Total Fees: {totalFees.toFixed(2)} CHF
+            Total Fees: {toFixedString(totalFees)} CHF
         </Typography>
 
         <TableContainer>

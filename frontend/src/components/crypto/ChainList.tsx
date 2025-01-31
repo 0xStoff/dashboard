@@ -17,6 +17,7 @@ const styles = {
   }), tableCell: { border: 0 }
 };
 
+
 const ChainList: React.FC<{
   data: Account; chainIdState: ChainIdState;
 }> = ({ data, chainIdState }) => {
@@ -24,7 +25,6 @@ const ChainList: React.FC<{
 
   if (!data.length) return null;
 
-  console.log(data)
 
   const handleRowClick = (chain: ChainListInterface) => {
     setSelectedChainId(selectedChainId === chain.chain_id ? "all" : chain.chain_id);
@@ -44,7 +44,7 @@ const ChainList: React.FC<{
         <Box sx={{ height: 400, overflow: "auto", maxHeight: "fit-content" }}>
           <Table>
             <TableBody>
-              {data.map((chain) => (<TableRow
+              {data.map((chain) => (chain.usd_value > 10 && <TableRow
                   key={chain.chain_id}
                   hover
                   onClick={() => handleRowClick(chain)}

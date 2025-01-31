@@ -1,5 +1,6 @@
 import React from 'react';
 import { Typography, Slider, Box } from '@mui/material';
+import { toFixedString } from "../../utils/number-utils";
 
 interface ThresholdSliderProps {
     value: number;
@@ -34,7 +35,7 @@ const ThresholdSlider: React.FC<ThresholdSliderProps> = ({ value, onChange, min,
 
             {/* Display the current threshold */}
             <Typography variant="body2" color="textSecondary">
-                Current Threshold: $ {value.toFixed(2)}
+                Current Threshold: $ {toFixedString(value)}
             </Typography>
         </Box>
     );

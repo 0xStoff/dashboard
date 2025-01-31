@@ -38,17 +38,20 @@ const fetchProtocolData = async () => {
  * Helper function to add or update a position within a protocol.
  */
 
-const addPosition = (protocolName, acc, tokens, itemName, walletTag, walletAmount, hideSmallBalances, selectedChainId) => {
+
+const addPosition = (protocolName, acc, tokens, itemName, walletTag, walletAmount, hideSmallBalances, selectedChainId, item) => {
   const validTokens = tokens
-    .filter((token) => token.amount * token.price > hideSmallBalances)
+    .filter((token) => token.amount * token.price > hideSmallBalances || item.stats.asset_usd_value > hideSmallBalances)
     .filter((token) => selectedChainId === "all" || token.chain === selectedChainId);
+
 
   if (!validTokens.length) return;
 
   const tokenNames = validTokens.map((t) => t.name).join(" + ");
   const logoUrls = validTokens.map((t) => t.logo_url);
   const totalAmount = validTokens.reduce((sum, token) => sum + token.amount, 0);
-  const totalUsdValue = validTokens.reduce((sum, token) => sum + token.amount * token.price, 0);
+  // const totalUsdValue = validTokens.reduce((sum, token) => sum + token.amount * token.price, 0);
+  const totalUsdValue = item.stats.asset_usd_value;
   const avgPrice = totalUsdValue / totalAmount;
 
   const protocol = acc[protocolName];
@@ -117,7 +120,7 @@ router.get("/protocols-table", async (req, res) => {
     const selectedChainId = req.query.chain || "all";
     const walletId = req.query.wallet_id || "all";
     // const hideSmallBalances = parseFloat(req.query.hideSmallBalances) || 0;
-    const hideSmallBalances = 0;
+    const hideSmallBalances = 0.1;
 
     const groupedByProtocol = (await fetchProtocolData()).reduce((acc, protocol) => {
       if (!acc[protocol.name]) {
@@ -126,8 +129,7 @@ router.get("/protocols-table", async (req, res) => {
 
       const addWalletPositions = (item, walletTag) => {
         const walletAmount = item.detail.supply_token_list?.[0]?.amount || 0;
-        addPosition(protocol.name, acc, item.detail.supply_token_list || [], item.name, walletTag, walletAmount, hideSmallBalances, selectedChainId
-        );
+        addPosition(protocol.name, acc, item.detail.supply_token_list || [], item.name, walletTag, walletAmount, hideSmallBalances, selectedChainId, item);
       };
 
       if (protocol.wallets) {
@@ -140,6 +142,7 @@ router.get("/protocols-table", async (req, res) => {
 
       return acc;
     }, {});
+
 
     const sortedGroupedProtocols = Object.values(groupedByProtocol)
       .map((protocol) => ({

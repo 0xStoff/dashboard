@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {
     Button, Dialog, DialogTitle, DialogContent, Typography,
 } from '@mui/material';
-import ThresholdSlider from "../../utils/ThresholdSlider";
+import ThresholdSlider from "./ThresholdSlider";
 
 function SettingsDialog({openSettings, setOpenSettings, hideSmallBalances, setHideSmallBalances}) {
 

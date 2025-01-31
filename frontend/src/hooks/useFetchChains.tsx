@@ -23,5 +23,10 @@ export const useFetchChains = (walletId = 'all') => {
     loadChains();
   }, [walletId]);
 
+  // const totalUSDValue = chains.reduce((sum, chain) => sum + chain.usd_value, 0)
+
+
+
+
   return { chains, loading };
 };

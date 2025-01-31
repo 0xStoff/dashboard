@@ -24,7 +24,7 @@ export const useFetchTokens = (chain = 'all', walletId = 'all') => {
     loadTokens();
   }, [chain, walletId]);
 
-  const totalTokenUSD = (tokens).reduce((acc, item) => acc + item.amount * item.price, 0) || 0;
+  const totalTokenUSD = (tokens).reduce((sum, item) => sum + item.total_usd_value, 0) || 0;
 
   return { tokens, totalTokenUSD, loading };
 };
