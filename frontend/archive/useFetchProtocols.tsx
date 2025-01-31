@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from "axios";
 
-const API_BASE_URL = 'http://localhost:3000/api'; // Base URL for your API
+const process.env.REACT_APP_API_BASE_URL = 'http://localhost:3000/api'; // Base URL for your API
 
 export const useFetchProtocols = (chain = null) => {
   const [protocols, setProtocols] = useState([]);
@@ -11,7 +11,7 @@ export const useFetchProtocols = (chain = null) => {
     const loadProtocols = async () => {
       try {
         // Build the URL conditionally based on whether the chain is provided
-        const url = `${API_BASE_URL}/protocols?chain=${chain}`;
+        const url = `${process.env.REACT_APP_API_BASE_URL}/protocols?chain=${chain}`;
 
         const response = await axios.get(url);
         setProtocols(response.data);

@@ -1,6 +1,6 @@
 import axios, { AxiosRequestConfig } from 'axios';
-import { mergeAndAggregateChains, mergeAndAggregateTokens, mergeProtocols } from '../../src/utils/data-transform';
-import { Account } from '../../src/interfaces/account';
+import { mergeAndAggregateChains, mergeAndAggregateTokens, mergeProtocols } from '../data-transform';
+import { Account } from '../interfaces/account';
 
 async function fetchDataForAccount(id: string): Promise<any> {
     const storedData = localStorage.getItem(id);

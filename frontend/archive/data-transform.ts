@@ -1,7 +1,7 @@
-import {Account} from "../interfaces/account";
-import {ChainListInterface} from "../interfaces/chain";
-import { Protocol} from "../interfaces/protocol";
-import {Tokens} from "../interfaces/tokens";
+import {Account} from "./interfaces/account";
+import {ChainListInterface} from "./interfaces/chain";
+import { Protocol} from "./interfaces/protocol";
+import {Tokens} from "./interfaces/tokens";
 
 export function mergeAndAggregateChains(accounts: Account[]): ChainListInterface[] {
     const chainMap = new Map<string, ChainListInterface>();

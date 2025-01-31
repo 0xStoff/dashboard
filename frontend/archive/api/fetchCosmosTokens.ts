@@ -1,6 +1,6 @@
 import {
     BalanceApiResponse, Chain, FetchResult, StakedAmount, StakingApiResponse, TokenBalance
-} from "../../src/interfaces/cosmos";
+} from "../interfaces/cosmos";
 import axios from "axios";
 import {fetchTokenPriceCoingecko} from "./fetchTokenPriceCoingecko";
 import {fromBech32, toBech32} from "@cosmjs/encoding";

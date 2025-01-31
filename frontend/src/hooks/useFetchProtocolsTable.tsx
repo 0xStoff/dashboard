@@ -1,21 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import axios from "axios";
+import { Wallet } from "./useFetchWallets";
+import { Protocol } from "../interfaces";
 
-const API_BASE_URL = 'http://localhost:3000/api'; // Base URL for your API
 
-export const useFetchProtocolsTable = (chain = 'all', walletId = 'all') => {
-  const [protocolsTable, setProtocolsTable] = useState([]);
-  const [loading, setLoading] = useState(true);
+interface UseFetchProtocolsReturn {
+  protocolsTable: Protocol[];
+  totalProtocolUSD: string | number;
+  loading: boolean;
+}
+
+export const useFetchProtocolsTable = (chain: string | null    = "all",
+                                       walletId: string | null = "all"): UseFetchProtocolsReturn => {
+  const [protocolsTable, setProtocolsTable] = useState<Protocol[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const loadProtocolsTable = async () => {
       try {
-        const url = `${API_BASE_URL}/protocols-table?chain=${chain}&wallet_id=${walletId}`;
+        const url = `${process.env.REACT_APP_API_BASE_URL}/protocols-table?chain=${chain}&wallet_id=${walletId}`;
 
         const response = await axios.get(url);
         setProtocolsTable(response.data);
       } catch (error) {
-        console.error('Failed to load protocolsTable:', error);
+        console.error("Failed to load protocolsTable:", error);
       } finally {
         setLoading(false);
       }

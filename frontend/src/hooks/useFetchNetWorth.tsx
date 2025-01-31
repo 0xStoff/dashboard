@@ -1,19 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import axios from "axios";
+import { HistoryData, NetWorthData } from "../interfaces";
 
-const API_BASE_URL = 'http://localhost:3000/api'; // Base URL for your API
 
-export const useFetchNetWorth = () => {
-  const [netWorth, setNetWorth] = useState([]);
-  const [loading, setLoading] = useState(true);
+interface UseFetchNetWorthReturn {
+  netWorth: NetWorthData[];
+  loading: boolean;
+  saveNetWorth: (totalNetWorth: number, historyData: HistoryData) => Promise<void>;
+}
+
+export const useFetchNetWorth = (): UseFetchNetWorthReturn => {
+  const [netWorth, setNetWorth] = useState<NetWorthData[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const loadNetWorth = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/net-worth`);
+        const response = await axios.get<NetWorthData[]>(`${process.env.REACT_APP_API_BASE_URL}/net-worth`);
         setNetWorth(response.data);
       } catch (error) {
-        console.error('Failed to load net worth:', error);
+        console.error("Failed to load net worth:", error);
       } finally {
         setLoading(false);
       }
@@ -22,10 +28,10 @@ export const useFetchNetWorth = () => {
     loadNetWorth();
   }, []);
 
-  const saveNetWorth = async (totalNetWorth, historyData) => {
+  const saveNetWorth = async (totalNetWorth: number, historyData: HistoryData): Promise<void> => {
     try {
       const payload = { date: new Date().toISOString(), totalNetWorth, historyData };
-      await axios.post(`${API_BASE_URL}/net-worth`, payload);
+      await axios.post(`${process.env.REACT_APP_API_BASE_URL}/net-worth`, payload);
     } catch (error) {
       console.error("Error saving net worth to DB:", error);
     }

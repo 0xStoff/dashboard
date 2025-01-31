@@ -1,7 +1,7 @@
 import React from "react";
 import { Avatar, Box, Card, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
-import { ChainIdState, ChainListInterface } from "../../interfaces/chain";
-import { Account } from "../../interfaces/account";
+import { ChainIdState, ChainListInterface } from "../../../archive/interfaces/chain";
+import { Account } from "../../../archive/interfaces/account";
 
 
 const styles = {

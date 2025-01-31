@@ -22,72 +22,78 @@ import { theme } from "./utils/theme";
 import { NetWorthChart } from "./components/crypto/NetWorthChart";
 import { useFetchNetWorth } from "./hooks/useFetchNetWorth";
 import Header from "./components/header/Header";
+import { Chain, Protocol, Token } from "./interfaces";
 
-const App = () => {
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [selectedChainId, setSelectedChainId] = useState("all");
-  const [loading, setLoading] = useState(true);
-  const [isCryptoView, setIsCryptoView] = useState(true);
 
-  const walletId = selectedItem?.id || "all";
+interface SelectedItem {
+  id: string;
+  tag: string;
+  chains: {
+    total_usd_value: number;
+    chain_list: Chain[];
+  };
+  tokens: Token[];
+  protocolsTable: Protocol[];
+}
+
+const App: React.FC = () => {
+  const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
+  const [selectedChainId, setSelectedChainId] = useState<string>("all");
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isCryptoView, setIsCryptoView] = useState<boolean>(true);
+
+  const walletId: string = selectedItem?.id || "all";
 
   const { netWorth, loading: netWorthLoading, saveNetWorth } = useFetchNetWorth();
   const { wallets, loading: walletsLoading } = useFetchWallets();
   const { chains, loading: chainsLoading } = useFetchChains(walletId);
-  const { tokens, totalTokenUSD, loading: tokensLoading } = useFetchTokens(
+  const { tokens, totalTokenUSD, loading: tokensLoading } = useFetchTokens(selectedChainId, walletId);
+  const { protocolsTable, totalProtocolUSD, loading: protocolsTableLoading } = useFetchProtocolsTable(
     selectedChainId,
     walletId
   );
-  const {
-          protocolsTable,
-          totalProtocolUSD,
-          loading: protocolsTableLoading,
-        } = useFetchProtocolsTable(selectedChainId, walletId);
 
-  const totalUSDValue = totalTokenUSD + totalProtocolUSD;
 
-  const allItem = useMemo(
-    () => ({
-      id: "all",
-      tag: "all",
-      chains: { total_usd_value: totalUSDValue, chain_list: chains },
-      tokens,
-      protocolsTable,
-    }),
-    [chains, protocolsTable, tokens, totalUSDValue]
-  );
+  const totalUSDValue: number = totalTokenUSD + totalProtocolUSD;
+
 
   const fetchAccountsData = useCallback(async () => {
     if (walletsLoading || chainsLoading || tokensLoading || protocolsTableLoading) return;
 
     setLoading(true);
     try {
-      setSelectedItem(allItem);
-      await saveNetWorth(totalUSDValue, {
+      const selectedData = {
+        id: "all",
+        tag: "all",
+        chains: { total_usd_value: totalUSDValue, chain_list: chains },
+        tokens,
+        protocolsTable,
+      };
+
+      setSelectedItem(selectedData);
+
+      saveNetWorth(totalUSDValue, {
         wallets,
         chains,
         tokens,
         protocolsTable,
         totalProtocolUSD,
         totalTokenUSD,
-      });
+      }).catch((err) => console.error("Error saving net worth:", err));
+
     } catch (error) {
       console.error("Error fetching account data:", error);
     } finally {
       setLoading(false);
     }
-  }, [
-    walletsLoading,
-    chainsLoading,
-    tokensLoading,
-    protocolsTableLoading,
-  ]);
+  }, [totalUSDValue, chains, tokens, protocolsTable]);
 
   useEffect(() => {
-    fetchAccountsData();
-  }, [walletsLoading, chainsLoading, tokensLoading, protocolsTableLoading, fetchAccountsData]);
-
-  const isLoading = loading || walletsLoading || chainsLoading || tokensLoading || protocolsTableLoading;
+    if (!walletsLoading && !chainsLoading && !tokensLoading && !protocolsTableLoading) {
+      fetchAccountsData();
+    }
+  }, [walletsLoading, chainsLoading, tokensLoading, protocolsTableLoading]);
+  const isLoading: boolean = loading || walletsLoading || chainsLoading || tokensLoading || protocolsTableLoading;
 
   return (
     <ThemeProvider theme={theme}>
@@ -107,21 +113,14 @@ const App = () => {
           <>
             {isCryptoView ? (
               <>
-                <Header
-                  wallets={wallets}
-                  totalUSDValue={totalUSDValue}
-                  selectedItemState={[selectedItem, setSelectedItem]}
-                />
+                <Header wallets={wallets} totalUSDValue={totalUSDValue} selectedItemState={[selectedItem, setSelectedItem]} />
                 <Container sx={{ display: "flex", gap: 3, marginY: 3 }}>
-                  <ChainList
-                    chains={chains}
-                    chainIdState={[selectedChainId, setSelectedChainId]}
-                  />
+                  <ChainList chains={chains} chainIdState={[selectedChainId, setSelectedChainId]} />
                   <WalletTable chainList={chains} tokens={tokens} />
                 </Container>
                 <ProtocolTable protocols={protocolsTable} />
               </>
-            ) : (
+            ) : !netWorthLoading && (
               <>
                 <NetWorthChart data={netWorth} />
                 <Transactions />

@@ -1,29 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import axios from "axios";
+import { Wallet } from "../interfaces";
 
-const API_BASE_URL = 'http://localhost:3000/api'; // Base URL for your API
 
-export const useFetchWallets = (chain = null) => {
-    const [wallets, setWallets] = useState([]);
-    const [loading, setLoading] = useState(true);
+interface UseFetchWalletsReturn {
+  wallets: Wallet[];
+  loading: boolean;
+}
+export const useFetchWallets = (chain: string | null = null): UseFetchWalletsReturn => {
+  const [wallets, setWallets] = useState<Wallet[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
-    useEffect(() => {
-        const loadWallets = async () => {
-            try {
-                // Build the URL conditionally based on whether the chain is provided
-                const url = chain ? `${API_BASE_URL}/wallets?chain=${chain}` : `${API_BASE_URL}/wallets`;
+  useEffect(() => {
+    const loadWallets = async () => {
+      try {
+        const url = chain ? `${process.env.REACT_APP_API_BASE_URL}/wallets?chain=${chain}` : `${process.env.REACT_APP_API_BASE_URL}/wallets`;
 
-                const response = await axios.get(url);
-                setWallets(response.data);
-            } catch (error) {
-                console.error('Failed to load wallets:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
+        const response = await axios.get<Wallet[]>(url);
+        setWallets(response.data);
+      } catch (error) {
+        console.error("Failed to load wallets:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-        loadWallets();
-    }, [chain]); // Add chain to the dependency array to reload when chain changes
+    loadWallets();
+  }, [chain]);
 
-    return { wallets, loading };
+  return { wallets, loading };
 };

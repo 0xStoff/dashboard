@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Avatar, Box, Card, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
-import { WalletList } from "../../interfaces/tokens";
-import { Account } from "../../interfaces/account";
+import { WalletList } from "../../../archive/interfaces/tokens";
+import { Account } from "../../../archive/interfaces/account";
 import { ChipWithTooltip } from "../utils/ChipWithTooltip";
-import { Chain, ChainIdState } from "../../interfaces/chain";
+import { Chain, ChainIdState } from "../../../archive/interfaces/chain";
 import { useFetchChains } from "../../hooks/useFetchChains";
 import { formatNumber, toFixedString } from "../../utils/number-utils";
 

@@ -1,20 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import axios from "axios";
+import { Chain } from "../interfaces";
 
-const API_BASE_URL = 'http://localhost:3000/api';
 
-export const useFetchChains = (walletId = 'all') => {
-  const [chains, setChains] = useState([]);
-  const [loading, setLoading] = useState(true);
+
+interface UseFetchChainsReturn {
+  chains: Chain[];
+  loading: boolean;
+}
+
+export const useFetchChains = (walletId: string | null = "all"): UseFetchChainsReturn => {
+  const [chains, setChains] = useState<Chain[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const loadChains = async () => {
       try {
-        const url = `${API_BASE_URL}/chains?wallet_id=${walletId}`;
+        const url = `${process.env.REACT_APP_API_BASE_URL}/chains?wallet_id=${walletId}`;
         const response = await axios.get(url);
         setChains(response.data);
       } catch (error) {
-        console.error('Failed to load chains:', error);
+        console.error("Failed to load chains:", error);
       } finally {
         setLoading(false);
       }
@@ -22,10 +28,6 @@ export const useFetchChains = (walletId = 'all') => {
 
     loadChains();
   }, [walletId]);
-
-  // const totalUSDValue = chains.reduce((sum, chain) => sum + chain.usd_value, 0)
-
-
 
 
   return { chains, loading };
