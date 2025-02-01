@@ -11,7 +11,6 @@ const ProtocolTable: React.FC<{
 
   if (!protocols.length) return null;
 
-
   return <Container>
     {protocols.map((protocol) => ((protocol.totalUSD > 10 && <Card sx={{ marginY: 5, borderRadius: 10 }} key={protocol.name}>
       <CardContent sx={{ padding: 3 }}>
@@ -19,7 +18,7 @@ const ProtocolTable: React.FC<{
           {protocol.name}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          $ {toFixedString(protocol.totalUSD)}
+          $ {toFixedString(protocol.positions.reduce((sum, position) => sum + position.usdValue, 0))}
         </Typography>
         {protocol.positions.map((position, index) => (<Grid key={index} container marginTop={2}>
           <Grid sx={{ display: "flex" }} item xs={1}>

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import axios from "axios";
-import { Wallet } from "./useFetchWallets";
 import { Token } from "../interfaces";
 
 
@@ -10,14 +9,14 @@ interface UseFetchTokensReturn {
   loading: boolean;
 }
 
-export const useFetchTokens = (chain: string | null = 'all', walletId: string | null = 'all'): UseFetchTokensReturn => {
+export const useFetchTokens = (chain: string | null = 'all', walletId: string | null = 'all', searchQuery: string): UseFetchTokensReturn => {
   const [tokens, setTokens] = useState<Token[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const loadTokens = async () => {
       try {
-        const url = `${process.env.REACT_APP_API_BASE_URL}/tokens?chain=${chain}&wallet_id=${walletId}`;
+        const url = `${process.env.REACT_APP_API_BASE_URL}/tokens?chain=${chain}&wallet_id=${walletId}&query=${searchQuery}`;
 
         const response = await axios.get(url);
         setTokens(response.data);
@@ -29,7 +28,7 @@ export const useFetchTokens = (chain: string | null = 'all', walletId: string | 
     };
 
     loadTokens();
-  }, [chain, walletId]);
+  }, [searchQuery, chain, walletId]);
 
   const totalTokenUSD = (tokens).reduce((sum, item) => sum + item.total_usd_value, 0) || 0;
 

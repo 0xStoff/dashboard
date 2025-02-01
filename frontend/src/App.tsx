@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   ChainList,
   NavHeader,
@@ -12,6 +12,7 @@ import {
   Container,
   CssBaseline,
   Typography,
+  TextField,
 } from "@mui/material";
 import { ThemeProvider } from "@mui/system";
 import { useFetchWallets } from "./hooks/useFetchWallets";
@@ -23,7 +24,7 @@ import { NetWorthChart } from "./components/crypto/NetWorthChart";
 import { useFetchNetWorth } from "./hooks/useFetchNetWorth";
 import Header from "./components/header/Header";
 import { Chain, Protocol, Token } from "./interfaces";
-
+import Snackbar from "./components/utils/Snackbar";
 
 interface SelectedItem {
   id: string;
@@ -41,21 +42,21 @@ const App: React.FC = () => {
   const [selectedChainId, setSelectedChainId] = useState<string>("all");
   const [loading, setLoading] = useState<boolean>(true);
   const [isCryptoView, setIsCryptoView] = useState<boolean>(true);
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const walletId: string = selectedItem?.id || "all";
 
   const { netWorth, loading: netWorthLoading, saveNetWorth } = useFetchNetWorth();
   const { wallets, loading: walletsLoading } = useFetchWallets();
-  const { chains, loading: chainsLoading } = useFetchChains(walletId);
-  const { tokens, totalTokenUSD, loading: tokensLoading } = useFetchTokens(selectedChainId, walletId);
+  const { chains, loading: chainsLoading } = useFetchChains(walletId, searchQuery);
+  const { tokens, totalTokenUSD, loading: tokensLoading } = useFetchTokens(selectedChainId, walletId, searchQuery);
   const { protocolsTable, totalProtocolUSD, loading: protocolsTableLoading } = useFetchProtocolsTable(
     selectedChainId,
-    walletId
+    walletId,
+    searchQuery,
   );
 
-
   const totalUSDValue: number = totalTokenUSD + totalProtocolUSD;
-
 
   const fetchAccountsData = useCallback(async () => {
     if (walletsLoading || chainsLoading || tokensLoading || protocolsTableLoading) return;
@@ -93,13 +94,18 @@ const App: React.FC = () => {
       fetchAccountsData();
     }
   }, [walletsLoading, chainsLoading, tokensLoading, protocolsTableLoading]);
-  const isLoading: boolean = loading || walletsLoading || chainsLoading || tokensLoading || protocolsTableLoading;
+
+  const isLoading: boolean = loading || walletsLoading || chainsLoading || tokensLoading || protocolsTableLoading
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <NavHeader isCryptoView={isCryptoView} setIsCryptoView={setIsCryptoView} />
-
+      <NavHeader
+        isCryptoView={isCryptoView}
+        setIsCryptoView={setIsCryptoView}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+      />
       <Container sx={{ marginY: 10 }}>
         {isLoading && (
           <Box display="flex" justifyContent="center" alignItems="center">

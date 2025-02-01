@@ -119,7 +119,7 @@ router.get("/protocols-table", async (req, res) => {
   try {
     const selectedChainId = req.query.chain || "all";
     const walletId = req.query.wallet_id || "all";
-    // const hideSmallBalances = parseFloat(req.query.hideSmallBalances) || 0;
+    const searchQuery = req.query.query ? req.query.query.toLowerCase() : "";
     const hideSmallBalances = 0.1;
 
     const groupedByProtocol = (await fetchProtocolData()).reduce((acc, protocol) => {
@@ -143,13 +143,33 @@ router.get("/protocols-table", async (req, res) => {
       return acc;
     }, {});
 
-
-    const sortedGroupedProtocols = Object.values(groupedByProtocol)
+    let sortedGroupedProtocols = Object.values(groupedByProtocol)
       .map((protocol) => ({
         ...protocol, positions: unifyPositions(protocol.positions)
       }))
       .sort((a, b) => b.totalUSD - a.totalUSD)
       .filter((protocol) => protocol.totalUSD > hideSmallBalances);
+
+    if (searchQuery) {
+      sortedGroupedProtocols = sortedGroupedProtocols
+        .map(protocol => {
+          const matchingPositions = protocol.positions.filter(position =>
+            position.tokenNames.toLowerCase().includes(searchQuery)
+          );
+
+          if (matchingPositions.length > 0) {
+            return {
+              ...protocol,
+              positions: matchingPositions,
+              totalUSD: matchingPositions.reduce((sum, pos) => sum + pos.usdValue, 0),
+            };
+          }
+
+          return null;
+        })
+        .filter(protocol => protocol !== null)
+        .sort((a, b) => b.totalUSD - a.totalUSD);
+    }
 
     res.json(sortedGroupedProtocols);
   } catch (err) {
@@ -159,3 +179,4 @@ router.get("/protocols-table", async (req, res) => {
 });
 
 export default router;
+

@@ -1,6 +1,5 @@
 import React from "react";
 import { Avatar, Box, Card, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
-import { ChainIdState, ChainListInterface } from "../../../.archive/interfaces/chain";
 import { Chain } from "../../interfaces";
 
 
@@ -19,14 +18,14 @@ const styles = {
 
 
 const ChainList: React.FC<{
-  chains: Chain[]; chainIdState: ChainIdState;
+  chains: Chain[]; chainIdState;
 }> = ({ chains, chainIdState }) => {
   const [selectedChainId, setSelectedChainId] = chainIdState;
 
   if (!chains.length) return null;
 
 
-  const handleRowClick = (chain: ChainListInterface) => {
+  const handleRowClick = (chain) => {
     setSelectedChainId(selectedChainId === chain.chain_id ? "all" : chain.chain_id);
   };
 

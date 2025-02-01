@@ -18,7 +18,7 @@ const Header = ({ totalUSDValue, wallets, selectedItemState}) => {
     <Box>
       {[{
         id: "all", tag: "all"
-      }, ...wallets].map((acc, i) => (<Chip
+      }, ...wallets.filter((wallet) => wallet.id < 14)].map((acc, i) => (<Chip
         key={`${acc.id}-${i}`}
         sx={{ margin: 1 }}
         onClick={() => setSelectedItem(acc)}
