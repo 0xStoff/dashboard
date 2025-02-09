@@ -35,6 +35,5 @@ export const useFetchProtocolsTable = (chain: string | null    = "all",
 
   const totalProtocolUSD = protocolsTable.reduce((sum, protocol) => sum + protocol.totalUSD, 0);
 
-  console.log(protocolsTable)
   return { protocolsTable, totalProtocolUSD, loading };
 };

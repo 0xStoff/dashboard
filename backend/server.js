@@ -24,45 +24,6 @@ import { Server as SocketServer } from "socket.io";
 import http from "http";
 
 
-const performanceData = [{ date: "2024-02-01", totalNetWorth: 25000 }, {
-  date: "2024-02-10",
-  totalNetWorth: 27000
-}, { date: "2024-02-20", totalNetWorth: 29000 }, { date: "2024-03-01", totalNetWorth: 45000 }, {
-  date: "2024-03-10",
-  totalNetWorth: 48000
-}, { date: "2024-03-20", totalNetWorth: 50000 }, { date: "2024-04-01", totalNetWorth: 70000 }, {
-  date: "2024-04-10",
-  totalNetWorth: 68000
-}, { date: "2024-04-20", totalNetWorth: 72000 }, { date: "2024-05-01", totalNetWorth: 60000 }, {
-  date: "2024-05-10",
-  totalNetWorth: 59000
-}, { date: "2024-05-20", totalNetWorth: 61000 }, { date: "2024-06-01", totalNetWorth: 55000 }, {
-  date: "2024-06-10",
-  totalNetWorth: 54000
-}, { date: "2024-06-20", totalNetWorth: 53000 }, { date: "2024-07-01", totalNetWorth: 52000 }, {
-  date: "2024-07-10",
-  totalNetWorth: 51000
-}, { date: "2024-07-20", totalNetWorth: 50000 }, { date: "2024-08-01", totalNetWorth: 48000 }, {
-  date: "2024-08-10",
-  totalNetWorth: 49000
-}, { date: "2024-08-20", totalNetWorth: 50000 }, { date: "2024-09-01", totalNetWorth: 47000 }, {
-  date: "2024-09-10",
-  totalNetWorth: 46000
-}, { date: "2024-09-20", totalNetWorth: 45000 }, { date: "2024-10-01", totalNetWorth: 44000 }, {
-  date: "2024-10-10",
-  totalNetWorth: 43000
-}, { date: "2024-10-20", totalNetWorth: 45000 }, { date: "2024-11-01", totalNetWorth: 48000 }, {
-  date: "2024-11-10",
-  totalNetWorth: 47000
-}, { date: "2024-11-20", totalNetWorth: 46000 }, { date: "2024-12-01", totalNetWorth: 50000 }, {
-  date: "2024-12-10",
-  totalNetWorth: 49000
-}, { date: "2024-12-20", totalNetWorth: 48000 }, { date: "2025-01-01", totalNetWorth: 44000 }, {
-  date: "2025-01-10",
-  totalNetWorth: 43000
-}, { date: "2025-01-20", totalNetWorth: 43000 }];
-
-
 dotenv.config();
 
 const app = express();
@@ -178,9 +139,10 @@ initDb().then(() => {
   //
   // seedNetWorthData();
 
-  // writeStaticDataToDB()
-  //     .then(() => console.log('Token Data for static wallets fetched'))
-  //     .catch((err) => console.error('Failed to fetch static Tokens:', err));
+
+  writeStaticDataToDB()
+      .then(() => console.log('Token Data for static wallets fetched'))
+      .catch((err) => console.error('Failed to fetch static Tokens:', err));
 
   // writeAptosDataToDB()
   //     .then(() => console.log('Token Data for aptos wallets fetched'))

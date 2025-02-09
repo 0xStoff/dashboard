@@ -129,7 +129,7 @@ function getKrakenSignature(urlPath, data, secret) {
  */
 async function fetchKrakenLedgers(apiKey, apiSecret, asset, type) {
     const now = Math.floor(Date.now() / 1000);
-    const fiveYearsAgo = now - 5 * 365 * 24 * 60 * 60; // Approximation of 5 years in seconds
+    const fiveYearsAgo = now - 5 * 365 * 24 * 60 * 60;
     const allLedgers = [];
     let offset = 0;
 
@@ -244,7 +244,6 @@ router.get('/gnosispay/transactions', async (req, res) => {
             },
         });
 
-        // Send the fetched data back as JSON
         res.json(response.data);
     } catch (error) {
         console.error("Error fetching Gnosis Pay transactions:", error.message);

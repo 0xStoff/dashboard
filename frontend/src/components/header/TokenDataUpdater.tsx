@@ -32,13 +32,14 @@ const TokenDataUpdater = () => {
 
     return () => {
       isMounted.current = false;
-      socket.off("progress", handleProgress); // ✅ Remove listener on unmount
+      socket.off("progress", handleProgress);
     };
   }, []);
 
   const handleUpdate = useCallback(() => {
     if (isMounted.current) {
       setIsLoading(true);
+      localStorage.clear();
       setMessage("🔄 Starting Token Data Update...");
       setOpen(true);
       socket.emit("runAllTokenDataFunctions");

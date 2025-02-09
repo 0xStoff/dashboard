@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   ChainList,
   NavHeader,
@@ -10,9 +10,8 @@ import {
   Box,
   CircularProgress,
   Container,
-  CssBaseline,
-  Typography,
-  TextField,
+  CssBaseline, IconButton, Tooltip,
+  Typography
 } from "@mui/material";
 import { ThemeProvider } from "@mui/system";
 import { useFetchWallets } from "./hooks/useFetchWallets";
@@ -24,7 +23,7 @@ import { NetWorthChart } from "./components/crypto/NetWorthChart";
 import { useFetchNetWorth } from "./hooks/useFetchNetWorth";
 import Header from "./components/header/Header";
 import { Chain, Protocol, Token } from "./interfaces";
-import Snackbar from "./components/utils/Snackbar";
+import { BarChart, SyncAlt } from "@mui/icons-material";
 
 interface SelectedItem {
   id: string;
@@ -43,6 +42,7 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [isCryptoView, setIsCryptoView] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [showChart, setShowChart] = useState<boolean>(false);
 
   const walletId: string = selectedItem?.id || "all";
 
@@ -117,18 +117,28 @@ const App: React.FC = () => {
 
         {!isLoading && selectedItem && (
           <>
-            {isCryptoView ? (
+            {isCryptoView && !netWorthLoading ? (
               <>
+                <Box display="flex" justifyContent="flex-end" mb={2}>
+                  <Tooltip title={showChart ? "Hide Chart" : "Show Chart"}>
+                    <IconButton
+                      color="primary"
+                      onClick={() => setShowChart((prev) => !prev)}
+                    >
+                      {showChart ? <SyncAlt fontSize="medium" /> : <BarChart fontSize="medium" />}
+                    </IconButton>
+                  </Tooltip>
+                </Box>
                 <Header wallets={wallets} totalUSDValue={totalUSDValue} selectedItemState={[selectedItem, setSelectedItem]} />
+                {showChart && <NetWorthChart data={netWorth} />}
                 <Container sx={{ display: "flex", gap: 3, marginY: 3 }}>
                   <ChainList chains={chains} chainIdState={[selectedChainId, setSelectedChainId]} />
                   <WalletTable chainList={chains} tokens={tokens} />
                 </Container>
                 <ProtocolTable protocols={protocolsTable} />
               </>
-            ) : !netWorthLoading && (
+            ) :  (
               <>
-                <NetWorthChart data={netWorth} />
                 <Transactions />
               </>
             )}

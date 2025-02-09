@@ -1,6 +1,6 @@
 export const toFixedString = (item: number | string, digits = 2) => {
   const num = parseFloat(item.toString());
-  return num.toLocaleString("de-CH", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  return Math.abs(num).toLocaleString("de-CH", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 };
 
 export const formatNumber = (value, type) => {

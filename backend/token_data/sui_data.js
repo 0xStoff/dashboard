@@ -275,7 +275,7 @@ export const fetchStaticData = async () => {
     name: "MAGIC",
     symbol: "MAGIC",
     decimals: 16,
-    logo_url: "https://cryptologos.cc/logos/magic-token-magic-logo.svg?v=040",
+    logo_url: "https://cryptologos.cc/logos/magic-token-magic-logo.png?v=040",
     priceKey: "magic",
     amount: 4349,
     wallet: "0x770353615119F0f701118d3A4eaf1FE57fA00F84"
@@ -286,7 +286,7 @@ export const fetchStaticData = async () => {
     decimals: 16,
     logo_url: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=040",
     priceKey: "usd-coin",
-    amount: 1500,
+    amount: 500,
     wallet: "0x01"
   }, {
     id: "nft",
@@ -295,9 +295,19 @@ export const fetchStaticData = async () => {
     decimals: 16,
     logo_url: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=040",
     priceKey: "usd-coin",
-    amount: 5000,
+    amount: 500,
     wallet: "0x02"
+  }, {
+    id: "bera",
+    name: "Bera",
+    symbol: "Bera",
+    decimals: 16,
+    logo_url: "https://img.cryptorank.io/coins/berachain1681996075164.png",
+    priceKey: "berachain-bera",
+    amount: 180,
+    wallet: "0x03"
   }];
+
 
   return Promise.all(chains.map(async chain => {
     const price = (await fetchTokenPriceCoingecko(chain.priceKey)) || 0;

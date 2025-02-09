@@ -26,6 +26,7 @@ const Header = ({ totalUSDValue, wallets, selectedItemState}) => {
         variant={selectedItem?.id === acc.id ? "outlined" : "filled"}
       />))}
     </Box>
+
   </Container>;
 };
 

@@ -20,6 +20,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "pg": "^8.13.0",
+    "puppeteer": "^24.2.0",
     "sequelize": "^6.37.3",
     "socket.io": "^4.8.1"
   },
