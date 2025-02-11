@@ -32,7 +32,7 @@ const port = 3000;
 const server = http.createServer(app);
 const io = new SocketServer(server, {
   cors: {
-    origin: "http://localhost:8080", methods: ["GET", "POST"]
+    origin: "*", methods: ["GET", "POST"]
   }
 });
 
@@ -42,7 +42,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const corsOptions = {
-  origin: "http://localhost:8080", methods: ["GET", "POST", "PUT", "DELETE"], credentials: true
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
 };
 
 app.use(cors(corsOptions));

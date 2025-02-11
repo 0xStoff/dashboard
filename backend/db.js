@@ -5,7 +5,7 @@ const { Pool } = pkg;
 // Replace these values with your actual DB configuration
 export const pool = new Pool({
     user: 'stoff',
-    host: 'localhost',
+    host: 'stoeff.xyz',
     database: 'crypto_dashboard',
     password: 'abc123',
     port: 5432,

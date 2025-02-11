@@ -4,7 +4,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import { io } from "socket.io-client";
 import Snackbar from "../utils/Snackbar";
 
-const socket = io("http://localhost:3000");
+const socket = io("http://stoeff.xyz:3000");
 
 const TokenDataUpdater = () => {
   const [isLoading, setIsLoading] = useState(false);

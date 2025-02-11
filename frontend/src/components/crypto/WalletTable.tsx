@@ -63,12 +63,12 @@ const WalletTable: React.FC<{
                 <Box sx={styles.avatarWrapper}>
                   <Avatar
                     alt={item.name}
-                    src={"http://localhost:3000/logos/" + item.logo_path || ""}
+                    src={"http://stoeff.xyz:3000/logos/" + item.logo_path || ""}
                     sx={{ width: 35, height: 35, marginRight: 1 }}
                   />
                   {getChainLogo(item.chain_id) && (<Avatar
                     alt={item.chain_id}
-                    src={"http://localhost:3000/logos/" + getChainLogo(item.chain_id)}
+                    src={"http://stoeff.xyz:3000/logos/" + getChainLogo(item.chain_id)}
                     sx={styles.chainLogo}
                   />)}
                 </Box>
