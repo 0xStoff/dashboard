@@ -25,7 +25,7 @@ const ProtocolTable: React.FC<{ protocols: Protocol[] }> = ({ protocols }) => {
               </Typography>
               {protocol.positions.map((position, index) => (
                 <Grid key={index} container marginTop={2} alignItems="center">
-                  <Grid sx={{ display: "flex" }} item xs={isMobile ? 4 : 2}>
+                  <Grid sx={{ display: "flex" }} item xs={isMobile ? 4 : 1}>
                     {position.logoUrls.map((url, i) => (
                       <Avatar
                         key={i}
@@ -37,14 +37,10 @@ const ProtocolTable: React.FC<{ protocols: Protocol[] }> = ({ protocols }) => {
                   </Grid>
 
                   {!isMobile &&
-                    <Grid item xs={2}>
+                    <Grid item xs={3}>
                       <Typography sx={{ marginLeft: 2 }}>{position.tokenNames}</Typography>
                     </Grid>}
 
-                  {!isMobile &&
-                    <Grid item xs={2}>
-                      <Typography>$ {formatNumber(position.price, "price")}</Typography>
-                    </Grid>}
 
                   <Grid item xs={isMobile ? 4 : 2}>
                     <Chip label={position.type} variant="filled" size={isMobile ? "small" : "medium"} />
@@ -59,6 +55,11 @@ const ProtocolTable: React.FC<{ protocols: Protocol[] }> = ({ protocols }) => {
                         />
                       ))}
                   </Grid>
+
+                  {!isMobile &&
+                    <Grid item xs={2}>
+                      <Typography align="right">$ {formatNumber(position.price, "price")}</Typography>
+                    </Grid>}
 
                   {!isMobile && (
                     <Grid item xs={2}>
