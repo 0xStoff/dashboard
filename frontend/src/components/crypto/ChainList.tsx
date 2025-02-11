@@ -5,7 +5,7 @@ import { Chain } from "../../interfaces";
 
 const styles = {
   container: {
-    flex: "0 0 auto", width: 200, maxWidth: 200
+    flex: "0 0 auto", width: { md: 200 }, maxWidth: { md: 200 }
   }, card: {
     borderRadius: 10
   }, tableRow: (isActive: boolean) => ({

@@ -129,7 +129,7 @@ const App: React.FC = () => {
                 </Box>
                 <Header wallets={wallets} totalUSDValue={totalUSDValue} selectedItemState={[selectedItem, setSelectedItem]} />
                 {showChart && <NetWorthChart data={netWorth} />}
-                <Container sx={{ display: "flex", gap: 3, marginY: 3 }}>
+                <Container sx={{ display: "flex", gap: 3, marginY: 3, flexDirection: { xs: "column", md: "row" }}}>
                   <ChainList chains={chains} chainIdState={[selectedChainId, setSelectedChainId]} />
                   <WalletTable chainList={chains} tokens={tokens} />
                 </Container>
