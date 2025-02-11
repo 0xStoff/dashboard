@@ -45,29 +45,26 @@ const fetchChains = async (req) => {
   }))];
 };
 
-
 const fetchWallets = async (req) => {
   const walletId = req.query.wallet_id || "all";
   const walletWhereClause = walletId !== "all" ? { id: walletId } : {};
+  const searchQuery = req.query.query ? req.query.query.toLowerCase() : "";
 
   const wallets = await WalletModel.findAll({
-    where: walletWhereClause,
-    include: [
-      {
-        model: TokenModel,
-        through: { model: WalletTokenModel, attributes: ["amount", "raw_amount", "usd_value"] },
-        attributes: ["name", "symbol", "decimals", "price", "logo_path", "chain_id"],
-      },
-      {
-        model: ProtocolModel,
-        through: { model: WalletProtocolModel, attributes: ["portfolio_item_list"] },
-        attributes: ["name", "logo_path", "chain_id"],
-      },
-    ],
-    order: [["id", "ASC"]],
+    where: walletWhereClause, include: [{
+      model: TokenModel,
+      through: { model: WalletTokenModel, attributes: ["amount", "raw_amount", "usd_value"] },
+      attributes: ["name", "symbol", "decimals", "price", "logo_path", "chain_id"]
+    }, {
+      model: ProtocolModel,
+      through: { model: WalletProtocolModel, attributes: ["portfolio_item_list"] },
+      attributes: ["name", "logo_path", "chain_id"]
+    }], order: [["id", "ASC"]]
   });
 
+
   const walletUsdValuesByChain = {};
+
 
   const processedWallets = wallets.map((wallet) => {
     const tokens = wallet.tokens.map((token) => ({
@@ -75,16 +72,14 @@ const fetchWallets = async (req) => {
       amount: token.wallets_tokens.amount,
       raw_amount: token.wallets_tokens.raw_amount,
       usd_value: parseFloat(token.wallets_tokens.usd_value || 0),
-      wallets_tokens: undefined,
+      wallets_tokens: undefined
     }));
+    const filteredTokens = searchQuery ? tokens.filter(token => token.symbol.toLowerCase().includes(searchQuery)) : tokens;
 
-    const totalTokenUsdValue = tokens.reduce((sum, token) => {
+    const totalTokenUsdValue = filteredTokens.reduce((sum, token) => {
       if (!walletUsdValuesByChain[token.chain_id]) {
         walletUsdValuesByChain[token.chain_id] = {
-          chain_id: token.chain_id,
-          total_usd_value: 0,
-          total_token_usd_value: 0,
-          total_protocol_usd_value: 0,
+          chain_id: token.chain_id, total_usd_value: 0, total_token_usd_value: 0, total_protocol_usd_value: 0
         };
       }
       walletUsdValuesByChain[token.chain_id].total_usd_value += token.usd_value;
@@ -92,7 +87,28 @@ const fetchWallets = async (req) => {
       return sum + token.usd_value;
     }, 0);
 
-    const totalProtocolUsdValue = wallet.protocols.reduce((sum, protocol) => {
+
+    const filteredProtocols = wallet.protocols
+      .map((protocol) => {
+        const filteredPortfolioItems = protocol.wallets_protocols.portfolio_item_list.filter((item) =>
+          item.asset_token_list.some((token) => token.name.toLowerCase().includes(searchQuery))
+        );
+
+        if (filteredPortfolioItems.length > 0) {
+          return {
+            ...protocol.get(),
+            wallets_protocols: {
+              ...protocol.wallets_protocols,
+              portfolio_item_list: filteredPortfolioItems,
+            },
+          };
+        }
+
+        return null;
+      })
+      .filter((protocol) => protocol !== null);
+
+    const totalProtocolUsdValue = filteredProtocols.reduce((sum, protocol) => {
       const protocolUsdValue = protocol.wallets_protocols.portfolio_item_list.reduce(
         (innerSum, item) => innerSum + (item.stats.asset_usd_value || 0),
         0
@@ -112,25 +128,25 @@ const fetchWallets = async (req) => {
       return sum + protocolUsdValue;
     }, 0);
 
+
     return {
       ...wallet.get(),
-      tokens,
+      tokens: filteredTokens,
       protocols: wallet.protocols,
       total_usd_value: parseFloat(totalTokenUsdValue + totalProtocolUsdValue),
       total_token_usd_value: parseFloat(totalTokenUsdValue),
-      total_protocol_usd_value: parseFloat(totalProtocolUsdValue),
+      total_protocol_usd_value: parseFloat(totalProtocolUsdValue)
     };
   });
 
   return { wallets: processedWallets, walletUsdValuesByChain };
 };
 
+
 router.get("/chains", async (req, res) => {
   try {
-    const [chains, { protocols, walletUsdValuesByChain }] = await Promise.all([
-      fetchChains(req),
-      fetchWallets(req),
-    ]);
+    const [chains, { wallets, walletUsdValuesByChain }] = await Promise.all([fetchChains(req), fetchWallets(req)]);
+
 
     const enrichedChains = chains.map((chain) => {
       const usdValue = walletUsdValuesByChain[chain.chain_id]?.total_usd_value || 0;
@@ -147,7 +163,7 @@ router.get("/chains", async (req, res) => {
         type: chain.type,
         usd_value: parseFloat(usdValue.toFixed(2)),
         token_usd_value: parseFloat(tokenUsdValue.toFixed(2)),
-        protocol_usd_value: parseFloat(protocolUsdValue.toFixed(2)),
+        protocol_usd_value: parseFloat(protocolUsdValue.toFixed(2))
       };
     });
 

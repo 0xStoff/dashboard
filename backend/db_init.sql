@@ -148,6 +148,10 @@ CREATE TABLE evm_chains
 );
 
 
+INSERT INTO evm_chains (chain_id, name, native_token_id, wrapped_token_id, logo_path)
+VALUES ('bera', 'Berachain', 'bera', '0x6969696969696969696969696969696969696969', 'bera.png');
+
+
 CREATE TABLE non_evm_chains
 (
     id        SERIAL PRIMARY KEY,
@@ -305,3 +309,4 @@ CREATE TABLE net_worth (
                            total_usd  DECIMAL(20, 8) NOT NULL,   -- The total net worth in USD
                            UNIQUE (date)                         -- Ensure only one entry per date
 );
+

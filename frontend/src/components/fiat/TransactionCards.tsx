@@ -23,19 +23,24 @@ const TransactionCards = ({ approvedSum, transactions }) => {
           CHF {toFixedString(totalDeposits + 6715.0)}
         </Typography>
       </Card>
+
+
     <Tooltip title={
       <Box>
         <Typography variant="body2">gnosis {toFixedString(approvedSum)} CHF</Typography>
         <Typography variant="body2">kraken {toFixedString(totalWithdrawals)} CHF</Typography>
+        <Typography variant="body2">coinbase 1460.00 CHF</Typography>
+        <Typography variant="body2">weed ca 6000.00 CHF</Typography>
       </Box>
     } arrow>
         <Card sx={{ padding: 3, borderRadius: 10 }}>
           <Typography variant="h5">Withdrawals</Typography>
           <Typography variant="h4" fontWeight="bold">
-            CHF {toFixedString(totalWithdrawals - 1460.0 - approvedSum)}
+            CHF {toFixedString(totalWithdrawals - 1460 - 6000 - approvedSum)}
           </Typography>
         </Card>
       </Tooltip>
+
       <Card sx={{ padding: 3, borderRadius: 10 }}>
         <Typography variant="h5">Fees</Typography>
         <Typography variant="h4" fontWeight="bold">

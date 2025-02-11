@@ -39,7 +39,6 @@ const WalletTable: React.FC<{
 
 
 
-
   return (<Box sx={styles.container}>
     <Card sx={styles.card}>
       <Table>

@@ -140,9 +140,10 @@ initDb().then(() => {
   // seedNetWorthData();
 
 
-  writeStaticDataToDB()
-      .then(() => console.log('Token Data for static wallets fetched'))
-      .catch((err) => console.error('Failed to fetch static Tokens:', err));
+
+  // writeStaticDataToDB()
+  //     .then(() => console.log('Token Data for static wallets fetched'))
+  //     .catch((err) => console.error('Failed to fetch static Tokens:', err));
 
   // writeAptosDataToDB()
   //     .then(() => console.log('Token Data for aptos wallets fetched'))

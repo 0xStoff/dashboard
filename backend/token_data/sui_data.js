@@ -286,7 +286,7 @@ export const fetchStaticData = async () => {
     decimals: 16,
     logo_url: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=040",
     priceKey: "usd-coin",
-    amount: 500,
+    amount: 0,
     wallet: "0x01"
   }, {
     id: "nft",
@@ -295,17 +295,8 @@ export const fetchStaticData = async () => {
     decimals: 16,
     logo_url: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=040",
     priceKey: "usd-coin",
-    amount: 500,
+    amount: 2000,
     wallet: "0x02"
-  }, {
-    id: "bera",
-    name: "Bera",
-    symbol: "Bera",
-    decimals: 16,
-    logo_url: "https://img.cryptorank.io/coins/berachain1681996075164.png",
-    priceKey: "berachain-bera",
-    amount: 180,
-    wallet: "0x03"
   }];
 
 

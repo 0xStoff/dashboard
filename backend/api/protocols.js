@@ -7,7 +7,7 @@ const router = express.Router();
 /**
  * Fetch protocol data and include wallet details.
  */
-const fetchProtocolData = async () => {
+export const fetchProtocolData = async () => {
   const protocols = await ProtocolModel.findAll({
     include: [{
       model: WalletModel, attributes: ["id", "wallet", "tag", "chain"]
@@ -39,7 +39,7 @@ const fetchProtocolData = async () => {
  */
 
 
-const addPosition = (protocolName, acc, tokens, itemName, walletTag, walletAmount, hideSmallBalances, selectedChainId, item) => {
+export const addPosition = (protocolName, acc, tokens, itemName, walletTag, walletAmount, hideSmallBalances, selectedChainId, item) => {
   const validTokens = tokens
     .filter((token) => token.amount * token.price > hideSmallBalances || item.stats.asset_usd_value > hideSmallBalances)
     .filter((token) => selectedChainId === "all" || token.chain === selectedChainId);
@@ -82,7 +82,7 @@ const addPosition = (protocolName, acc, tokens, itemName, walletTag, walletAmoun
 /**
  * Unify positions by merging wallets with the same tokens, type, and chain.
  */
-const unifyPositions = (positions) => {
+export const unifyPositions = (positions) => {
   const unified = {};
 
   positions.forEach((position) => {

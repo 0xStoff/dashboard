@@ -16,7 +16,6 @@ router.get('/tokens', async (req, res) => {
         const filteredTokens = searchQuery
           ? result.filter(token =>
             token.symbol.toLowerCase().includes(searchQuery)
-            // (token.name && token.name.toLowerCase().includes(searchQuery))
           )
           : result;
 

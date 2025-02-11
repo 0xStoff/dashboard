@@ -120,14 +120,12 @@ const App: React.FC = () => {
             {isCryptoView && !netWorthLoading ? (
               <>
                 <Box display="flex" justifyContent="flex-end" mb={2}>
-                  <Tooltip title={showChart ? "Hide Chart" : "Show Chart"}>
                     <IconButton
                       color="primary"
                       onClick={() => setShowChart((prev) => !prev)}
                     >
                       {showChart ? <SyncAlt fontSize="medium" /> : <BarChart fontSize="medium" />}
                     </IconButton>
-                  </Tooltip>
                 </Box>
                 <Header wallets={wallets} totalUSDValue={totalUSDValue} selectedItemState={[selectedItem, setSelectedItem]} />
                 {showChart && <NetWorthChart data={netWorth} />}

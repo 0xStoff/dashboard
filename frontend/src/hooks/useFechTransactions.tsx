@@ -121,3 +121,68 @@ const useFetchTransactions = () => {
 };
 
 export default useFetchTransactions;
+
+
+// import { useEffect, useRef, useState } from "react";
+// import axios from "axios";
+//
+// const useFetchTransactions = () => {
+//   const [transactions, setTransactions] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [gnosisTransactions, setGnosisTransactions] = useState([]);
+//   const [approvedSum, setApprovedSum] = useState(0);
+//   const effectRan = useRef(false);
+//
+//   // Fetch all transactions from DB (Binance, Kraken, and Gnosis Pay)
+//   const fetchTransactionsFromDB = async () => {
+//     try {
+//       const response = await axios.get("http://localhost:3000/api/transactions");
+//       return response.data;
+//     } catch (error) {
+//       console.error("Error fetching transactions from DB:", error.message);
+//       return [];
+//     }
+//   };
+//
+//   useEffect(() => {
+//     const fetchTransactions = async () => {
+//       if (effectRan.current) return;
+//       effectRan.current = true;
+//
+//       try {
+//         const transactionsData = await fetchTransactionsFromDB();
+//
+//
+//         const sortedTransactions = transactionsData.sort((a, b) => b.timestamp - a.timestamp);
+//
+//
+//         const [gnosisTransactions, otherTransactions] = sortedTransactions.reduce(
+//           ([gnosis, others], tx) => {
+//             tx.exchange === "Gnosis Pay" ? gnosis.push(tx) : others.push(tx);
+//             return [gnosis, others];
+//           },
+//           [[], []]
+//         );
+//
+//         setGnosisTransactions(gnosisTransactions);
+//         setTransactions(otherTransactions);
+//
+//         const sum = gnosisTransactions
+//           .filter(transaction => transaction.status === "Approved")
+//           .reduce((total, transaction) => total + Number(transaction.amount), 0);
+//         setApprovedSum(sum / 100);
+//
+//       } catch (error) {
+//         console.error("Error processing transactions:", error);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+//
+//     fetchTransactions();
+//   }, []);
+//
+//   return { transactions, loading, gnosisTransactions, approvedSum };
+// };
+//
+// export default useFetchTransactions;

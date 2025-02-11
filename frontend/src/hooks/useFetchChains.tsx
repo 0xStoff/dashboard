@@ -9,14 +9,14 @@ interface UseFetchChainsReturn {
   loading: boolean;
 }
 
-export const useFetchChains = (walletId: string | null = "all"): UseFetchChainsReturn => {
+export const useFetchChains = (walletId: string | null = "all", searchQuery: string): UseFetchChainsReturn => {
   const [chains, setChains] = useState<Chain[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const loadChains = async () => {
       try {
-        const url = `${process.env.REACT_APP_API_BASE_URL}/chains?wallet_id=${walletId}`;
+        const url = `${process.env.REACT_APP_API_BASE_URL}/chains?wallet_id=${walletId}&query=${searchQuery}`;
         const response = await axios.get(url);
         setChains(response.data);
       } catch (error) {
@@ -27,7 +27,7 @@ export const useFetchChains = (walletId: string | null = "all"): UseFetchChainsR
     };
 
     loadChains();
-  }, [walletId]);
+  }, [walletId, searchQuery]);
 
 
   return { chains, loading };

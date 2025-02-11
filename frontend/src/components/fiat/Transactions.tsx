@@ -32,7 +32,7 @@ const Transactions = () => {
     createdAt: new Date(transaction.createdAt).toLocaleString(),
     transactionAmountFormatted: `${transaction.transactionAmount / 100} ${transaction.transactionCurrency.symbol}`,
     billingAmountFormatted: `${transaction.billingAmount / 100} ${transaction.billingCurrency.symbol}`,
-    merchantFormatted: `${transaction.merchant.name.trim()} (${transaction.merchant.city})`,
+    merchantFormatted: `${transaction.merchant.name.trim()}, ${transaction.merchant.city}`,
     status: transaction.status
   }));
 
