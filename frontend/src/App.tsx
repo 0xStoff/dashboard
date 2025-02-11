@@ -11,7 +11,7 @@ import {
   CircularProgress,
   Container,
   CssBaseline, IconButton, Tooltip,
-  Typography
+  Typography, useMediaQuery
 } from "@mui/material";
 import { ThemeProvider } from "@mui/system";
 import { useFetchWallets } from "./hooks/useFetchWallets";
@@ -43,6 +43,8 @@ const App: React.FC = () => {
   const [isCryptoView, setIsCryptoView] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showChart, setShowChart] = useState<boolean>(false);
+
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const walletId: string = selectedItem?.id || "all";
 
@@ -119,14 +121,14 @@ const App: React.FC = () => {
           <>
             {isCryptoView && !netWorthLoading ? (
               <>
-                <Box display="flex" justifyContent="flex-end" mb={2}>
-                    <IconButton
-                      color="primary"
-                      onClick={() => setShowChart((prev) => !prev)}
-                    >
-                      {showChart ? <SyncAlt fontSize="medium" /> : <BarChart fontSize="medium" />}
-                    </IconButton>
-                </Box>
+                {!isMobile && <Box display="flex" justifyContent="flex-end" mb={2}>
+                  <IconButton
+                    color="primary"
+                    onClick={() => setShowChart((prev) => !prev)}
+                  >
+                    {showChart ? <SyncAlt fontSize="medium" /> : <BarChart fontSize="medium" />}
+                  </IconButton>
+                </Box>}
                 <Header wallets={wallets} totalUSDValue={totalUSDValue} selectedItemState={[selectedItem, setSelectedItem]} />
                 {showChart && <NetWorthChart data={netWorth} />}
                 <Container sx={{ display: "flex", gap: 3, marginY: 3, flexDirection: { xs: "column", md: "row" }}}>

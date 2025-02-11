@@ -1,8 +1,9 @@
 import React from "react";
-import { CircularProgress, Container } from "@mui/material";
+import { CircularProgress, Container, useMediaQuery } from "@mui/material";
 import TransactionsTable from "./TransactionsTable";
 import TransactionCards from "./TransactionCards";
 import useFetchTransactions from "../../hooks/useFechTransactions";
+import { useTheme } from "@mui/material/styles";
 
 const binanceTransactionColumns = [{ label: "Exchange", key: "exchange" },
   { label: "Order No", key: "orderNo" },
@@ -21,6 +22,8 @@ const gnosisColumns = [{ label: "Created At", key: "createdAt" },
 
 const Transactions = () => {
   const { transactions, loading, gnosisTransactions, approvedSum } = useFetchTransactions();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   if (loading) {
     return (<Container>
@@ -38,16 +41,17 @@ const Transactions = () => {
 
   return (<Container sx={{ marginTop: 10 }}>
       <TransactionCards transactions={transactions} approvedSum={approvedSum} />
-      <TransactionsTable
-        title="Gnosis Pay Transactions"
-        transactions={formattedGnosisTransactions}
-        columns={gnosisColumns}
-      />
-      <TransactionsTable
-        title="Binance & Kraken Transactions"
-        transactions={transactions}
-        columns={binanceTransactionColumns}
-      />
+
+    {!isMobile && <TransactionsTable
+      title="Gnosis Pay Transactions"
+      transactions={formattedGnosisTransactions}
+      columns={gnosisColumns}
+    />}
+    {!isMobile && <TransactionsTable
+      title="Binance & Kraken Transactions"
+      transactions={transactions}
+      columns={binanceTransactionColumns}
+    />}
     </Container>);
 };
 

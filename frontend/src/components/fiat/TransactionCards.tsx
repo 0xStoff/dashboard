@@ -16,8 +16,8 @@ const TransactionCards = ({ approvedSum, transactions }) => {
   const totalFees = transactions.reduce((sum, tx) => sum + (parseFloat(tx.fee) || 0), 0);
 
 
-  return (<Container sx={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-      <Card sx={{ padding: 3, borderRadius: 10 }}>
+  return (<Container sx={{ display: {md: "flex" }, justifyContent: "space-between", marginBottom: 5 }}>
+      <Card sx={{ padding: 3, borderRadius: 10, marginY: 3 }}>
         <Typography variant="h5">Deposits</Typography>
         <Typography variant="h4" fontWeight="bold">
           CHF {toFixedString(totalDeposits + 6715.0)}
@@ -33,7 +33,7 @@ const TransactionCards = ({ approvedSum, transactions }) => {
         <Typography variant="body2">weed ca 6000.00 CHF</Typography>
       </Box>
     } arrow>
-        <Card sx={{ padding: 3, borderRadius: 10 }}>
+        <Card sx={{ padding: 3, borderRadius: 10, marginY: 3 }}>
           <Typography variant="h5">Withdrawals</Typography>
           <Typography variant="h4" fontWeight="bold">
             CHF {toFixedString(totalWithdrawals - 1460 - 6000 - approvedSum)}
@@ -41,7 +41,7 @@ const TransactionCards = ({ approvedSum, transactions }) => {
         </Card>
       </Tooltip>
 
-      <Card sx={{ padding: 3, borderRadius: 10 }}>
+      <Card sx={{ padding: 3, borderRadius: 10, marginY: 3 }}>
         <Typography variant="h5">Fees</Typography>
         <Typography variant="h4" fontWeight="bold">
           CHF {toFixedString(totalFees)}

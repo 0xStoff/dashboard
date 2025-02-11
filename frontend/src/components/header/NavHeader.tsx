@@ -1,5 +1,5 @@
 import React from "react";
-import { AppBar, IconButton, Toolbar, Typography, useMediaQuery } from "@mui/material";
+import { AppBar, Box, IconButton, Toolbar, Typography, useMediaQuery } from "@mui/material";
 import CurrencyBitcoinIcon from "@mui/icons-material/CurrencyBitcoin";
 import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
 import TokenDataUpdater from "./TokenDataUpdater";
@@ -13,9 +13,9 @@ const NavHeader = ({ isCryptoView, setIsCryptoView, searchQuery, setSearchQuery 
   return (
     <AppBar position="sticky" sx={{ background: "#121212", padding: "0 16px" }}>
       <Toolbar sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        {!isMobile && <Typography variant="h5" sx={{ flexGrow: 1 }}>
+        {!isMobile ? <Typography variant="h5" sx={{ flexGrow: 1 }}>
           Dashboard
-        </Typography>}
+        </Typography> : <Box sx={{flexGrow: 1}}></Box>}
 
         {isCryptoView && <SearchInput searchQuery={searchQuery} setSearchQuery={setSearchQuery} />}
 
