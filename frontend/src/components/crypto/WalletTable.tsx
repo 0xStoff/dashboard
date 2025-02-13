@@ -147,12 +147,12 @@ const WalletTable: React.FC<{ tokens: Token[], chainList: any[] }> = ({ tokens, 
                           </Typography>
                         )}
                       </TableCell>
-
-                    <TableCell sx={styles.tableCell} align="right">
+                    {!isMobile &&
+                      <TableCell sx={styles.tableCell} align="right">
                       {item.wallets?.map((wallet) => (
                         <ChipWithTooltip key={wallet.id} item={item} wallet={wallet} />
                       ))}
-                    </TableCell>
+                    </TableCell>}
 
                     <TableCell sx={{ ...styles.tableCell, fontWeight: "bold", whiteSpace: "nowrap" }} align="right">
                       $ {toFixedString(item.amount * item.price)}
