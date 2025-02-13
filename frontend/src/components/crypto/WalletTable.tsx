@@ -1,13 +1,28 @@
-import React, { useMemo } from "react";
-import { Avatar, Box, Card, Table, TableBody, TableCell, TableHead, TableRow, Typography, useMediaQuery } from "@mui/material";
-import { ChipWithTooltip } from "../utils/ChipWithTooltip";
-import { formatNumber, toFixedString } from "../../utils/number-utils";
+import React, { useMemo, useState } from "react";
+import {
+  Avatar,
+  Box,
+  Card,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Typography,
+  useMediaQuery,
+  Menu,
+  MenuItem,
+  IconButton
+} from "@mui/material";
+import { ArrowDropUp, ArrowDropDown } from "@mui/icons-material";
 import { Token } from "../../interfaces";
 import { useTheme } from "@mui/material/styles";
+import { formatNumber, toFixedString } from "../../utils/number-utils";
+import { ChipWithTooltip } from "../utils/ChipWithTooltip";
 
 const styles = {
   container: { flex: 1 },
-  card: { borderRadius: 10, overflowX: "auto" }, // Enable horizontal scrolling if needed
+  card: { borderRadius: 10, overflowX: "auto", position: "relative", padding: 2 },
   tableRow: { "&:last-child td, &:last-child th": { border: 0 } },
   tableCell: { border: 0 },
   avatarWrapper: {
@@ -24,15 +39,23 @@ const styles = {
     right: 0,
     border: "1px solid",
     borderColor: "background.paper"
+  },
+  sortButton: {
+    position: "absolute",
+    top: 10,
+    right: 10
   }
 };
 
-const WalletTable: React.FC<{ tokens: Token[] }> = ({ tokens, chainList }) => {
+const WalletTable: React.FC<{ tokens: Token[], chainList: any[] }> = ({ tokens, chainList }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  const totalUSD = useMemo(
-    () => tokens.reduce((acc, item) => acc + item.amount * item.price, 0),
+  const [sortConfig, setSortConfig] = useState({ key: "holdings", order: "desc" });
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+
+  const totalUSD = useMemo(() =>
+      tokens.reduce((acc, item) => acc + item.amount * item.price, 0),
     [tokens]
   );
 
@@ -41,28 +64,53 @@ const WalletTable: React.FC<{ tokens: Token[] }> = ({ tokens, chainList }) => {
   const getChainLogo = (chainId: string) =>
     chainList.find((c) => c.chain_id === chainId)?.logo_path || "";
 
+  const sortedTokens = useMemo(() => {
+    return [...tokens].sort((a, b) => {
+      const valueA = sortConfig.key === "holdings" ? a.amount * a.price : (a.price_24h_change || 0);
+      const valueB = sortConfig.key === "holdings" ? b.amount * b.price : (b.price_24h_change || 0);
+      return sortConfig.order === "asc" ? valueA - valueB : valueB - valueA;
+    });
+  }, [tokens, sortConfig]);
+
+  const handleSortChange = (key: "holdings" | "change") => {
+    setSortConfig((prev) => ({
+      key,
+      order: prev.key === key ? (prev.order === "asc" ? "desc" : "asc") : "desc"
+    }));
+    setMenuAnchor(null);
+  };
+
   return (
     <Box sx={styles.container}>
       <Card sx={styles.card}>
+        {/* Sorting Button in Upper Right Corner */}
+        <IconButton sx={styles.sortButton} onClick={(e) => setMenuAnchor(e.currentTarget)}>
+          {sortConfig.order === "asc" ? <ArrowDropUp /> : <ArrowDropDown />}
+        </IconButton>
+
+        {/* Sorting Menu */}
+        <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
+          <MenuItem onClick={() => handleSortChange("holdings")}>Sort by Holdings</MenuItem>
+          <MenuItem onClick={() => handleSortChange("change")}>Sort by 24h Change</MenuItem>
+        </Menu>
+
         <Table>
           <TableHead>
             <TableRow>
               <TableCell sx={{ border: 0, padding: 2 }} colSpan={isMobile ? 3 : 6}>
                 <Typography variant="h5" fontWeight="bold">Wallet</Typography>
-                <Typography variant="body2" fontWeight="bold">
-                  $ {toFixedString(totalUSD)}
-                </Typography>
+                <Typography variant="body2" fontWeight="bold">$ {toFixedString(totalUSD)}</Typography>
               </TableCell>
             </TableRow>
           </TableHead>
         </Table>
-        <Box sx={{ height: 600, maxHeight: "fit-content", overflowX: "auto" }}>
+
+        <Box sx={{ height: 600, overflowX: "auto" }}>
           <Table>
             <TableBody>
-              {tokens.map((item, index) => (
+              {sortedTokens.map((item, index) => (
                 item.amount * item.price > 10 && (
                   <TableRow key={index} sx={styles.tableRow}>
-                    {/* Avatar + Token Symbol */}
                     <TableCell sx={styles.tableCell}>
                       <Box sx={styles.avatarWrapper}>
                         <Avatar
@@ -86,7 +134,6 @@ const WalletTable: React.FC<{ tokens: Token[] }> = ({ tokens, chainList }) => {
                       </Typography>
                     </TableCell>}
 
-                    {!isMobile && (
                       <TableCell sx={styles.tableCell} align="left">
                         {item.price_24h_change && (
                           <Typography
@@ -100,33 +147,14 @@ const WalletTable: React.FC<{ tokens: Token[] }> = ({ tokens, chainList }) => {
                           </Typography>
                         )}
                       </TableCell>
-                    )}
 
-                      <TableCell sx={styles.tableCell} align="right">
-                        {item.wallets?.map((wallet) => (
-                          <ChipWithTooltip key={wallet.id} item={item} wallet={wallet} />
-                        ))}
-                      </TableCell>
-                    {!isMobile && (
-                    <TableCell sx={{ ...styles.tableCell, whiteSpace: "nowrap" }} align="right">
-                      $ {formatNumber(item.price, "price")}
+                    <TableCell sx={styles.tableCell} align="right">
+                      {item.wallets?.map((wallet) => (
+                        <ChipWithTooltip key={wallet.id} item={item} wallet={wallet} />
+                      ))}
                     </TableCell>
-                    )}
 
-                    {!isMobile && (
-                      <TableCell sx={styles.tableCell} align="right">
-                        {formatNumber(item.amount, "amount")} {item.symbol}
-                      </TableCell>
-                    )}
-
-                    <TableCell
-                      sx={{
-                        ...styles.tableCell,
-                        fontWeight: "bold",
-                        whiteSpace: "nowrap",
-                      }}
-                      align="right"
-                    >
+                    <TableCell sx={{ ...styles.tableCell, fontWeight: "bold", whiteSpace: "nowrap" }} align="right">
                       $ {toFixedString(item.amount * item.price)}
                     </TableCell>
                   </TableRow>
