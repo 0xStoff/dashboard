@@ -1,7 +1,8 @@
 {
   "name": "crypto_dashboard",
   "scripts": {
-    "start": "concurrently \"cd backend && yarn start\" \"cd frontend && yarn start\""
+    "start": "concurrently \"cd backend && yarn start\" \"cd frontend && yarn start\"",
+    "setup": "yarn install && cd backend && yarn install && cd ../frontend && yarn install"
   },
   "devDependencies": {
     "concurrently": "^7.0.0"
