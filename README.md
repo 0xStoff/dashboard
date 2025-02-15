@@ -91,5 +91,6 @@ Now you can run both the backend and frontend from the root using:
 
     yarn start
 
-•	🖥️ Backend → Runs on: http://localhost:3000
-	•	🌐 Frontend → Runs on: http://localhost:8080
+
+•	🖥️ Backend → http://localhost:3000 <br>
+•	🌐 Frontend → http://localhost:8080
