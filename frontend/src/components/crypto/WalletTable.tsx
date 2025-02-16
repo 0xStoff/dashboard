@@ -83,12 +83,10 @@ const WalletTable: React.FC<{ tokens: Token[], chainList: any[] }> = ({ tokens, 
   return (
     <Box sx={styles.container}>
       <Card sx={styles.card}>
-        {/* Sorting Button in Upper Right Corner */}
         <IconButton sx={styles.sortButton} onClick={(e) => setMenuAnchor(e.currentTarget)}>
           {sortConfig.order === "asc" ? <ArrowDropUp /> : <ArrowDropDown />}
         </IconButton>
 
-        {/* Sorting Menu */}
         <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
           <MenuItem onClick={() => handleSortChange("holdings")}>Sort by Holdings</MenuItem>
           <MenuItem onClick={() => handleSortChange("change")}>Sort by 24h Change</MenuItem>
@@ -105,7 +103,7 @@ const WalletTable: React.FC<{ tokens: Token[], chainList: any[] }> = ({ tokens, 
           </TableHead>
         </Table>
 
-        <Box sx={{ height: 600, overflowX: "auto" }}>
+        <Box sx={{ height: "auto", maxHeight: 600, overflowX: "auto" }}>
           <Table>
             <TableBody>
               {sortedTokens.map((item, index) => (
@@ -154,6 +152,14 @@ const WalletTable: React.FC<{ tokens: Token[], chainList: any[] }> = ({ tokens, 
                       ))}
                     </TableCell>}
 
+                    {!isMobile &&
+                    <TableCell sx={styles.tableCell}>
+                      {formatNumber(item.amount, 'amount')}
+                    </TableCell>}
+                    {!isMobile &&
+                      <TableCell sx={{ ...styles.tableCell, whiteSpace: "nowrap" }}>
+                      $ {formatNumber(item.price, 'price')}
+                    </TableCell>}
                     <TableCell sx={{ ...styles.tableCell, fontWeight: "bold", whiteSpace: "nowrap" }} align="right">
                       $ {toFixedString(item.amount * item.price)}
                     </TableCell>
