@@ -5,6 +5,8 @@ import WalletModel from "../models/WalletModel.js";
 import ProtocolModel from "../models/ProtocolModel.js";
 import WalletProtocolModel from "../models/WalletProtocolModel.js";
 
+export const HIDESMALLBALANCES = 10;
+
 const TOKEN_ATTRIBUTES = [
   "name", "symbol", "decimals", "price", "logo_path", "chain_id", "price_24h_change"
 ];
@@ -95,12 +97,11 @@ export const transformData = (wallets) => {
     });
   });
 
-  const hideSmallBalances = 0;
 
   return [...tokenMap.values()]
     .reduce((acc, token) => {
       const total_usd_value = token.amount * token.price;
-      if (total_usd_value > hideSmallBalances) {
+      if (total_usd_value > HIDESMALLBALANCES) {
         acc.push({
           ...token,
           total_usd_value,

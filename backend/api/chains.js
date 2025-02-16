@@ -7,6 +7,7 @@ import TokenModel from "../models/TokenModel.js";
 import WalletTokenModel from "../models/WalletTokenModel.js";
 import ProtocolModel from "../models/ProtocolModel.js";
 import WalletProtocolModel from "../models/WalletProtocolModel.js";
+import { HIDESMALLBALANCES } from "./utils.js";
 
 const router = express.Router();
 
@@ -167,9 +168,8 @@ router.get("/chains", async (req, res) => {
       };
     });
 
-    const hideSmallBalances = 0;
     const sortedData = enrichedChains
-      .filter((chain) => chain.usd_value > hideSmallBalances)
+      .filter((chain) => chain.usd_value > HIDESMALLBALANCES)
       .sort((a, b) => b.usd_value - a.usd_value) || [];
 
     res.json(sortedData);

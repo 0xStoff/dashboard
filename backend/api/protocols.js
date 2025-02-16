@@ -1,6 +1,7 @@
 import express from "express";
 import ProtocolModel from "../models/ProtocolModel.js";
 import WalletModel from "../models/WalletModel.js";
+import { HIDESMALLBALANCES } from "./utils.js";
 
 const router = express.Router();
 
@@ -39,10 +40,10 @@ export const fetchProtocolData = async () => {
  */
 
 
-export const addPosition = (protocolName, acc, tokens, itemName, walletTag, walletAmount, hideSmallBalances, selectedChainId, item) => {
+export const addPosition = (protocolName, acc, tokens, itemName, walletTag, walletAmount, selectedChainId, item) => {
   const validTokens = tokens
-    .filter((token) => token.amount * token.price > hideSmallBalances || item.stats.asset_usd_value > hideSmallBalances)
-    .filter((token) => selectedChainId === "all" || token.chain === selectedChainId);
+    .filter((token) => selectedChainId === "all" || token.chain === selectedChainId)
+    .filter((token) => token.amount * token.price > 0.01 || item.stats.asset_usd_value > 0.01)
 
 
   if (!validTokens.length) return;
@@ -120,7 +121,6 @@ router.get("/protocols-table", async (req, res) => {
     const selectedChainId = req.query.chain || "all";
     const walletId = req.query.wallet_id || "all";
     const searchQuery = req.query.query ? req.query.query.toLowerCase() : "";
-    const hideSmallBalances = 0.1;
 
     const groupedByProtocol = (await fetchProtocolData()).reduce((acc, protocol) => {
       if (!acc[protocol.name]) {
@@ -129,7 +129,7 @@ router.get("/protocols-table", async (req, res) => {
 
       const addWalletPositions = (item, walletTag) => {
         const walletAmount = item.detail.supply_token_list?.[0]?.amount || 0;
-        addPosition(protocol.name, acc, item.detail.supply_token_list || [], item.name, walletTag, walletAmount, hideSmallBalances, selectedChainId, item);
+        addPosition(protocol.name, acc, item.detail.supply_token_list || [], item.name, walletTag, walletAmount, selectedChainId, item);
       };
 
       if (protocol.wallets) {
@@ -148,7 +148,7 @@ router.get("/protocols-table", async (req, res) => {
         ...protocol, positions: unifyPositions(protocol.positions)
       }))
       .sort((a, b) => b.totalUSD - a.totalUSD)
-      .filter((protocol) => protocol.totalUSD > hideSmallBalances);
+      .filter((protocol) => protocol.totalUSD > HIDESMALLBALANCES);
 
     if (searchQuery) {
       sortedGroupedProtocols = sortedGroupedProtocols

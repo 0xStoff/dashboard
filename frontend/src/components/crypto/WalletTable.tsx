@@ -59,7 +59,6 @@ const WalletTable: React.FC<{ tokens: Token[], chainList: any[] }> = ({ tokens, 
     [tokens]
   );
 
-  if (!tokens.length) return null;
 
   const getChainLogo = (chainId: string) =>
     chainList.find((c) => c.chain_id === chainId)?.logo_path || "";
@@ -79,6 +78,8 @@ const WalletTable: React.FC<{ tokens: Token[], chainList: any[] }> = ({ tokens, 
     }));
     setMenuAnchor(null);
   };
+
+  if (!tokens.length) return <Typography>no tokens</Typography>;
 
   return (
     <Box sx={styles.container}>
@@ -107,7 +108,6 @@ const WalletTable: React.FC<{ tokens: Token[], chainList: any[] }> = ({ tokens, 
           <Table>
             <TableBody>
               {sortedTokens.map((item, index) => (
-                item.amount * item.price > 10 && (
                   <TableRow key={index} sx={styles.tableRow}>
                     <TableCell sx={styles.tableCell}>
                       <Box sx={styles.avatarWrapper}>
@@ -165,7 +165,7 @@ const WalletTable: React.FC<{ tokens: Token[], chainList: any[] }> = ({ tokens, 
                     </TableCell>
                   </TableRow>
                 )
-              ))}
+              )}
             </TableBody>
           </Table>
         </Box>

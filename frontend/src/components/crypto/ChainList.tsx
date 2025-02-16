@@ -43,7 +43,7 @@ const ChainList: React.FC<{
         <Box sx={{ height: 400, overflow: "auto", maxHeight: "fit-content" }}>
           <Table>
             <TableBody>
-              {chains.map((chain) => (chain.usd_value > 10 && <TableRow
+              {chains.map((chain) => (<TableRow
                   key={chain.chain_id}
                   hover
                   onClick={() => handleRowClick(chain)}
