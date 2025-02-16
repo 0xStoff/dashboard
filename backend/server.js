@@ -116,79 +116,12 @@ const initDb = async () => {
 
 initDb().then(() => {
   console.log("Database synced");
-  // app.listen(port, async () => {
-  //     console.log('Server running on port 3000');
 
   server.listen(port, () => {
     console.log(`Server running on port ${port}`);
-
-    // fetchAndSaveEvmTokenDataForAllWallets();
-    //
-    // fetchAndSaveEvmTokenData(6, '0xa8d58cd36835970af11be0ff1f9e2d66c79417cb')
   });
 
 
-  //
-  // const seedNetWorthData = async () => {
-  //     try {
-  //
-  //         await NetWorth.bulkCreate(performanceData);
-  //         console.log("Seed data added successfully");
-  //     } catch (error) {
-  //         console.error("Error seeding data:", error);
-  //     }
-  // };
-  //
-  //
-  // seedNetWorthData();
-
-
-
-  // writeStaticDataToDB()
-  //     .then(() => console.log('Token Data for static wallets fetched'))
-  //     .catch((err) => console.error('Failed to fetch static Tokens:', err));
-
-  // writeAptosDataToDB()
-  //     .then(() => console.log('Token Data for aptos wallets fetched'))
-  //     .catch((err) => console.error('Failed to fetch aptos Tokens:', err));
-  //
-  //
-  // writeSuiDataToDB()
-  //     .then(() => console.log('Token Data for sui wallets fetched'))
-  //     .catch((err) => console.error('Failed to fetch sui Tokens:', err));
-  //
-  // fetchAndSaveSolTokenDataForAllWallets()
-  //     .then(() => console.log('Token Data for sol Wallets fetched'))
-  //     .catch((err) => console.error('Failed to fetch Tokens:', err));
-
-
-  // fetchAndSaveEvmTokenDataForAllWallets()
-  //      .then(() => console.log('Token Data for all Wallets fetched'))
-  //      .catch((err) => console.error('Failed to fetch Tokens:', err));
-
-  //
-  //
-
-  // fetchAndSaveEvmTokenData(6, "0xa8d58cd36835970af11be0ff1f9e2d66c79417cb")
-  //      .then(() => console.log('Token Data for l 1.25 fetched'))
-
-  // fetchCosmosTokens()
-  //      .then(() => console.log('Token Data for cosmos Wallets fetched'))
-  //      .catch((err) => console.error('Failed to fetch cosmos Tokens:', err));
-
-
-  //
-  // updateNonEvmChainsData(nonEvmChains)
-  //     .then(() => console.log('Non-EVM chains updated'))
-  //     .catch((error) => console.error('Error updating non-EVM chains:', error));
-  //
-  //
-  // updateChainsData(await evmChains())
-  //     .then(() => console.log('Initial chain data update complete'))
-  //     .catch((err) => console.error('Failed to update chains on startup:', err));
-
-
-  // });
 }).catch(error => {
   console.error("Failed to sync database:", error);
 });
