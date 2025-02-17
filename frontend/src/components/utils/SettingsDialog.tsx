@@ -1,44 +1,61 @@
-import React, {useEffect, useState} from 'react';
-import {
-    Button, Dialog, DialogTitle, DialogContent, Typography,
-} from '@mui/material';
+import React, { useEffect, useState } from "react";
+import { Dialog, DialogContent, Typography } from "@mui/material";
 import ThresholdSlider from "./ThresholdSlider";
+import ManageWallets from "./ManageWallets"; // Import the new component
+import axios from "axios";
 
-function SettingsDialog({openSettings, setOpenSettings, hideSmallBalances, setHideSmallBalances}) {
+function SettingsDialog({ openSettings, setOpenSettings }) {
+  const [hideSmallBalances, setHideSmallBalances] = useState<number>(0);
 
+  useEffect(() => {
+    if (openSettings) {
+      fetchHideSmallBalances();
+    }
+  }, [openSettings]);
 
-    useEffect(() => {
-        const storedHideSmallBalances = localStorage.getItem('hideSmallBalances');
+  const fetchHideSmallBalances = async () => {
+    try {
+      const response = await axios.get("http://localhost:3000/api/settings/hidesmallbalances");
+      setHideSmallBalances(response.data.value);
+    } catch (error) {
+      console.error("Error fetching hideSmallBalances:", error);
+    }
+  };
 
-        if (storedHideSmallBalances) {
-            setHideSmallBalances(JSON.parse(storedHideSmallBalances));
-        }
+  const updateHideSmallBalances = async (newValue: number) => {
+    try {
+      setHideSmallBalances(newValue);
 
-    }, []);
+      await axios.post("http://localhost:3000/api/settings/hidesmallbalances", {
+        value: newValue,
+      });
+    } catch (error) {
+      console.error("Error updating hideSmallBalances:", error);
+    }
+  };
 
+  const handleSliderChange = (event: Event, newValue: number | number[]) => {
+    updateHideSmallBalances(newValue as number);
+  };
 
-    const handleSliderChange = (event: Event, newValue: number | number[]) => {
-        localStorage.setItem('hideSmallBalances', JSON.stringify(newValue));
-        setHideSmallBalances(newValue as number);
-    };
+  const handleCloseSettings = () => {
+    setOpenSettings(false);
+  };
 
-
-    const handleCloseSettings = () => {
-        setOpenSettings(false);
-    };
-
-    return (<Dialog open={openSettings} onClose={handleCloseSettings} maxWidth="sm" fullWidth>
-        <DialogTitle>Settings</DialogTitle>
-        <DialogContent>
-            <ThresholdSlider
-                value={hideSmallBalances}
-                onChange={handleSliderChange}
-                min={0}
-                max={300}
-                label="Hide Small Balances"
-            />
-        </DialogContent>
-    </Dialog>);
+  return (
+    <Dialog open={openSettings} onClose={handleCloseSettings} maxWidth="sm" fullWidth>
+      <DialogContent>
+        <ThresholdSlider
+          value={hideSmallBalances}
+          onChange={handleSliderChange}
+          min={0}
+          max={300}
+          label="Hide Small Balances"
+        />
+        <ManageWallets />
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export default SettingsDialog;

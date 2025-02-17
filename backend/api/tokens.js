@@ -11,7 +11,7 @@ router.get('/tokens', async (req, res) => {
         const searchQuery = req.query.query ? req.query.query.toLowerCase() : "";
 
         const wallets = await fetchWalletData(chain, usd_value, walletId);
-        const result = transformData(wallets);
+        const result = await transformData(wallets);
 
         const filteredTokens = searchQuery
           ? result.filter(token =>

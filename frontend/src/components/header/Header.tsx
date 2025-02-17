@@ -1,6 +1,8 @@
-import { Box, Card, Chip, CircularProgress, Container, Typography } from "@mui/material";
-import React from "react";
+import { Box, Card, Chip, CircularProgress, Container, IconButton, Typography } from "@mui/material";
+import React, { useState } from "react";
 import { toFixedString } from "../../utils/number-utils";
+import { SettingsDialog } from "../index";
+import { Settings } from "@mui/icons-material";
 
 
 const Header = ({ totalUSDValue, wallets, selectedItemState}) => {
@@ -26,7 +28,6 @@ const Header = ({ totalUSDValue, wallets, selectedItemState}) => {
         variant={selectedItem?.id === acc.id ? "outlined" : "filled"}
       />))}
     </Box>
-
   </Container>;
 };
 

@@ -4,12 +4,17 @@ import WalletTokenModel from "../models/WalletTokenModel.js";
 import WalletModel from "../models/WalletModel.js";
 import ProtocolModel from "../models/ProtocolModel.js";
 import WalletProtocolModel from "../models/WalletProtocolModel.js";
+import SettingsModel from "../models/SettingsModel.js";
 
-export const HIDESMALLBALANCES = 10;
 
 const TOKEN_ATTRIBUTES = [
   "name", "symbol", "decimals", "price", "logo_path", "chain_id", "price_24h_change"
 ];
+
+export const getHideSmallBalances = async () => {
+  const setting = await SettingsModel.findOne({ where: { key: "HIDESMALLBALANCES" } });
+  return setting ? setting.value : 10;
+};
 
 export const fetchWalletData = async (chain, usd_value, walletId) => {
   const walletWhereClause = {};
@@ -44,8 +49,9 @@ export const fetchWalletData = async (chain, usd_value, walletId) => {
   });
 };
 
-export const transformData = (wallets) => {
+export const transformData = async (wallets) => {
   const tokenMap = new Map();
+  const hideSmallBalances = await getHideSmallBalances();
 
   wallets.forEach(({ id: walletId, wallet: walletAddress, tag, chain, tokens }) => {
     tokens.forEach((token) => {
@@ -101,7 +107,7 @@ export const transformData = (wallets) => {
   return [...tokenMap.values()]
     .reduce((acc, token) => {
       const total_usd_value = token.amount * token.price;
-      if (total_usd_value > HIDESMALLBALANCES) {
+      if (total_usd_value > hideSmallBalances) {
         acc.push({
           ...token,
           total_usd_value,

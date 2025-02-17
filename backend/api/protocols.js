@@ -1,7 +1,7 @@
 import express from "express";
 import ProtocolModel from "../models/ProtocolModel.js";
 import WalletModel from "../models/WalletModel.js";
-import { HIDESMALLBALANCES } from "./utils.js";
+import { getHideSmallBalances } from "./utils.js";
 
 const router = express.Router();
 
@@ -122,6 +122,9 @@ router.get("/protocols-table", async (req, res) => {
     const walletId = req.query.wallet_id || "all";
     const searchQuery = req.query.query ? req.query.query.toLowerCase() : "";
 
+    const hideSmallBalances = await getHideSmallBalances();
+
+
     const groupedByProtocol = (await fetchProtocolData()).reduce((acc, protocol) => {
       if (!acc[protocol.name]) {
         acc[protocol.name] = { name: protocol.name, positions: [], totalUSD: 0 };
@@ -143,12 +146,14 @@ router.get("/protocols-table", async (req, res) => {
       return acc;
     }, {});
 
+
+
     let sortedGroupedProtocols = Object.values(groupedByProtocol)
       .map((protocol) => ({
         ...protocol, positions: unifyPositions(protocol.positions)
       }))
       .sort((a, b) => b.totalUSD - a.totalUSD)
-      .filter((protocol) => protocol.totalUSD > HIDESMALLBALANCES);
+      .filter((protocol) => protocol.totalUSD > hideSmallBalances);
 
     if (searchQuery) {
       sortedGroupedProtocols = sortedGroupedProtocols

@@ -5,7 +5,6 @@ import SearchIcon from "@mui/icons-material/Search";
 const SearchInput = ({ searchQuery, setSearchQuery }) => {
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Handle keyboard shortcuts (Escape to clear, Ctrl+F / Cmd+F to focus)
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (event.key === "Escape") {
       setSearchQuery("");

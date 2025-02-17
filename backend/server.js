@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import nonEvmRoutes from "./api/chains.js";
 import chainsRoutes from "./api/chains.js";
 import walletRoutes from "./api/wallets.js";
+import settingsRoutes from "./api/settings.js";
 import protocolsRoutes from "./api/protocols.js";
 import netWorthRoutes from "./api/netWorth.js";
 import tokensRoutes from "./api/tokens.js";
@@ -22,6 +23,7 @@ import ProtocolModel from "./models/ProtocolModel.js";
 import WalletProtocolModel from "./models/WalletProtocolModel.js";
 import { Server as SocketServer } from "socket.io";
 import http from "http";
+import SettingsModel from "./models/SettingsModel.js";
 
 
 dotenv.config();
@@ -59,6 +61,7 @@ app.use("/api", tokensRoutes);
 app.use("/api", protocolsRoutes);
 app.use("/api", transactionsRoutes);
 app.use("/api", netWorthRoutes);
+app.use("/api/settings", settingsRoutes);
 app.use("/logos", express.static(path.join(__dirname, "logos")));
 
 const runAllTokenDataFunctions = async (socket) => {
@@ -119,6 +122,7 @@ initDb().then(() => {
 
   server.listen(port, () => {
     console.log(`Server running on port ${port}`);
+
   });
 
 
