@@ -4,8 +4,7 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "nodemon server.js",
-    "db:init": "psql -U stoff -d crypto_dashboard -f backend/db_init.sql"
+    "start": "nodemon server.js"
   },
   "dependencies": {
     "@aptos-labs/ts-sdk": "^1.33.1",
