@@ -118,8 +118,6 @@ export const writeStaticDataToDB = async () => {
         const raw_amount = amount * 10 ** decimals;
         const usd_value = amount * price;
 
-        // console.log(chainId)
-        // console.log(wallets)
 
         // Insert or update wallet token data
         await WalletTokenModel.upsert({
@@ -295,7 +293,7 @@ export const fetchStaticData = async () => {
     decimals: 16,
     logo_url: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=040",
     priceKey: "usd-coin",
-    amount: 2000,
+    amount: 1000,
     wallet: "0x02"
   }];
 

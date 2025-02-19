@@ -33,7 +33,6 @@ router.post('/wallets', async (req, res) => {
 
 router.put('/wallets/:id', async (req, res) => {
     try {
-        console.log('test')
         const { id } = req.params;
         const { tag } = req.body;
 

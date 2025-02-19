@@ -38,7 +38,6 @@ export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
 
         if (tokenInfo) {
             const tokenPrice = await fetchTokenPrice(tokenInfo.extensions.coingeckoId || '');
-            console.log(tokenPrice)
             if (tokenPrice) {
                 tokenData.push({
                     ...tokenInfo, amount: parsedAccountInfo.tokenAmount.uiAmount, usd: tokenPrice.usd, price_24h_change: tokenPrice.usd_24h_change

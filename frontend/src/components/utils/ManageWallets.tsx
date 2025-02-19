@@ -36,7 +36,6 @@ function ManageWallets() {
     if (!newWallet.tag.trim() || !newWallet.wallet.trim() || !newWallet.chain) return;
     try {
       delete newWallet.showChip;
-      console.log(newWallet)
       await axios.post(`${process.env.REACT_APP_API_BASE_URL}/wallets`, newWallet);
       setNewWallet({ tag: "", wallet: "", chain: "", showChip: false });
       fetchWallets();

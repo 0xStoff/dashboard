@@ -79,8 +79,8 @@ const runAllTokenDataFunctions = async (socket) => {
       socket.emit("progress", { status: "✅ Other token data fetched" });
     })(), (async () => {
       socket.emit("progress", { status: "Fetching EVM token data..." });
-      // await fetchAndSaveEvmTokenDataForAllWallets();
-      // socket.emit("progress", { status: "✅ EVM token data fetched" });
+      await fetchAndSaveEvmTokenDataForAllWallets();
+      socket.emit("progress", { status: "✅ EVM token data fetched" });
     })()]);
 
 
