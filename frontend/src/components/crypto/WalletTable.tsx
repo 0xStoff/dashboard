@@ -113,13 +113,13 @@ const WalletTable: React.FC<{ tokens: Token[], chainList: any[] }> = ({ tokens, 
                       <Box sx={styles.avatarWrapper}>
                         <Avatar
                           alt={item.name}
-                          src={"http://stoeff.xyz:3000/logos/" + item.logo_path || ""}
+                          src={process.env.REACT_APP_LOGO_BASE_URL + item.logo_path || ""}
                           sx={{ width: isMobile ? 30 : 35, height: isMobile ? 30 : 35, marginRight: 1 }}
                         />
                         {getChainLogo(item.chain_id) && (
                           <Avatar
                             alt={item.chain_id}
-                            src={"http://stoeff.xyz:3000/logos/" + getChainLogo(item.chain_id)}
+                            src={process.env.REACT_APP_LOGO_BASE_URL + getChainLogo(item.chain_id)}
                             sx={{ ...styles.chainLogo, width: isMobile ? 15 : 20, height: isMobile ? 15 : 20 }}
                           />
                         )}
