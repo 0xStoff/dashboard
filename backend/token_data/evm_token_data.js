@@ -57,7 +57,6 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress) => {
 
     for (const protocol of protocols) {
       const { id, chain, name, logo_url, portfolio_item_list } = protocol;
-      // console.log(id, portfolio_item_list.reduce((sum, item) => sum + item.stats.asset_usd_value, 0))
 
       const logoPath = logo_url ? await downloadLogo(logo_url, id) : null;
 
