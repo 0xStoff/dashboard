@@ -17,12 +17,12 @@ router.get('/wallets', async (req, res) => {
 
 router.post('/wallets', async (req, res) => {
     try {
-        const { name } = req.body;
-        if (!name) {
-            return res.status(400).json({ error: "Wallet name is required" });
+        const { tag } = req.body;
+        if (!tag) {
+            return res.status(400).json({ error: "Wallet tag is required" });
         }
 
-        const newWallet = await WalletModel.create({ name });
+        const newWallet = await WalletModel.create({ tag });
         res.status(201).json(newWallet);
     } catch (err) {
         console.error('Error adding wallet:', err);
@@ -33,10 +33,10 @@ router.post('/wallets', async (req, res) => {
 router.put('/wallets/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { name } = req.body;
+        const { tag } = req.body;
 
-        if (!name) {
-            return res.status(400).json({ error: "Wallet name is required" });
+        if (!tag) {
+            return res.status(400).json({ error: "Wallet tag is required" });
         }
 
         const wallet = await WalletModel.findByPk(id);
@@ -44,7 +44,7 @@ router.put('/wallets/:id', async (req, res) => {
             return res.status(404).json({ error: "Wallet not found" });
         }
 
-        wallet.name = name;
+        wallet.tag = tag;
         await wallet.save();
         res.status(200).json(wallet);
     } catch (err) {
