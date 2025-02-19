@@ -1,4 +1,3 @@
-
 CREATE TABLE wallets
 (
     id     SERIAL PRIMARY KEY,
@@ -6,7 +5,6 @@ CREATE TABLE wallets
     tag    VARCHAR(100),
     chain  VARCHAR(10)
 );
-
 
 CREATE TABLE evm_chains
 (

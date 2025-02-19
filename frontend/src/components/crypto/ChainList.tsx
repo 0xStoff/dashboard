@@ -55,7 +55,7 @@ const ChainList: React.FC<{
 
                     <Avatar
                       alt={chain.name}
-                      src={"http://stoeff.xyz:3000/logos/" + chain.logo_path || ""}
+                      src={"http://localhost:3000/logos/" + chain.logo_path || ""}
                       sx={{ width: 35, height: 35 }}
                     />
                   </TableCell>
