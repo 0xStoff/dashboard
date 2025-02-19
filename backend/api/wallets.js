@@ -17,12 +17,13 @@ router.get('/wallets', async (req, res) => {
 
 router.post('/wallets', async (req, res) => {
     try {
-        const { tag } = req.body;
-        if (!tag) {
-            return res.status(400).json({ error: "Wallet tag is required" });
+        const { tag, wallet, chain } = req.body;
+
+        if (!tag || !wallet || !chain) {
+            return res.status(400).json({ error: "Tag, wallet, and chain are required" });
         }
 
-        const newWallet = await WalletModel.create({ tag });
+        const newWallet = await WalletModel.create({ tag, wallet, chain });
         res.status(201).json(newWallet);
     } catch (err) {
         console.error('Error adding wallet:', err);
@@ -32,6 +33,7 @@ router.post('/wallets', async (req, res) => {
 
 router.put('/wallets/:id', async (req, res) => {
     try {
+        console.log('test')
         const { id } = req.params;
         const { tag } = req.body;
 
