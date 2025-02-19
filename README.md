@@ -82,6 +82,8 @@ supported chains are: evm, sol, cosmos, aptos, sui
 
 Step 2: Run Database Initialization
 
+	psql -U stoff -d template1 -c "CREATE DATABASE crypto_dashboard;"
+
     yarn db:init
 
 
