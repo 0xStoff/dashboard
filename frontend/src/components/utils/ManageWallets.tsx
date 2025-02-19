@@ -35,7 +35,9 @@ function ManageWallets() {
   const handleAddWallet = async () => {
     if (!newWallet.tag.trim() || !newWallet.wallet.trim() || !newWallet.chain) return;
     try {
-      await axios.post("/api/wallets", newWallet);
+      delete newWallet.showChip;
+      console.log(newWallet)
+      await axios.post(`${process.env.REACT_APP_API_BASE_URL}/wallets`, newWallet);
       setNewWallet({ tag: "", wallet: "", chain: "", showChip: false });
       fetchWallets();
     } catch (error) {
@@ -46,7 +48,7 @@ function ManageWallets() {
   const handleEditWallet = async () => {
     if (!editingWallet || !editingWallet.tag.trim() || !editingWallet.wallet.trim() || !editingWallet.chain) return;
     try {
-      await axios.put(`/api/wallets/${editingWallet.id}`, editingWallet);
+      await axios.put(`${process.env.REACT_APP_API_BASE_URL}/wallets/${editingWallet.id}`, editingWallet);
       setEditingWallet(null);
       fetchWallets();
     } catch (error) {
@@ -56,7 +58,7 @@ function ManageWallets() {
 
   const handleDeleteWallet = async (id: string) => {
     try {
-      await axios.delete(`/api/wallets/${id}`);
+      await axios.delete(`${process.env.REACT_APP_API_BASE_URL}/wallets/${id}`);
       fetchWallets();
     } catch (error) {
       console.error("Error deleting wallet:", error);

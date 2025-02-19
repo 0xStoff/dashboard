@@ -4,7 +4,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import { io } from "socket.io-client";
 import Snackbar from "../utils/Snackbar";
 
-const socket = io("http://localhost:3000");
+const socket = io(process.env.REACT_APP_BASE_URL);
 
 const TokenDataUpdater = () => {
   const [isLoading, setIsLoading] = useState(false);
