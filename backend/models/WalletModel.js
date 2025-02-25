@@ -18,6 +18,11 @@ const WalletModel = sequelize.define('wallets', {
     chain: {
         type: DataTypes.STRING,
         allowNull: false
+    },
+    show_chip: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
     }
 },{
     timestamps: false,

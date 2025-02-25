@@ -3,7 +3,8 @@ CREATE TABLE wallets
     id     SERIAL PRIMARY KEY,
     wallet VARCHAR(255) NOT NULL UNIQUE,
     tag    VARCHAR(100),
-    chain  VARCHAR(10)
+    chain  VARCHAR(10),
+    show_chip  BOOLEAN DEFAULT TRUE
 );
 
 CREATE TABLE evm_chains
