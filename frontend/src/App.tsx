@@ -24,6 +24,7 @@ import { useFetchNetWorth } from "./hooks/useFetchNetWorth";
 import Header from "./components/header/Header";
 import { Chain, Protocol, Token } from "./interfaces";
 import { BarChart, SyncAlt } from "@mui/icons-material";
+import {TokenChart} from "./components/crypto/TokenChart";
 
 interface SelectedItem {
   id: string;
@@ -36,6 +37,27 @@ interface SelectedItem {
   protocolsTable: Protocol[];
 }
 
+export const tokensData = [
+  {
+    name: "Ethereum",
+    symbol: "ETH",
+    history: [
+      { date: "2025-02-20", balance: 1.2, usdValue: 3000 },
+      { date: "2025-02-21", balance: 1.5, usdValue: 3300 },
+      { date: "2025-02-22", balance: 1.3, usdValue: 3100 },
+    ],
+  },
+  {
+    name: "Bitcoin",
+    symbol: "BTC",
+    history: [
+      { date: "2025-02-20", balance: 0.1, usdValue: 5000 },
+      { date: "2025-02-21", balance: 0.15, usdValue: 7500 },
+      { date: "2025-02-22", balance: 0.12, usdValue: 6000 },
+    ],
+  },
+];
+
 const App: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
   const [selectedChainId, setSelectedChainId] = useState<string>("all");
@@ -43,6 +65,7 @@ const App: React.FC = () => {
   const [isCryptoView, setIsCryptoView] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showChart, setShowChart] = useState<boolean>(false);
+  const [selectedToken, setSelectedToken] = useState(null);
 
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -60,6 +83,7 @@ const App: React.FC = () => {
 
   const totalUSDValue: number = totalTokenUSD + totalProtocolUSD;
 
+  console.log(netWorth.history)
   const fetchAccountsData = useCallback(async () => {
     if (walletsLoading || chainsLoading || tokensLoading || protocolsTableLoading) return;
 
@@ -131,6 +155,26 @@ const App: React.FC = () => {
                 </Box>}
                 <Header wallets={wallets} totalUSDValue={totalUSDValue} selectedItemState={[selectedItem, setSelectedItem]} />
                 {showChart && <NetWorthChart data={netWorth} />}
+                <div>
+                  <h2>Token List</h2>
+                  <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                    {tokensData.map((token) => (
+                        <button
+                            key={token.symbol}
+                            onClick={() => setSelectedToken(token)}
+                            style={{
+                              padding: "10px",
+                              cursor: "pointer",
+                              border: selectedToken?.symbol === token.symbol ? "2px solid blue" : "1px solid gray",
+                            }}
+                        >
+                          {token.name} ({token.symbol})
+                        </button>
+                    ))}
+                  </div>
+
+                  {selectedToken && <TokenChart token={selectedToken} />}
+                </div>
                 <Container sx={{ display: "flex", gap: 3, marginY: 3, flexDirection: { xs: "column", md: "row" }}}>
                   <ChainList chains={chains} chainIdState={[selectedChainId, setSelectedChainId]} />
                   <WalletTable chainList={chains} tokens={tokens} />
