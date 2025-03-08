@@ -10,7 +10,7 @@ const useFetchTransactions = () => {
 
   const fetchTransactionsFromServer = async (endpoint) => {
     try {
-      const response = await axios.get(`http://localhost:3000/api/${endpoint}`);
+      const response = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/${endpoint}`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching transactions from ${endpoint}:`, error.message);
@@ -101,7 +101,7 @@ const useFetchTransactions = () => {
     // Fetch Gnosis Transactions
     const fetchGnosisPayTransactions = async () => {
       try {
-        const response = await axios.get("http://localhost:3000/api/gnosispay/transactions");
+        const response = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/gnosispay/transactions`);
         const transactions = response.data;
 
         setGnosisTransactions(transactions);

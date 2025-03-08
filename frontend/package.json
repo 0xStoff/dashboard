@@ -59,7 +59,7 @@
   },
   "scripts": {
     "start": "webpack serve --mode development --open",
-    "build": "webpack --mode production",
+    "build": "webpack --mode production && cp -r ./build/* /var/www/dashboard.stoeff.xyz && rm -R ./build/*",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

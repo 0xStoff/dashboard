@@ -293,7 +293,7 @@ export const fetchStaticData = async () => {
     decimals: 16,
     logo_url: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=040",
     priceKey: "usd-coin",
-    amount: 1000,
+    amount: 0,
     wallet: "0x02"
   }];
 

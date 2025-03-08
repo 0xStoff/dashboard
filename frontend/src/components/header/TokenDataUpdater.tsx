@@ -1,61 +1,51 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { IconButton, Tooltip, CircularProgress } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import { io } from "socket.io-client";
 import Snackbar from "../utils/Snackbar";
-
-const socket = io(process.env.REACT_APP_BASE_URL);
 
 const TokenDataUpdater = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const isMounted = useRef(true);
 
-  useEffect(() => {
-    isMounted.current = true;
+  const handleUpdate = useCallback(async () => {
+    setIsLoading(true);
+    localStorage.clear();
+    setMessage("🔄 Starting Token Data Update...");
+    setOpen(true);
 
-    const handleProgress = (data) => {
-      if (isMounted.current) {
-        if (data.status) {
-          setMessage(data.status);
-          setOpen(true);
-        }
+    try {
+      const response = await fetch("/api/wallets/refetch", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-        if (data.status === "🎉 All Token Data Fetched Successfully!") {
-          setIsLoading(false);
-        }
+      if (!response.ok) {
+        throw new Error("Failed to update token data.");
       }
-    };
 
-    socket.on("progress", handleProgress);
-
-    return () => {
-      isMounted.current = false;
-      socket.off("progress", handleProgress);
-    };
-  }, []);
-
-  const handleUpdate = useCallback(() => {
-    if (isMounted.current) {
-      setIsLoading(true);
-      localStorage.clear();
-      setMessage("🔄 Starting Token Data Update...");
+      const result = await response.json();
+      setMessage(result.message || "🎉 All Token Data Fetched Successfully!");
+    } catch (error) {
+      setMessage("❌ Error fetching token data.");
+    } finally {
+      setIsLoading(false);
       setOpen(true);
-      socket.emit("runAllTokenDataFunctions");
     }
   }, []);
 
   return (
-    <>
-      <Tooltip title="Update Token Data" arrow>
-        <IconButton onClick={handleUpdate} color="primary" disabled={isLoading}>
-          {isLoading ? <CircularProgress size={24} /> : <RefreshIcon fontSize="large" />}
-        </IconButton>
-      </Tooltip>
+      <>
+        <Tooltip title="Update Token Data" arrow>
+          <IconButton onClick={handleUpdate} color="primary" disabled={isLoading}>
+            {isLoading ? <CircularProgress size={24} /> : <RefreshIcon fontSize="large" />}
+          </IconButton>
+        </Tooltip>
 
-      <Snackbar open={open} message={message} handleClose={() => setOpen(false)} />
-    </>
+        <Snackbar open={open} message={message} handleClose={() => setOpen(false)} />
+      </>
   );
 };
 

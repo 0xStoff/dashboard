@@ -32,11 +32,12 @@ const app = express();
 const port = 3000;
 
 const server = http.createServer(app);
-const io = new SocketServer(server, {
-  cors: {
-    origin: "*", methods: ["GET", "POST"]
-  }
-});
+// const io = new SocketServer(server, {
+//   cors: {
+//     origin: "*", methods: ["GET", "POST"]
+//   },
+//   transports: ["websocket", "polling"],
+// });
 
 
 // Get the current directory
@@ -64,44 +65,44 @@ app.use("/api", netWorthRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/logos", express.static(path.join(__dirname, "logos")));
 
-const runAllTokenDataFunctions = async (socket) => {
-  try {
-    socket.emit("progress", { status: "Starting token data updates..." });
+// const runAllTokenDataFunctions = async (socket) => {
+//   try {
+//     socket.emit("progress", { status: "Starting token data updates..." });
+//
+//     await Promise.all([(async () => {
+//       socket.emit("progress", { status: "Fetching other token data..." });
+//       await writeStaticDataToDB();
+//       await writeAptosDataToDB();
+//       await writeSuiDataToDB();
+//       await fetchAndSaveSolTokenDataForAllWallets();
+//       await fetchCosmosTokens();
+//
+//       socket.emit("progress", { status: "✅ Other token data fetched" });
+//     })(), (async () => {
+//       socket.emit("progress", { status: "Fetching EVM token data..." });
+//       await fetchAndSaveEvmTokenDataForAllWallets();
+//       socket.emit("progress", { status: "✅ EVM token data fetched" });
+//     })()]);
+//
+//
+//     socket.emit("progress", { status: "🎉 All Token Data Fetched Successfully!" });
+//   } catch (error) {
+//     socket.emit("progress", { status: "Error executing token data functions.", error: error.message });
+//     console.error("Error executing token data functions:", error);
+//   }
+// };
 
-    await Promise.all([(async () => {
-      socket.emit("progress", { status: "Fetching other token data..." });
-      await writeStaticDataToDB();
-      await writeAptosDataToDB();
-      await writeSuiDataToDB();
-      await fetchAndSaveSolTokenDataForAllWallets();
-      await fetchCosmosTokens();
-
-      socket.emit("progress", { status: "✅ Other token data fetched" });
-    })(), (async () => {
-      socket.emit("progress", { status: "Fetching EVM token data..." });
-      await fetchAndSaveEvmTokenDataForAllWallets();
-      socket.emit("progress", { status: "✅ EVM token data fetched" });
-    })()]);
-
-
-    socket.emit("progress", { status: "🎉 All Token Data Fetched Successfully!" });
-  } catch (error) {
-    socket.emit("progress", { status: "Error executing token data functions.", error: error.message });
-    console.error("Error executing token data functions:", error);
-  }
-};
-
-io.on("connection", (socket) => {
-  console.log("A client connected:", socket.id);
-
-  socket.on("runAllTokenDataFunctions", async () => {
-    await runAllTokenDataFunctions(socket);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("A client disconnected:", socket.id);
-  });
-});
+// io.on("connection", (socket) => {
+//   console.log("A client connected:", socket.id);
+//
+//   socket.on("runAllTokenDataFunctions", async () => {
+//     await runAllTokenDataFunctions(socket);
+//   });
+//
+//   socket.on("disconnect", () => {
+//     console.log("A client disconnected:", socket.id);
+//   });
+// });
 
 
 // Set up associations after all models are defined
