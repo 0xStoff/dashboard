@@ -71,58 +71,6 @@ const App: React.FC = () => {
 
             setSelectedItem(selectedData);
 
-// <<<<<<< HEAD
-//         {!isLoading && selectedItem && (
-//           <>
-//             {isCryptoView && !netWorthLoading ? (
-//               <>
-//                 {!isMobile && <Box display="flex" justifyContent="flex-end" mb={2}>
-//                   <IconButton
-//                     color="primary"
-//                     onClick={() => setShowChart((prev) => !prev)}
-//                   >
-//                     {showChart ? <SyncAlt fontSize="medium" /> : <BarChart fontSize="medium" />}
-//                   </IconButton>
-//                 </Box>}
-//                 <Header wallets={wallets} totalUSDValue={totalUSDValue} selectedItemState={[selectedItem, setSelectedItem]} />
-//                 {showChart && <NetWorthChart data={netWorth} />}
-//                 {/*<div>*/}
-//                 {/*  <h2>Token List</h2>*/}
-//                 {/*  <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>*/}
-//                 {/*    {tokensData.map((token) => (*/}
-//                 {/*        <button*/}
-//                 {/*            key={token.symbol}*/}
-//                 {/*            onClick={() => setSelectedToken(token)}*/}
-//                 {/*            style={{*/}
-//                 {/*              padding: "10px",*/}
-//                 {/*              cursor: "pointer",*/}
-//                 {/*              border: selectedToken?.symbol === token.symbol ? "2px solid blue" : "1px solid gray",*/}
-//                 {/*            }}*/}
-//                 {/*        >*/}
-//                 {/*          {token.name} ({token.symbol})*/}
-//                 {/*        </button>*/}
-//                 {/*    ))}*/}
-//                 {/*  </div>*/}
-//
-//                 {/*  {selectedToken && <TokenChart token={selectedToken} />}*/}
-//                 {/*</div>*/}
-//                 <Container sx={{ display: "flex", gap: 3, marginY: 3, flexDirection: { xs: "column", md: "row" }}}>
-//                   <ChainList chains={chains} chainIdState={[selectedChainId, setSelectedChainId]} />
-//                   <WalletTable chainList={chains} tokens={tokens} />
-//                 </Container>
-//                 <ProtocolTable protocols={protocolsTable} />
-//               </>
-//             ) :  (
-//               <>
-//                 <Transactions />
-//               </>
-//             )}
-//           </>
-//         )}
-//       </Container>
-//     </ThemeProvider>
-//   );
-// =======
             saveNetWorth(totalUSDValue, {
                 wallets, chains, tokens, protocolsTable, totalProtocolUSD, totalTokenUSD,
             }).catch((err) => console.error("Error saving net worth:", err));
@@ -191,7 +139,6 @@ const App: React.FC = () => {
                     </>)}
             </Container>
         </ThemeProvider>);
-// >>>>>>> e9673542c75b5bd38ce1bbe2769ec7089cdbc236
 };
 
 export default App;
