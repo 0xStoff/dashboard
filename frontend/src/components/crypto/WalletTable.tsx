@@ -23,7 +23,7 @@ import { ChipWithTooltip } from "../utils/ChipWithTooltip";
 const styles = {
   container: { flex: 1 },
   card: { borderRadius: 10, overflowX: "auto", position: "relative", padding: 2 },
-  tableRow: { "&:last-child td, &:last-child th": { border: 0 } },
+  tableRow: { cursor: "pointer", "&:last-child td, &:last-child th": { border: 0 } },
   tableCell: { border: 0 },
   avatarWrapper: {
     display: "flex",
@@ -47,7 +47,7 @@ const styles = {
   }
 };
 
-const WalletTable: React.FC<{ tokens: Token[], chainList: any[] }> = ({ tokens, chainList }) => {
+const WalletTable: React.FC<{ tokens: Token[], chainList: any[], setSelectedToken: (symbol: (prevSelected) => null | string) => void  }> = ({ tokens, chainList, setSelectedToken }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -79,6 +79,10 @@ const WalletTable: React.FC<{ tokens: Token[], chainList: any[] }> = ({ tokens, 
     setMenuAnchor(null);
   };
 
+  const handleTokenClick = (symbol: string) => {
+    setSelectedToken((prevSelected) => (prevSelected === symbol ? null : symbol));
+  };
+
   if (!tokens.length) return <Typography>no tokens</Typography>;
 
   return (
@@ -108,7 +112,7 @@ const WalletTable: React.FC<{ tokens: Token[], chainList: any[] }> = ({ tokens, 
           <Table>
             <TableBody>
               {sortedTokens.map((item, index) => (
-                  <TableRow key={index} sx={styles.tableRow}>
+                  <TableRow onClick={() => handleTokenClick(item.symbol)} key={index} sx={styles.tableRow}>
                     <TableCell sx={styles.tableCell}>
                       <Box sx={styles.avatarWrapper}>
                         <Avatar
