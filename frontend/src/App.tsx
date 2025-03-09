@@ -155,26 +155,26 @@ const App: React.FC = () => {
                 </Box>}
                 <Header wallets={wallets} totalUSDValue={totalUSDValue} selectedItemState={[selectedItem, setSelectedItem]} />
                 {showChart && <NetWorthChart data={netWorth} />}
-                <div>
-                  <h2>Token List</h2>
-                  <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                    {tokensData.map((token) => (
-                        <button
-                            key={token.symbol}
-                            onClick={() => setSelectedToken(token)}
-                            style={{
-                              padding: "10px",
-                              cursor: "pointer",
-                              border: selectedToken?.symbol === token.symbol ? "2px solid blue" : "1px solid gray",
-                            }}
-                        >
-                          {token.name} ({token.symbol})
-                        </button>
-                    ))}
-                  </div>
+                {/*<div>*/}
+                {/*  <h2>Token List</h2>*/}
+                {/*  <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>*/}
+                {/*    {tokensData.map((token) => (*/}
+                {/*        <button*/}
+                {/*            key={token.symbol}*/}
+                {/*            onClick={() => setSelectedToken(token)}*/}
+                {/*            style={{*/}
+                {/*              padding: "10px",*/}
+                {/*              cursor: "pointer",*/}
+                {/*              border: selectedToken?.symbol === token.symbol ? "2px solid blue" : "1px solid gray",*/}
+                {/*            }}*/}
+                {/*        >*/}
+                {/*          {token.name} ({token.symbol})*/}
+                {/*        </button>*/}
+                {/*    ))}*/}
+                {/*  </div>*/}
 
-                  {selectedToken && <TokenChart token={selectedToken} />}
-                </div>
+                {/*  {selectedToken && <TokenChart token={selectedToken} />}*/}
+                {/*</div>*/}
                 <Container sx={{ display: "flex", gap: 3, marginY: 3, flexDirection: { xs: "column", md: "row" }}}>
                   <ChainList chains={chains} chainIdState={[selectedChainId, setSelectedChainId]} />
                   <WalletTable chainList={chains} tokens={tokens} />

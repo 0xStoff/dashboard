@@ -104,4 +104,59 @@ router.post('/wallets/refetch', async (req, res) => {
         res.status(500).json({ error: "Failed to refetch wallet data", details: err.message });
     }
 });
+
+router.post('/wallets/refetch/other', async (req, res) => {
+    try {
+        console.log("🔄 Refetching other token data...");
+
+        await Promise.all([
+            writeStaticDataToDB(),
+            writeAptosDataToDB(),
+            writeSuiDataToDB(),
+            fetchAndSaveSolTokenDataForAllWallets(),
+            fetchCosmosTokens()
+        ]);
+
+        console.log("✅ Other token data fetched successfully!");
+        res.status(200).json({ message: "✅ Other token data refetched successfully!" });
+    } catch (err) {
+        console.error("❌ Error refetching other token data:", err);
+        res.status(500).json({ error: "Failed to refetch other token data", details: err.message });
+    }
+});
+
+router.post('/wallets/refetch/evm', async (req, res) => {
+    try {
+        console.log("🔄 Refetching EVM token data for all wallets...");
+
+        await fetchAndSaveEvmTokenDataForAllWallets();
+
+        console.log("✅ EVM token data for all wallets fetched successfully!");
+        res.status(200).json({ message: "✅ EVM token data for all wallets refetched successfully!" });
+    } catch (err) {
+        console.error("❌ Error refetching EVM token data for all wallets:", err);
+        res.status(500).json({ error: "Failed to refetch EVM token data", details: err.message });
+    }
+});
+
+router.post('/wallets/refetch/evm/:walletId', async (req, res) => {
+    try {
+        const { walletId } = req.params;
+        const wallet = await WalletModel.findByPk(walletId);
+
+        if (!wallet || wallet.chain !== 'evm') {
+            return res.status(404).json({ error: "Wallet not found or not an EVM wallet" });
+        }
+
+        console.log(`🔄 Refetching EVM token data for wallet ID: ${walletId}`);
+
+        await fetchAndSaveEvmTokenData(wallet.id, wallet.wallet);
+
+        console.log(`✅ EVM token data fetched successfully for wallet ID: ${walletId}`);
+        res.status(200).json({ message: `✅ EVM token data refetched for wallet ID: ${walletId}` });
+    } catch (err) {
+        console.error("❌ Error refetching EVM token data for wallet:", err);
+        res.status(500).json({ error: "Failed to refetch EVM token data", details: err.message });
+    }
+});
 export default router;
