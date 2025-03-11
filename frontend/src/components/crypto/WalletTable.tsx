@@ -47,7 +47,7 @@ const styles = {
   }
 };
 
-const WalletTable: React.FC<{ tokens: Token[], chainList: any[], setSelectedToken: (symbol: (prevSelected) => null | string) => void  }> = ({ tokens, chainList, setSelectedToken }) => {
+const WalletTable: React.FC<{ tokens: Token[], chainList: any[], setSelectedToken:  (value: (prevSelected) => null | string) => void }> = ({ tokens, chainList, setSelectedToken }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 

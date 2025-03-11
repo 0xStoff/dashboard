@@ -2,10 +2,10 @@ import React from "react";
 import { Avatar, Card, CardContent, Chip, Container, Grid, Typography, useMediaQuery } from "@mui/material";
 import { ColoredChip } from "../utils/ChipWithTooltip";
 import { formatNumber, toFixedString } from "../../utils/number-utils";
-import { Protocol } from "../../interfaces";
+import {Protocol} from "../../interfaces";
 import { useTheme } from "@mui/material/styles";
 
-const ProtocolTable: React.FC<{ protocols: Protocol[], setSelectedToken: (symbol: (prevSelected) => null | string) => void  } > = ({ protocols, setSelectedToken }) => {
+const ProtocolTable: React.FC<{ protocols: Protocol[], setSelectedToken:  (value: (prevSelected) => null | string) => void } > = ({ protocols, setSelectedToken }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 

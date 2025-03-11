@@ -1,9 +1,9 @@
-import React, {useEffect, useState, useCallback} from "react";
+import React, {useEffect, useState, useCallback, useRef} from "react"; // Import useRef
 import {
     ChainList, NavHeader, ProtocolTable, Transactions, WalletTable,
 } from "./components";
 import {
-    Box, CircularProgress, Container, CssBaseline, IconButton, Tooltip, Typography, useMediaQuery
+    Box, CircularProgress, Container, CssBaseline, IconButton, Typography, useMediaQuery
 } from "@mui/material";
 import {ThemeProvider} from "@mui/system";
 import {useFetchWallets} from "./hooks/useFetchWallets";
@@ -28,7 +28,6 @@ interface SelectedItem {
     protocolsTable: Protocol[];
 }
 
-
 const App: React.FC = () => {
     const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
     const [selectedChainId, setSelectedChainId] = useState<string>("all");
@@ -36,7 +35,7 @@ const App: React.FC = () => {
     const [isCryptoView, setIsCryptoView] = useState<boolean>(true);
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [showChart, setShowChart] = useState<boolean>(false);
-    const [selectedToken, setSelectedToken] = useState(null);
+    const [selectedToken, setSelectedToken] = useState<Token | null>(null);
 
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -49,7 +48,6 @@ const App: React.FC = () => {
     const {
         protocolsTable, totalProtocolUSD, loading: protocolsTableLoading
     } = useFetchProtocolsTable(selectedChainId, walletId, searchQuery,);
-
 
     const totalUSDValue: number = totalTokenUSD + totalProtocolUSD;
 
@@ -85,61 +83,94 @@ const App: React.FC = () => {
         }
     }, [walletsLoading, chainsLoading, tokensLoading, protocolsTableLoading]);
 
-    const isLoading: boolean = loading || walletsLoading || chainsLoading || tokensLoading || protocolsTableLoading
+    const isLoading: boolean = loading || walletsLoading || chainsLoading || tokensLoading || protocolsTableLoading;
 
-    return (<ThemeProvider theme={theme}>
-        <CssBaseline/>
-        <NavHeader
-            isCryptoView={isCryptoView}
-            setIsCryptoView={setIsCryptoView}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-        />
-        <Container sx={{marginY: 10}}>
-            {isLoading && (<Box display="flex" justifyContent="center" alignItems="center">
-                <CircularProgress/>
-            </Box>)}
+    const tokenChartRef = useRef<HTMLDivElement | null>(null);
 
+    useEffect(() => {
+        if (selectedToken && tokenChartRef.current) {
+            if ("scrollIntoView" in tokenChartRef.current) {
+                tokenChartRef.current.scrollIntoView({behavior: "smooth", block: "start"});
+            }
+        }
+    }, [selectedToken]);
 
-            {!isLoading && !selectedItem && <Typography>No data available</Typography>}
+    return (
+        <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <NavHeader
+                isCryptoView={isCryptoView}
+                setIsCryptoView={setIsCryptoView}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+            />
+            <Container sx={{ marginY: 10 }}>
+                {isLoading && (
+                    <Box display="flex" justifyContent="center" alignItems="center">
+                        <CircularProgress />
+                    </Box>
+                )}
 
-            {!isLoading && selectedItem && (<>
-                {isCryptoView && !netWorthLoading ? (<>
-                    {!isMobile && <Box display="flex" justifyContent="flex-end" mb={2}>
-                        <IconButton
-                            color="primary"
-                            onClick={() => setShowChart((prev) => !prev)}
-                        >
-                            {showChart ? <SyncAlt fontSize="medium"/> : <BarChart fontSize="medium"/>}
-                        </IconButton>
-                    </Box>}
-                    <Header wallets={wallets} totalUSDValue={totalUSDValue}
-                            selectedItemState={[selectedItem, setSelectedItem]}/>
-                    {showChart && <NetWorthChart data={netWorth}/>}
-                    {selectedToken &&
-                        <TokenChart
-                            netWorthHistory={netWorth}
-                            selectedToken={selectedToken}
-                            setSelectedToken={setSelectedToken}
-                        />}
+                {!isLoading && !selectedItem && <Typography>No data available</Typography>}
 
-                    <Container sx={{
-                        display: "flex", gap: 3, marginY: 3, flexDirection: {xs: "column", md: "row"}
-                    }}>
-                        <ChainList chains={chains} chainIdState={[selectedChainId, setSelectedChainId]}/>
-                        <WalletTable
-                            tokens={tokens}
-                            chainList={chains}
-                            setSelectedToken={setSelectedToken}
-                        />
-                    </Container>
-                    <ProtocolTable protocols={protocolsTable} setSelectedToken={setSelectedToken}/>
-                </>) : (<>
-                    <Transactions/>
-                </>)}
-            </>)}
-        </Container>
-    </ThemeProvider>);
+                {!isLoading && selectedItem && (
+                    <>
+                        {isCryptoView && !netWorthLoading ? (
+                            <>
+                                {!isMobile && (
+                                    <Box display="flex" justifyContent="flex-end" mb={2}>
+                                        <IconButton
+                                            color="primary"
+                                            onClick={() => setShowChart((prev) => !prev)}
+                                        >
+                                            {showChart ? <SyncAlt fontSize="medium" /> : <BarChart fontSize="medium" />}
+                                        </IconButton>
+                                    </Box>
+                                )}
+                                <Header
+                                    wallets={wallets}
+                                    totalUSDValue={totalUSDValue}
+                                    selectedItemState={[selectedItem, setSelectedItem]}
+                                />
+                                {showChart && <NetWorthChart data={netWorth} />}
+
+                                {selectedToken && (
+                                    <div ref={tokenChartRef}> {/* Attach ref here */}
+                                        <TokenChart
+                                            netWorthHistory={netWorth}
+                                            selectedToken={selectedToken}
+                                            setSelectedToken={setSelectedToken}
+                                        />
+                                    </div>
+                                )}
+
+                                <Container
+                                    sx={{
+                                        display: "flex",
+                                        gap: 3,
+                                        marginY: 3,
+                                        flexDirection: { xs: "column", md: "row" },
+                                    }}
+                                >
+                                    <ChainList chains={chains} chainIdState={[selectedChainId, setSelectedChainId]} />
+                                    <WalletTable
+                                        tokens={tokens}
+                                        chainList={chains}
+                                        setSelectedToken={setSelectedToken}
+                                    />
+                                </Container>
+                                <ProtocolTable protocols={protocolsTable} setSelectedToken={setSelectedToken} />
+                            </>
+                        ) : (
+                            <>
+                                <Transactions />
+                            </>
+                        )}
+                    </>
+                )}
+            </Container>
+        </ThemeProvider>
+    );
 };
 
 export default App;
