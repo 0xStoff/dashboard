@@ -111,7 +111,7 @@ const TokenDataUpdater = () => {
                   <FormControl fullWidth>
                     <InputLabel>Select Wallet</InputLabel>
                     <Select
-                        value={selectedWallet}
+                        value={selectedWallet || null}
                         onChange={(e) => setSelectedWallet(e.target.value)}
                         displayEmpty
                     >
