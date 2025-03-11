@@ -18,26 +18,38 @@ const TokenDataUpdater = () => {
 
   const { wallets, loading: walletsLoading } = useFetchWallets();
 
-  const handleUpdate = useCallback(async (type: "other" | "evm" | "evm_wallet") => {
+  const handleUpdate = useCallback(async (type: "all" | "other" | "evm" | "evm_wallet") => {
     setIsLoading(true);
     localStorage.clear();
 
     let endpoint = "/api/wallets/refetch";
-    if (type === "other") {
-      setMessage("🔄 Fetching Other Token Data...");
-      endpoint = "/api/wallets/refetch/other";
-    } else if (type === "evm") {
-      setMessage("🔄 Fetching EVM Token Data (All Wallets)...");
-      endpoint = "/api/wallets/refetch/evm";
-    } else if (type === "evm_wallet") {
-      if (!selectedWallet) {
-        setMessage("❌ Please select a wallet.");
-        setSnackbarOpen(true);
+
+    switch (type) {
+      case "all":
+        setMessage("🔄 Fetching Token Data for All Wallets...");
+        break;
+      case "other":
+        setMessage("🔄 Fetching Other Token Data...");
+        endpoint = "/api/wallets/refetch/other";
+        break;
+      case "evm":
+        setMessage("🔄 Fetching EVM Token Data...");
+        endpoint = "/api/wallets/refetch/evm";
+        break;
+      case "evm_wallet":
+        if (!selectedWallet) {
+          setMessage("❌ Please select a wallet.");
+          setSnackbarOpen(true);
+          setIsLoading(false);
+          return;
+        }
+        setMessage(`🔄 Fetching EVM Token Data for Wallet: ${selectedWallet}...`);
+        endpoint = `/api/wallets/refetch/evm/${selectedWallet}`;
+        break;
+      default:
+        setMessage("❌ Invalid fetch type.");
         setIsLoading(false);
         return;
-      }
-      setMessage(`🔄 Fetching EVM Token Data for Wallet: ${selectedWallet}...`);
-      endpoint = `/api/wallets/refetch/evm/${selectedWallet}`;
     }
 
     setSnackbarOpen(true);
@@ -65,6 +77,8 @@ const TokenDataUpdater = () => {
     }
   }, [selectedWallet]);
 
+
+
   return (
       <>
         {/* Icon Button to Open Modal */}
@@ -79,6 +93,10 @@ const TokenDataUpdater = () => {
           <DialogTitle>Select Refetch Option</DialogTitle>
           <DialogContent>
             <Box display="flex" flexDirection="column" gap={2} mt={1}>
+              <Button onClick={() => handleUpdate("all")} variant="contained" disabled={isLoading}>
+                {isLoading ? <CircularProgress size={24} /> : "Refetch All Wallets"}
+              </Button>
+
               <Button onClick={() => handleUpdate("other")} variant="contained" disabled={isLoading}>
                 {isLoading ? <CircularProgress size={24} /> : "Refetch Other Tokens"}
               </Button>
