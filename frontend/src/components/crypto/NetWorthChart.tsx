@@ -22,7 +22,7 @@ const processDailyData = (data) => {
 
 
 export const NetWorthChart = ({data}) => {
-    const processedData: NetWorthData[] = processDailyData(data);
+    const processedData: { date: string; totalNetWorth: number }[] = processDailyData(data);
     const startDate = new Date("2025-01-25T23:33:42.697Z").toISOString().split("T")[0];
 
     return (<Chart

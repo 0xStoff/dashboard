@@ -14,7 +14,8 @@ router.get("/net-worth", async (req, res) => {
     const formattedData = netWorthData.map(entry => ({
       date: entry.date,
       totalNetWorth: parseFloat(entry.totalNetWorth),
-      history: entry.history?.tokens || []
+      tokenHistory: entry.history?.tokens || [],
+      protocolHistory: entry.history?.protocolsTable || []
     }));
 
     res.json(formattedData);

@@ -22,6 +22,8 @@ export interface Wallet {
 export interface NetWorthData {
   date: string;
   totalNetWorth: number;
+  tokenHistory: Token[];
+  protocolHistory: Protocol[];
 }
 
 export interface HistoryData {
