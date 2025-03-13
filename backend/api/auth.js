@@ -36,6 +36,9 @@ router.get("/check", (req, res) => {
 
 router.post("/login", async (req, res) => {
     const { address, signature, message } = req.body;
+    console.log("Stored Messages:", global.expectedMessages);
+    console.log("Incoming IP:", req.ip);
+    console.log("Incoming Message:", message);
 
     if (!address || !signature || !message) {
         return res.status(400).json({ error: "Missing address, signature, or message" });
