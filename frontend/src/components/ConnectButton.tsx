@@ -12,7 +12,7 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
 
     const checkAuthentication = async () => {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/auth/check`, {
+            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/check`, {
                 credentials: "include",
             });
 
@@ -48,7 +48,7 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
 
     const signMessage = async (address: string) => {
         try {
-            const messageResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/auth/message`, {
+            const messageResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/message`, {
                 credentials: "include",
             });
 
@@ -61,7 +61,7 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
             const signer = await provider.getSigner();
             const signature = await signer.signMessage(message);
 
-            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/auth/login`, {
+            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
@@ -84,7 +84,7 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
 
     const logout = async () => {
         try {
-            await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/auth/logout`, {
+            await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/logout`, {
                 method: "POST",
                 credentials: "include",
             });

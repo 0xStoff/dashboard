@@ -125,7 +125,7 @@ const App: React.FC = () => {
     useEffect(() => {
         const checkAuthentication = async () => {
             try {
-                const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/auth/check`, {
+                const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/check`, {
                     credentials: "include",
                 });
 
