@@ -12,9 +12,20 @@ router.use(cookieParser());
 global.activeSession = null;
 global.expectedMessages = {};
 
+
+function normalizeIP(ip) {
+    if (!ip) return "";
+    if (ip.startsWith("::ffff:")) {
+        return ip.substring(7); // Convert ::ffff:127.0.0.1 to 127.0.0.1
+    }
+    return ip;
+}
+
+
 router.get("/message", (req, res) => {
+    const ip = normalizeIP(req.ip);
     const message = `Authenticate at ${new Date().toISOString()}`;
-    global.expectedMessages[req.ip] = message;
+    global.expectedMessages[ip] = message; // Store with normalized IP
     res.json({ message });
 });
 
@@ -36,15 +47,17 @@ router.get("/check", (req, res) => {
 
 router.post("/login", async (req, res) => {
     const { address, signature, message } = req.body;
+    const ip = normalizeIP(req.ip);
+
     console.log("Stored Messages:", global.expectedMessages);
-    console.log("Incoming IP:", req.ip);
+    console.log("Incoming IP:", ip);
     console.log("Incoming Message:", message);
 
     if (!address || !signature || !message) {
         return res.status(400).json({ error: "Missing address, signature, or message" });
     }
 
-    if (global.expectedMessages[req.ip] !== message) {
+    if (global.expectedMessages[ip] !== message) {
         return res.status(403).json({ error: "Invalid authentication message" });
     }
 
@@ -75,6 +88,7 @@ router.post("/login", async (req, res) => {
         return res.status(500).json({ error: "Internal Server Error" });
     }
 });
+
 
 router.post("/logout", (req, res) => {
     global.activeSession = null; // Clear session
