@@ -15,7 +15,7 @@ export const useFetchWallets = (chain: string | null = null): UseFetchWalletsRet
   useEffect(() => {
     const loadWallets = async () => {
       try {
-        const url = chain ? `${process.env.REACT_APP_API_BASE_URL}/wallets?chain=${chain}` : `${process.env.REACT_APP_API_BASE_URL}/wallets`;
+        const url = chain ? `/wallets?chain=${chain}` : `/wallets`;
 
         const response = await apiClient.get<Wallet[]>(url);
         setWallets(response.data);

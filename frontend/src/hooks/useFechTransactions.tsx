@@ -11,7 +11,7 @@ const useFetchTransactions = () => {
 
   const fetchTransactionsFromServer = async (endpoint) => {
     try {
-      const response = await apiClient.get(`${process.env.REACT_APP_API_BASE_URL}/${endpoint}`);
+      const response = await apiClient.get(`/${endpoint}`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching transactions from ${endpoint}:`, error.message);

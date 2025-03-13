@@ -17,7 +17,7 @@ export const useFetchNetWorth = (): UseFetchNetWorthReturn => {
   useEffect(() => {
     const loadNetWorth = async () => {
       try {
-        const response = await apiClient.get<NetWorthData[]>(`${process.env.REACT_APP_API_BASE_URL}/net-worth`);
+        const response = await apiClient.get<NetWorthData[]>(`/net-worth`);
         setNetWorth(response.data);
       } catch (error) {
         console.error("Failed to load net worth:", error);

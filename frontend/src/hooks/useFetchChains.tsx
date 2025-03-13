@@ -17,7 +17,7 @@ export const useFetchChains = (walletId: string | null = "all", searchQuery: str
   useEffect(() => {
     const loadChains = async () => {
       try {
-        const url = `${process.env.REACT_APP_API_BASE_URL}/chains?wallet_id=${walletId}&query=${searchQuery}`;
+        const url = `/chains?wallet_id=${walletId}&query=${searchQuery}`;
         const response = await apiClient.get(url);
         setChains(response.data);
       } catch (error) {

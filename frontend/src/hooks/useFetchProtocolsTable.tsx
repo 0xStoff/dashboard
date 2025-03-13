@@ -19,7 +19,7 @@ export const useFetchProtocolsTable = (chain: string | null    = "all",
   useEffect(() => {
     const loadProtocolsTable = async () => {
       try {
-        const url = `${process.env.REACT_APP_API_BASE_URL}/protocols-table?chain=${chain}&wallet_id=${walletId}&query=${searchQuery}`;
+        const url = `/protocols-table?chain=${chain}&wallet_id=${walletId}&query=${searchQuery}`;
 
         const response = await apiClient.get(url);
         setProtocolsTable(response.data);

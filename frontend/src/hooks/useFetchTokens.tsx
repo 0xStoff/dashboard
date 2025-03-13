@@ -17,7 +17,7 @@ export const useFetchTokens = (chain: string | null = 'all', walletId: string | 
   useEffect(() => {
     const loadTokens = async () => {
       try {
-        const url = `${process.env.REACT_APP_API_BASE_URL}/tokens?chain=${chain}&wallet_id=${walletId}&query=${searchQuery}`;
+        const url = `/tokens?chain=${chain}&wallet_id=${walletId}&query=${searchQuery}`;
 
         const response = await apiClient.get(url);
         setTokens(response.data);
