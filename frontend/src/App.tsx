@@ -157,7 +157,7 @@ const App: React.FC = () => {
         }
     }, [selectedToken]);
 
-    const delay = useDelay(1000);
+    const delay = useDelay(2000);
 
 
     return (
