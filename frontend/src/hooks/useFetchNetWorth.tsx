@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { HistoryData, NetWorthData } from "../interfaces";
+import apiClient from "../utils/api-client";
 
 
 interface UseFetchNetWorthReturn {
@@ -16,7 +17,7 @@ export const useFetchNetWorth = (): UseFetchNetWorthReturn => {
   useEffect(() => {
     const loadNetWorth = async () => {
       try {
-        const response = await axios.get<NetWorthData[]>(`${process.env.REACT_APP_API_BASE_URL}/net-worth`);
+        const response = await apiClient.get<NetWorthData[]>(`${process.env.REACT_APP_API_BASE_URL}/net-worth`);
         setNetWorth(response.data);
       } catch (error) {
         console.error("Failed to load net worth:", error);

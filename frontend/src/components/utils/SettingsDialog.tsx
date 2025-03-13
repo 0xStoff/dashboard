@@ -3,6 +3,7 @@ import { Dialog, DialogContent, Typography } from "@mui/material";
 import ThresholdSlider from "./ThresholdSlider";
 import ManageWallets from "./ManageWallets"; // Import the new component
 import axios from "axios";
+import apiClient from "../../utils/api-client";
 
 function SettingsDialog({ openSettings, setOpenSettings }) {
   const [hideSmallBalances, setHideSmallBalances] = useState<number>(0);
@@ -15,7 +16,7 @@ function SettingsDialog({ openSettings, setOpenSettings }) {
 
   const fetchHideSmallBalances = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/api/settings/hidesmallbalances");
+      const response = await apiClient.get("http://localhost:3000/api/settings/hidesmallbalances");
       setHideSmallBalances(response.data.value);
     } catch (error) {
       console.error("Error fetching hideSmallBalances:", error);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Chain } from "../interfaces";
+import apiClient from "../utils/api-client";
 
 
 
@@ -17,7 +18,7 @@ export const useFetchChains = (walletId: string | null = "all", searchQuery: str
     const loadChains = async () => {
       try {
         const url = `${process.env.REACT_APP_API_BASE_URL}/chains?wallet_id=${walletId}&query=${searchQuery}`;
-        const response = await axios.get(url);
+        const response = await apiClient.get(url);
         setChains(response.data);
       } catch (error) {
         console.error("Failed to load chains:", error);
