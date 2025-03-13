@@ -48,10 +48,6 @@ router.post("/login", async (req, res) => {
     const { address, signature, message } = req.body;
     const ip = normalizeIP(req.ip);
 
-    console.log("Stored Messages:", global.expectedMessages);
-    console.log("Incoming IP:", ip);
-    console.log("Incoming Message:", message);
-
     if (!address || !signature || !message) {
         return res.status(400).json({ error: "Missing address, signature, or message" });
     }
@@ -67,7 +63,10 @@ router.post("/login", async (req, res) => {
             return res.status(401).json({ error: "Signature verification failed" });
         }
 
-        // Authentication success
+        if (address.toLowerCase() !== ALLOWED_WALLET) {
+            return res.status(403).json({ error: "Unauthorized wallet" });
+        }
+
         const sessionToken = ethers.id(`${address}-${Date.now()}`);
         global.activeSession = { address, sessionToken, expiresAt: Date.now() + 3600000 };
 
