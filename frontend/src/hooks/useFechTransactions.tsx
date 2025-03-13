@@ -102,7 +102,7 @@ const useFetchTransactions = () => {
     // Fetch Gnosis Transactions
     const fetchGnosisPayTransactions = async () => {
       try {
-        const response = await apiClient.get(`${process.env.REACT_APP_API_BASE_URL}/gnosispay/transactions`);
+        const response = await apiClient.get(`/gnosispay/transactions`);
         const transactions = response.data;
 
         setGnosisTransactions(transactions);
