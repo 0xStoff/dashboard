@@ -15,9 +15,8 @@ global.expectedMessages = {};
 
 function normalizeIP(ip) {
     if (!ip) return "";
-    if (ip.startsWith("::ffff:")) {
-        return ip.substring(7); // Convert ::ffff:127.0.0.1 to 127.0.0.1
-    }
+    if (ip === "::1") return "127.0.0.1"; // Convert IPv6 loopback to IPv4
+    if (ip.startsWith("::ffff:")) return ip.substring(7); // Convert "::ffff:127.0.0.1" to "127.0.0.1"
     return ip;
 }
 
@@ -68,16 +67,13 @@ router.post("/login", async (req, res) => {
             return res.status(401).json({ error: "Signature verification failed" });
         }
 
-        if (address.toLowerCase() !== ALLOWED_WALLET) {
-            return res.status(403).json({ error: "Unauthorized wallet" });
-        }
-
+        // Authentication success
         const sessionToken = ethers.id(`${address}-${Date.now()}`);
         global.activeSession = { address, sessionToken, expiresAt: Date.now() + 3600000 };
 
         res.cookie("sessionToken", sessionToken, {
             httpOnly: true,
-            secure: true, // ❗ Change to `true` in production (requires HTTPS)
+            secure: true, // Ensure HTTPS is used
             sameSite: "Lax",
             maxAge: 3600000, // 1 hour
         });
