@@ -61,7 +61,7 @@ router.post("/login", async (req, res) => {
 
         res.cookie("sessionToken", sessionToken, {
             httpOnly: true,
-            secure: false, // ❗ Change to `true` in production (requires HTTPS)
+            secure: true, // ❗ Change to `true` in production (requires HTTPS)
             sameSite: "Lax",
             maxAge: 3600000, // 1 hour
         });

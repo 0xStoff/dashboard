@@ -12,7 +12,7 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
 
     const checkAuthentication = async () => {
         try {
-            const response = await fetch("http://localhost:3000/api/auth/check", {
+            const response = await fetch("/api/auth/check", {
                 credentials: "include",
             });
 

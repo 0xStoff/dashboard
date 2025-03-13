@@ -1,7 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-const ALLOWED_WALLET = process.env.AUTHORIZED_WALLET?.toLowerCase();
 
 const authenticateToken = (req, res, next) => {
     if (req.path === "/message") {
