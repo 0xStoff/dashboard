@@ -5,12 +5,13 @@ import { toFixedString } from "../../utils/number-utils";
 
 const TransactionCards = ({ approvedSum, transactions }) => {
 
+  console.log(transactions)
   const totalWithdrawals = transactions
     .filter((tx) => tx.type.toLowerCase() === "withdrawal")
     .reduce((sum, tx) => sum + (parseFloat(tx.amount) || 0), 0);
 
   const totalDeposits = transactions
-    .filter((tx) => ["deposit", "fiat payment", "fiat order"].includes(tx.type.toLowerCase()))
+    .filter((tx) => ["deposit", "credit card", "bank transfer"].includes(tx.type.toLowerCase()))
     .reduce((sum, tx) => sum + (parseFloat(tx.amount) || 0), 0);
 
   const totalFees = transactions.reduce((sum, tx) => sum + (parseFloat(tx.fee) || 0), 0);

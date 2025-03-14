@@ -41,75 +41,92 @@ router.get('/binance/fiat-payments', async (req, res) => {
     const transactionType = req.query.transactionType || 0;
 
     if (!apiKey || !apiSecret) {
+        console.error("Missing API key or secret");
         return res.status(400).json({error: 'Missing API key or secret'});
     }
 
     const params = {
-        transactionType, beginTime: new Date('2020-01-01').getTime(), endTime: Date.now(), timestamp: Date.now(),
+        transactionType,
+        beginTime: new Date('2020-01-01').getTime(),
+        endTime: Date.now(),
+        timestamp: Date.now(),
     };
 
     try {
         const data = await fetchBinanceData('/sapi/v1/fiat/payments', apiKey, apiSecret, params);
+
+
         const completedPayments = (data.data || []).filter(order => order.status === 'Completed');
 
         for (const order of completedPayments) {
+
             await TransactionModel.upsert({
                 exchange: "Binance",
                 orderNo: order.orderNo,
-                type: order.method,
-                amount: order.amount,
+                type: order.paymentMethod,
+                amount: order.sourceAmount,
                 fee: order.totalFee,
-                asset: order.asset,
+                asset: order.cryptoCurrency,
                 status: order.status,
                 date: new Date(order.createTime),
             }, {
                 conflictFields: ["orderNo"]
-            });
+            })
         }
 
         res.json(completedPayments);
     } catch (error) {
+        console.error("Failed to fetch Binance fiat payments:", error);
         res.status(500).json({error: 'Failed to fetch Binance fiat payments', details: error});
     }
 });
+
 router.get('/binance/fiat-orders', async (req, res) => {
     const apiKey = process.env.BINANCE_API_KEY;
     const apiSecret = process.env.BINANCE_API_SECRET;
     const transactionType = req.query.transactionType || 0;
 
     if (!apiKey || !apiSecret) {
+        console.error("Missing API key or secret");
         return res.status(400).json({error: 'Missing API key or secret'});
     }
 
     const params = {
-        transactionType, beginTime: new Date('2020-01-01').getTime(), endTime: Date.now(), timestamp: Date.now(),
+        transactionType,
+        beginTime: new Date('2020-01-01').getTime(),
+        endTime: Date.now(),
+        timestamp: Date.now(),
     };
 
     try {
         const data = await fetchBinanceData('/sapi/v1/fiat/orders', apiKey, apiSecret, params);
+
+
         const successfulOrders = (data.data || []).filter(order => order.status === 'Successful');
 
         for (const order of successfulOrders) {
+
+
             await TransactionModel.upsert({
                 exchange: "Binance",
                 orderNo: order.orderNo,
                 type: order.method,
                 amount: order.amount,
                 fee: order.totalFee,
-                asset: order.asset,
+                asset: order.fiatCurrency,
                 status: order.status,
                 date: new Date(order.createTime),
             }, {
                 conflictFields: ["orderNo"]
-            });
+            })
         }
 
         res.json(successfulOrders);
     } catch (error) {
+        console.error("Failed to fetch Binance fiat orders:", error);
         res.status(500).json({error: 'Failed to fetch Binance fiat orders', details: error});
     }
 });
-
 
 function getKrakenSignature(urlPath, data, secret) {
     let encoded;
@@ -215,35 +232,35 @@ router.get('/kraken/ledgers', async (req, res) => {
 });
 
 
-router.get('/kraken/portfolio', async (req, res) => {
-    const apiKey = process.env.KRAKEN_API_KEY;
-    const apiSecret = process.env.KRAKEN_API_SECRET;
-
-    if (!apiKey || !apiSecret) {
-        return res.status(400).json({error: 'Missing API key or secret'});
-    }
-
-    try {
-        // Generate nonce and signature
-        const nonce = Date.now().toString();
-        const data = {nonce};
-        const signature = getKrakenSignature('/0/private/BalanceEx', data, apiSecret);
-
-        // Make the request to the Kraken API
-        const response = await axios.post('https://api.kraken.com/0/private/BalanceEx', querystring.stringify(data), {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded', 'API-Key': apiKey, 'API-Sign': signature,
-            },
-        });
-
-        res.json(response.data.result);
-    } catch (error) {
-        console.error('Error fetching Kraken portfolio:', error.response?.data || error.message);
-        res.status(500).json({
-            error: 'Failed to fetch Kraken portfolio', details: error.response?.data || error.message,
-        });
-    }
-});
+// router.get('/kraken/portfolio', async (req, res) => {
+//     const apiKey = process.env.KRAKEN_API_KEY;
+//     const apiSecret = process.env.KRAKEN_API_SECRET;
+//
+//     if (!apiKey || !apiSecret) {
+//         return res.status(400).json({error: 'Missing API key or secret'});
+//     }
+//
+//     try {
+//         // Generate nonce and signature
+//         const nonce = Date.now().toString();
+//         const data = {nonce};
+//         const signature = getKrakenSignature('/0/private/BalanceEx', data, apiSecret);
+//
+//         // Make the request to the Kraken API
+//         const response = await axios.post('https://api.kraken.com/0/private/BalanceEx', querystring.stringify(data), {
+//             headers: {
+//                 'Content-Type': 'application/x-www-form-urlencoded', 'API-Key': apiKey, 'API-Sign': signature,
+//             },
+//         });
+//
+//         res.json(response.data.result);
+//     } catch (error) {
+//         console.error('Error fetching Kraken portfolio:', error.response?.data || error.message);
+//         res.status(500).json({
+//             error: 'Failed to fetch Kraken portfolio', details: error.response?.data || error.message,
+//         });
+//     }
+// });
 
 
 router.get('/gnosispay/transactions', async (req, res) => {
@@ -288,7 +305,10 @@ router.get('/transactions', async (req, res) => {
             whereCondition.exchange = {[Op.iLike]: exchange};
         }
 
-        const transactions = await TransactionModel.findAll({where: whereCondition});
+        const transactions = await TransactionModel.findAll({
+            where: whereCondition,
+            order: [['date', 'DESC']],
+        });
 
         res.json(transactions);
     } catch (error) {

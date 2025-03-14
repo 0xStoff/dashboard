@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import axios from "axios";
 import apiClient from "../utils/api-client";
 
 const useFetchTransactions = () => {
@@ -11,22 +10,25 @@ const useFetchTransactions = () => {
 
     const fetchFormattedTransaction = async (exchange: string) => {
         try {
-            const { data } = await apiClient.get(`/transactions?exchange=${exchange}`);
+            const response = await apiClient.get(`/transactions?exchange=${exchange}`);
+            console.log(`Raw response for ${exchange}:`, response.data);
+            const { data } = response;
 
             return (
                 data?.filter(d => d.orderNo !== null).map((tx) => ({
                     orderNo: tx.orderNo,
                     exchange: tx.exchange,
-                    type: tx.type.toString(),
-                    amount: parseFloat(tx.amount),
-                    asset: tx.asset,
+                    type: tx.type ? tx.type.toString() : "Unknown",
+                    amount: parseFloat(tx.amount) || 0,
+                    asset: tx.asset || "Unknown",
                     fee: parseFloat(tx.fee) || 0,
-                    status: tx.status,
-                    date: tx.date,
-                    timestamp: tx.date
+                    status: tx.status || "Unknown",
+                    date: tx.date || "N/A",
+                    timestamp: tx.date || 0
                 })) || []
             );
         } catch (error) {
+            console.error(`Error fetching formatted transaction for ${exchange}:`, error);
             return [];
         }
     };
@@ -34,13 +36,13 @@ const useFetchTransactions = () => {
     const fetchTransactions = async () => {
         try {
             setLoading(true);
+
             const [binanceLedgers, krakenLedgers] = await Promise.all([
                 fetchFormattedTransaction("binance"),
                 fetchFormattedTransaction("kraken")
             ]);
 
-            const sortedTransactions = [...binanceLedgers, ...krakenLedgers].sort((a, b) => b.timestamp - a.timestamp);
-            setTransactions(sortedTransactions);
+            setTransactions([...binanceLedgers, ...krakenLedgers].sort((a, b) => new Date(b.date) - new Date(a.date)));
         } catch (error) {
             console.error("Error fetching transactions:", error);
         } finally {
@@ -78,7 +80,6 @@ const useFetchTransactions = () => {
         await Promise.all([
             fetchTransactionsFromServer("kraken/ledgers?asset=CHF.HOLD,EUR.HOLD,CHF,EUR"),
             fetchTransactionsFromServer("binance/fiat-payments"),
-            fetchTransactionsFromServer("binance/fiat-orders"),
             fetchTransactionsFromServer("binance/fiat-orders"),
             apiClient.get(`/gnosispay/transactions`)]);
     }, []);
