@@ -7,7 +7,7 @@ import TokenModel from "../models/TokenModel.js";
 import WalletTokenModel from "../models/WalletTokenModel.js";
 import ProtocolModel from "../models/ProtocolModel.js";
 import WalletProtocolModel from "../models/WalletProtocolModel.js";
-import { getHideSmallBalances } from "./utils.js";
+import { getHideSmallBalances } from "../utils/utils.js";
 
 const router = express.Router();
 

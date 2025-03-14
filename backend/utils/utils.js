@@ -5,6 +5,10 @@ import WalletModel from "../models/WalletModel.js";
 import ProtocolModel from "../models/ProtocolModel.js";
 import WalletProtocolModel from "../models/WalletProtocolModel.js";
 import SettingsModel from "../models/SettingsModel.js";
+import CryptoJS from "crypto-js";
+import axios from "axios";
+import querystring from "querystring";
+import crypto from "crypto";
 
 
 const TOKEN_ATTRIBUTES = [
@@ -118,3 +122,109 @@ export const transformData = async (wallets) => {
     .sort((a, b) => b.total_usd_value - a.total_usd_value);
 
 };
+
+const createBinanceSignature = (queryString, secret) => {
+  return CryptoJS.HmacSHA256(queryString, secret).toString();
+};
+
+export const fetchBinanceData = async (endpoint, apiKey, apiSecret, params) => {
+  try {
+    const queryString = new URLSearchParams(params).toString();
+    const signature = createBinanceSignature(queryString, apiSecret);
+
+    const headers = {'X-MBX-APIKEY': apiKey};
+    const response = await axios.get(`https://api.binance.com${endpoint}?${queryString}&signature=${signature}`, {
+      headers,
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching Binance data from ${endpoint}:`, error.response?.data || error.message);
+    throw error.response?.data || error.message;
+  }
+};
+
+
+function getKrakenSignature(urlPath, data, secret) {
+  let encoded;
+
+  if (typeof data === 'string') {
+    const jsonData = JSON.parse(data);
+    encoded = jsonData.nonce + data;
+  } else if (typeof data === 'object') {
+    const dataStr = querystring.stringify(data);
+    encoded = data.nonce + dataStr;
+  } else {
+    throw new Error('Invalid data type');
+  }
+
+  const sha256Hash = crypto.createHash('sha256').update(encoded).digest();
+  const message = urlPath + sha256Hash.toString('binary');
+  const secretBuffer = Buffer.from(secret, 'base64');
+  const hmac = crypto.createHmac('sha512', secretBuffer);
+  hmac.update(message, 'binary');
+  return hmac.digest('base64');
+}
+
+
+
+export async function fetchKrakenLedgers(apiKey, apiSecret, asset, type) {
+  const now = Math.floor(Date.now() / 1000);
+  const fiveYearsAgo = now - 5 * 365 * 24 * 60 * 60;
+  const allLedgers = [];
+  let offset = 0;
+
+  while (true) {
+    const nonce = Date.now().toString();
+    const data = JSON.stringify({
+      nonce, asset, type, start: fiveYearsAgo, end: now, ofs: offset,
+    });
+
+    const signature = getKrakenSignature('/0/private/Ledgers', data, apiSecret);
+
+    const config = {
+      method: 'post', url: 'https://api.kraken.com/0/private/Ledgers', headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'API-Key': apiKey,
+        'API-Sign': signature,
+      }, data,
+    };
+
+    const response = await axios.request(config);
+
+    const result = response.data?.result?.ledger || {};
+    const ledgerEntries = Object.values(result);
+
+    if (ledgerEntries.length === 0) {
+      break;
+    }
+
+    allLedgers.push(...ledgerEntries);
+
+    offset += ledgerEntries.length;
+  }
+
+  return allLedgers;
+}
+
+
+export const binanceCredentials = (req, res)=> {
+  const apiKey = process.env.BINANCE_API_KEY;
+  const apiSecret = process.env.BINANCE_API_SECRET;
+  const transactionType = req.query.transactionType || 0;
+
+  if(!apiKey || !apiSecret) {
+    console.error("Missing API key or secret");
+    return res.status(400).json({error: 'Missing API key or secret'});
+  }
+
+  const params = {
+    transactionType,
+    beginTime: new Date('2020-01-01').getTime(),
+    endTime: Date.now(),
+    timestamp: Date.now(),
+  };
+
+  return {apiKey, apiSecret, params}
+}

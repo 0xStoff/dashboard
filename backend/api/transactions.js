@@ -7,50 +7,16 @@ import crypto from 'crypto';
 import TransactionModel from "../models/TransactionsModel.js";
 import WalletModel from "../models/WalletModel.js";
 import {Op} from "sequelize";
+import {binanceCredentials, fetchBinanceData, fetchKrakenLedgers} from "../utils/utils.js";
 
-// Load environment variables
 dotenv.config();
 
 const router = express.Router();
 
 
-const createBinanceSignature = (queryString, secret) => {
-    return CryptoJS.HmacSHA256(queryString, secret).toString();
-};
-
-const fetchBinanceData = async (endpoint, apiKey, apiSecret, params) => {
-    try {
-        const queryString = new URLSearchParams(params).toString();
-        const signature = createBinanceSignature(queryString, apiSecret);
-
-        const headers = {'X-MBX-APIKEY': apiKey};
-        const response = await axios.get(`https://api.binance.com${endpoint}?${queryString}&signature=${signature}`, {
-            headers,
-        });
-
-        return response.data;
-    } catch (error) {
-        console.error(`Error fetching Binance data from ${endpoint}:`, error.response?.data || error.message);
-        throw error.response?.data || error.message;
-    }
-};
-
 router.get('/binance/fiat-payments', async (req, res) => {
-    const apiKey = process.env.BINANCE_API_KEY;
-    const apiSecret = process.env.BINANCE_API_SECRET;
-    const transactionType = req.query.transactionType || 0;
 
-    if (!apiKey || !apiSecret) {
-        console.error("Missing API key or secret");
-        return res.status(400).json({error: 'Missing API key or secret'});
-    }
-
-    const params = {
-        transactionType,
-        beginTime: new Date('2020-01-01').getTime(),
-        endTime: Date.now(),
-        timestamp: Date.now(),
-    };
+    const {apiKey, apiSecret, params} = binanceCredentials(req, res)
 
     try {
         const data = await fetchBinanceData('/sapi/v1/fiat/payments', apiKey, apiSecret, params);
@@ -82,21 +48,8 @@ router.get('/binance/fiat-payments', async (req, res) => {
 });
 
 router.get('/binance/fiat-orders', async (req, res) => {
-    const apiKey = process.env.BINANCE_API_KEY;
-    const apiSecret = process.env.BINANCE_API_SECRET;
-    const transactionType = req.query.transactionType || 0;
+    const {apiKey, apiSecret, params} = binanceCredentials(req, res)
 
-    if (!apiKey || !apiSecret) {
-        console.error("Missing API key or secret");
-        return res.status(400).json({error: 'Missing API key or secret'});
-    }
-
-    const params = {
-        transactionType,
-        beginTime: new Date('2020-01-01').getTime(),
-        endTime: Date.now(),
-        timestamp: Date.now(),
-    };
 
     try {
         const data = await fetchBinanceData('/sapi/v1/fiat/orders', apiKey, apiSecret, params);
@@ -128,72 +81,9 @@ router.get('/binance/fiat-orders', async (req, res) => {
     }
 });
 
-function getKrakenSignature(urlPath, data, secret) {
-    let encoded;
-
-    if (typeof data === 'string') {
-        const jsonData = JSON.parse(data);
-        encoded = jsonData.nonce + data;
-    } else if (typeof data === 'object') {
-        const dataStr = querystring.stringify(data);
-        encoded = data.nonce + dataStr;
-    } else {
-        throw new Error('Invalid data type');
-    }
-
-    const sha256Hash = crypto.createHash('sha256').update(encoded).digest();
-    const message = urlPath + sha256Hash.toString('binary');
-    const secretBuffer = Buffer.from(secret, 'base64');
-    const hmac = crypto.createHmac('sha512', secretBuffer);
-    hmac.update(message, 'binary');
-    return hmac.digest('base64');
-}
 
 
-async function fetchKrakenLedgers(apiKey, apiSecret, asset, type) {
-    const now = Math.floor(Date.now() / 1000);
-    const fiveYearsAgo = now - 5 * 365 * 24 * 60 * 60;
-    const allLedgers = [];
-    let offset = 0;
-
-    while (true) {
-        const nonce = Date.now().toString();
-        const data = JSON.stringify({
-            nonce, asset, type, start: fiveYearsAgo, end: now, ofs: offset,
-        });
-
-        const signature = getKrakenSignature('/0/private/Ledgers', data, apiSecret);
-
-        const config = {
-            method: 'post', url: 'https://api.kraken.com/0/private/Ledgers', headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'API-Key': apiKey,
-                'API-Sign': signature,
-            }, data,
-        };
-
-        const response = await axios.request(config);
-
-        // Handle the response
-        const result = response.data?.result?.ledger || {};
-        const ledgerEntries = Object.values(result);
-
-        if (ledgerEntries.length === 0) {
-            break; // Exit loop if no more records are found
-        }
-
-        allLedgers.push(...ledgerEntries);
-
-        // Update offset for the next batch
-        offset += ledgerEntries.length;
-    }
-
-    return allLedgers;
-}
-
-
-router.get('/kraken/ledgers', async (req, res) => {
+const krakenCredentials = (req, res)=> {
     const apiKey = process.env.KRAKEN_API_KEY;
     const apiSecret = process.env.KRAKEN_API_SECRET;
     const asset = req.query.asset;
@@ -202,6 +92,13 @@ router.get('/kraken/ledgers', async (req, res) => {
     if (!apiKey || !apiSecret) {
         return res.status(400).json({error: 'Missing API key or secret'});
     }
+
+    return {apiKey, apiSecret, asset, types}
+}
+
+
+router.get('/kraken/ledgers', async (req, res) => {
+    const {apiKey, apiSecret, asset, types} = krakenCredentials(req, res)
 
     try {
         const results = [];
@@ -230,37 +127,6 @@ router.get('/kraken/ledgers', async (req, res) => {
         res.status(500).json({error: 'Failed to fetch Kraken ledgers', details: error});
     }
 });
-
-
-// router.get('/kraken/portfolio', async (req, res) => {
-//     const apiKey = process.env.KRAKEN_API_KEY;
-//     const apiSecret = process.env.KRAKEN_API_SECRET;
-//
-//     if (!apiKey || !apiSecret) {
-//         return res.status(400).json({error: 'Missing API key or secret'});
-//     }
-//
-//     try {
-//         // Generate nonce and signature
-//         const nonce = Date.now().toString();
-//         const data = {nonce};
-//         const signature = getKrakenSignature('/0/private/BalanceEx', data, apiSecret);
-//
-//         // Make the request to the Kraken API
-//         const response = await axios.post('https://api.kraken.com/0/private/BalanceEx', querystring.stringify(data), {
-//             headers: {
-//                 'Content-Type': 'application/x-www-form-urlencoded', 'API-Key': apiKey, 'API-Sign': signature,
-//             },
-//         });
-//
-//         res.json(response.data.result);
-//     } catch (error) {
-//         console.error('Error fetching Kraken portfolio:', error.response?.data || error.message);
-//         res.status(500).json({
-//             error: 'Failed to fetch Kraken portfolio', details: error.response?.data || error.message,
-//         });
-//     }
-// });
 
 
 router.get('/gnosispay/transactions', async (req, res) => {

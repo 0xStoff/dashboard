@@ -1,7 +1,7 @@
 import express from "express";
 import ProtocolModel from "../models/ProtocolModel.js";
 import WalletModel from "../models/WalletModel.js";
-import { getHideSmallBalances } from "./utils.js";
+import { getHideSmallBalances } from "../utils/utils.js";
 
 const router = express.Router();
 

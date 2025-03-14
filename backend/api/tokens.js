@@ -1,5 +1,5 @@
 import express from "express";
-import { fetchWalletData, transformData } from "./utils.js";
+import { fetchWalletData, transformData } from "../utils/utils.js";
 
 const router = express.Router();
 
