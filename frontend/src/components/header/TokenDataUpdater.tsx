@@ -8,6 +8,7 @@ import {
 import RefreshIcon from "@mui/icons-material/Refresh";
 import Snackbar from "../utils/Snackbar";
 import { useFetchWallets } from "../../hooks/useFetchWallets";
+import {useWallets} from "../../context/WalletsContext";
 
 const TokenDataUpdater = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,7 +17,7 @@ const TokenDataUpdater = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedWallet, setSelectedWallet] = useState("");
 
-  const { wallets, loading: walletsLoading } = useFetchWallets();
+  const { wallets, loading: walletsLoading } = useWallets();
 
   const handleUpdate = useCallback(async (type: "all" | "other" | "evm" | "evm_wallet") => {
     setIsLoading(true);

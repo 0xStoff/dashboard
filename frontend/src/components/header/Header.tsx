@@ -3,9 +3,11 @@ import React, { useState } from "react";
 import { toFixedString } from "../../utils/number-utils";
 import { SettingsDialog } from "../index";
 import { Settings } from "@mui/icons-material";
+import {useWallets} from "../../context/WalletsContext";
 
-const Header = ({ totalUSDValue, wallets, selectedItemState }) => {
+const Header = ({ totalUSDValue, selectedItemState }) => {
   const [selectedItem, setSelectedItem] = selectedItemState;
+    const { wallets } = useWallets();
 
   return (
       <Container>

@@ -27,6 +27,7 @@ import Header from "./components/header/Header";
 import { Chain, Protocol, Token } from "./interfaces";
 import { BarChart, SyncAlt } from "@mui/icons-material";
 import { TokenChart } from "./components/crypto/TokenChart";
+import {WalletsProvider} from "./context/WalletsContext";
 
 interface SelectedItem {
     id: string;
@@ -71,7 +72,7 @@ const App: React.FC = () => {
     const walletId: string = selectedItem?.id || "all";
 
     const { netWorth, loading: netWorthLoading, saveNetWorth } = useFetchNetWorth();
-    const { wallets, loading: walletsLoading } = useFetchWallets();
+    const { wallets, loading: walletsLoading, fetchWallets, setWallets } = useFetchWallets();
     const { chains, loading: chainsLoading } = useFetchChains(walletId, searchQuery);
     const { tokens, totalTokenUSD, loading: tokensLoading } = useFetchTokens(selectedChainId, walletId, searchQuery);
     const { protocolsTable, totalProtocolUSD, loading: protocolsTableLoading } =
@@ -109,6 +110,8 @@ const App: React.FC = () => {
             setLoading(false);
         }
     }, [totalUSDValue, chains, tokens, protocolsTable]);
+
+
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -148,7 +151,6 @@ const App: React.FC = () => {
 
     const tokenChartRef = useRef<HTMLDivElement | null>(null);
 
-
     useEffect(() => {
         if (selectedToken && tokenChartRef.current) {
             if ("scrollIntoView" in tokenChartRef.current) {
@@ -161,6 +163,7 @@ const App: React.FC = () => {
 
 
     return (
+        <WalletsProvider>
         <ThemeProvider theme={theme}>
             <CssBaseline />
 
@@ -235,7 +238,8 @@ const App: React.FC = () => {
                 </Container>
             )}
         </ThemeProvider>
-    );
+            </WalletsProvider>
+            );
 };
 
 export default App;

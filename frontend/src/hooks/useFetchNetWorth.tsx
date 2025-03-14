@@ -32,7 +32,7 @@ export const useFetchNetWorth = (): UseFetchNetWorthReturn => {
   const saveNetWorth = async (totalNetWorth: number, historyData: HistoryData): Promise<void> => {
     try {
       const payload = { date: new Date().toISOString(), totalNetWorth, historyData };
-      await axios.post(`${process.env.REACT_APP_API_BASE_URL}/net-worth`, payload);
+      await apiClient.post(`/net-worth`, payload);
     } catch (error) {
       console.error("Error saving net worth to DB:", error);
     }

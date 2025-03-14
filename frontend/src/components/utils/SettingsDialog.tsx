@@ -16,7 +16,7 @@ function SettingsDialog({ openSettings, setOpenSettings }) {
 
   const fetchHideSmallBalances = async () => {
     try {
-      const response = await apiClient.get("http://localhost:3000/api/settings/hidesmallbalances");
+      const response = await apiClient.get("/settings/hidesmallbalances");
       setHideSmallBalances(response.data.value);
     } catch (error) {
       console.error("Error fetching hideSmallBalances:", error);
