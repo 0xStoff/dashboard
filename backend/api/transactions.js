@@ -6,31 +6,18 @@ import * as querystring from "querystring";
 import crypto from 'crypto';
 import TransactionModel from "../models/TransactionsModel.js";
 import WalletModel from "../models/WalletModel.js";
-import { Op } from "sequelize";
+import {Op} from "sequelize";
 
 // Load environment variables
 dotenv.config();
 
 const router = express.Router();
 
-/**
- * Helper function to create a Binance signature
- * @param {string} queryString - The query string for the API request.
- * @param {string} secret - The Binance API secret.
- * @returns {string} - The HMAC SHA256 signature.
- */
+
 const createBinanceSignature = (queryString, secret) => {
     return CryptoJS.HmacSHA256(queryString, secret).toString();
 };
 
-/**
- * Fetch Binance data utility function
- * @param {string} endpoint - Binance API endpoint.
- * @param {string} apiKey - Binance API key.
- * @param {string} apiSecret - Binance API secret.
- * @param {object} params - Query parameters for the API request.
- * @returns {Promise<object>} - The API response data.
- */
 const fetchBinanceData = async (endpoint, apiKey, apiSecret, params) => {
     try {
         const queryString = new URLSearchParams(params).toString();
@@ -48,21 +35,17 @@ const fetchBinanceData = async (endpoint, apiKey, apiSecret, params) => {
     }
 };
 
-// Binance Fiat Payments Endpoint
 router.get('/binance/fiat-payments', async (req, res) => {
     const apiKey = process.env.BINANCE_API_KEY;
     const apiSecret = process.env.BINANCE_API_SECRET;
     const transactionType = req.query.transactionType || 0;
 
     if (!apiKey || !apiSecret) {
-        return res.status(400).json({ error: 'Missing API key or secret' });
+        return res.status(400).json({error: 'Missing API key or secret'});
     }
 
     const params = {
-        transactionType,
-        beginTime: new Date('2020-01-01').getTime(),
-        endTime: Date.now(),
-        timestamp: Date.now(),
+        transactionType, beginTime: new Date('2020-01-01').getTime(), endTime: Date.now(), timestamp: Date.now(),
     };
 
     try {
@@ -79,29 +62,27 @@ router.get('/binance/fiat-payments', async (req, res) => {
                 asset: order.asset,
                 status: order.status,
                 date: new Date(order.createTime),
+            }, {
+                conflictFields: ["orderNo"]
             });
         }
 
         res.json(completedPayments);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch Binance fiat payments', details: error });
+        res.status(500).json({error: 'Failed to fetch Binance fiat payments', details: error});
     }
 });
-// Binance Fiat Orders Endpoint
 router.get('/binance/fiat-orders', async (req, res) => {
     const apiKey = process.env.BINANCE_API_KEY;
     const apiSecret = process.env.BINANCE_API_SECRET;
     const transactionType = req.query.transactionType || 0;
 
     if (!apiKey || !apiSecret) {
-        return res.status(400).json({ error: 'Missing API key or secret' });
+        return res.status(400).json({error: 'Missing API key or secret'});
     }
 
     const params = {
-        transactionType,
-        beginTime: new Date('2020-01-01').getTime(),
-        endTime: Date.now(),
-        timestamp: Date.now(),
+        transactionType, beginTime: new Date('2020-01-01').getTime(), endTime: Date.now(), timestamp: Date.now(),
     };
 
     try {
@@ -118,21 +99,18 @@ router.get('/binance/fiat-orders', async (req, res) => {
                 asset: order.asset,
                 status: order.status,
                 date: new Date(order.createTime),
+            }, {
+                conflictFields: ["orderNo"]
             });
         }
 
         res.json(successfulOrders);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch Binance fiat orders', details: error });
+        res.status(500).json({error: 'Failed to fetch Binance fiat orders', details: error});
     }
 });
-/**
- * Generate Kraken API signature.
- * @param {string} urlPath - The Kraken API endpoint path.
- * @param {string|object} data - The request payload.
- * @param {string} secret - The Kraken API secret.
- * @returns {string} - The API signature.
- */
+
+
 function getKrakenSignature(urlPath, data, secret) {
     let encoded;
 
@@ -154,13 +132,7 @@ function getKrakenSignature(urlPath, data, secret) {
     return hmac.digest('base64');
 }
 
-/**
- * Fetch all Kraken ledgers for a specific asset with pagination.
- * @param {string} apiKey - The Kraken API key.
- * @param {string} apiSecret - The Kraken API secret.
- * @param {string} asset - The asset to fetch (e.g., "CHF", "EUR").
- * @returns {Promise<object[]>} - An array of all ledger entries.
- */
+
 async function fetchKrakenLedgers(apiKey, apiSecret, asset, type) {
     const now = Math.floor(Date.now() / 1000);
     const fiveYearsAgo = now - 5 * 365 * 24 * 60 * 60;
@@ -204,7 +176,6 @@ async function fetchKrakenLedgers(apiKey, apiSecret, asset, type) {
 }
 
 
-// Route to fetch ledgers for CHF and EUR
 router.get('/kraken/ledgers', async (req, res) => {
     const apiKey = process.env.KRAKEN_API_KEY;
     const apiSecret = process.env.KRAKEN_API_SECRET;
@@ -212,7 +183,7 @@ router.get('/kraken/ledgers', async (req, res) => {
     const types = req.query.type ? req.query.type.split(',') : ['deposit', 'withdrawal', 'trade'];
 
     if (!apiKey || !apiSecret) {
-        return res.status(400).json({ error: 'Missing API key or secret' });
+        return res.status(400).json({error: 'Missing API key or secret'});
     }
 
     try {
@@ -232,12 +203,14 @@ router.get('/kraken/ledgers', async (req, res) => {
                 asset: entry.asset,
                 status: entry.status || "Completed",
                 date: new Date(entry.time * 1000),
+            }, {
+                conflictFields: ["orderNo"]
             });
         }
 
         res.json(results);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch Kraken ledgers', details: error });
+        res.status(500).json({error: 'Failed to fetch Kraken ledgers', details: error});
     }
 });
 
@@ -247,34 +220,27 @@ router.get('/kraken/portfolio', async (req, res) => {
     const apiSecret = process.env.KRAKEN_API_SECRET;
 
     if (!apiKey || !apiSecret) {
-        return res.status(400).json({ error: 'Missing API key or secret' });
+        return res.status(400).json({error: 'Missing API key or secret'});
     }
 
     try {
         // Generate nonce and signature
         const nonce = Date.now().toString();
-        const data = { nonce };
+        const data = {nonce};
         const signature = getKrakenSignature('/0/private/BalanceEx', data, apiSecret);
 
         // Make the request to the Kraken API
-        const response = await axios.post(
-            'https://api.kraken.com/0/private/BalanceEx',
-            querystring.stringify(data),
-            {
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'API-Key': apiKey,
-                    'API-Sign': signature,
-                },
-            }
-        );
+        const response = await axios.post('https://api.kraken.com/0/private/BalanceEx', querystring.stringify(data), {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded', 'API-Key': apiKey, 'API-Sign': signature,
+            },
+        });
 
         res.json(response.data.result);
     } catch (error) {
         console.error('Error fetching Kraken portfolio:', error.response?.data || error.message);
         res.status(500).json({
-            error: 'Failed to fetch Kraken portfolio',
-            details: error.response?.data || error.message,
+            error: 'Failed to fetch Kraken portfolio', details: error.response?.data || error.message,
         });
     }
 });
@@ -284,18 +250,17 @@ router.get('/gnosispay/transactions', async (req, res) => {
     try {
         const response = await axios.get("https://app.gnosispay.com/api/v1/transactions", {
             headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-                Cookie: process.env.COOKIE,
+                "Content-Type": "application/json", Accept: "application/json", Cookie: process.env.COOKIE,
             },
         });
 
         const transactions = response.data;
 
+
         for (const tx of transactions) {
             await TransactionModel.upsert({
                 exchange: "Gnosis Pay",
-                orderNo: null,
+                orderNo: tx.createdAt,
                 type: "transaction",
                 amount: tx.transactionAmount,
                 fee: null,
@@ -305,15 +270,13 @@ router.get('/gnosispay/transactions', async (req, res) => {
                 merchant: tx.merchant?.name || "Unknown",
                 transactionAmount: tx.transactionAmount,
                 billingAmount: tx.billingAmount,
-            }, {
-                conflictFields: ["date", "merchant"]
             });
         }
 
         res.json(transactions);
     } catch (error) {
         console.error("Error fetching Gnosis Pay transactions:", error.message);
-        res.status(500).json({ error: "Failed to fetch Gnosis Pay transactions", details: error.message });
+        res.status(500).json({error: "Failed to fetch Gnosis Pay transactions", details: error.message});
     }
 });
 router.get('/transactions', async (req, res) => {
@@ -322,15 +285,15 @@ router.get('/transactions', async (req, res) => {
 
         const whereCondition = {};
         if (exchange) {
-            whereCondition.exchange = { [Op.iLike]: exchange };
+            whereCondition.exchange = {[Op.iLike]: exchange};
         }
 
-        const transactions = await TransactionModel.findAll({ where: whereCondition });
+        const transactions = await TransactionModel.findAll({where: whereCondition});
 
         res.json(transactions);
     } catch (error) {
         console.error("Error fetching transactions from DB:", error);
-        res.status(500).json({ error: "Failed to fetch transactions from DB", details: error.message });
+        res.status(500).json({error: "Failed to fetch transactions from DB", details: error.message});
     }
 });
 export default router;

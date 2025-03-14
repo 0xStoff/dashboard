@@ -1,20 +1,14 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../sequelize.js";
 
-
 const TransactionModel = sequelize.define("transactions", {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
+  orderNo: {
+    type: DataTypes.STRING,
+    primaryKey: true, // ✅ Make orderNo the primary key
   },
   exchange: {
     type: DataTypes.STRING,
     allowNull: false
-  },
-  orderNo: {
-    type: DataTypes.STRING,
-    allowNull: true
   },
   type: {
     type: DataTypes.STRING,
@@ -57,8 +51,10 @@ const TransactionModel = sequelize.define("transactions", {
   indexes: [
     {
       unique: true,
-      fields: ["date", "merchant"]
+      fields: ["orderNo"]
     }
   ]
+
 });
+
 export default TransactionModel;

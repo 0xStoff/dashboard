@@ -1,57 +1,62 @@
 import React from "react";
-import { CircularProgress, Container, useMediaQuery } from "@mui/material";
+import {Button, CircularProgress, Container, useMediaQuery} from "@mui/material";
 import TransactionsTable from "./TransactionsTable";
 import TransactionCards from "./TransactionCards";
 import useFetchTransactions from "../../hooks/useFechTransactions";
-import { useTheme } from "@mui/material/styles";
+import {useTheme} from "@mui/material/styles";
 
-const binanceTransactionColumns = [{ label: "Exchange", key: "exchange" },
-  { label: "Order No", key: "orderNo" },
-  { label: "Type", key: "type" },
-  { label: "Amount", key: "amount" },
-  { label: "Fee", key: "fee" },
-  { label: "Asset", key: "asset" },
-  { label: "Status", key: "status" },
-  { label: "Date", key: "date" }];
+const binanceTransactionColumns = [{label: "Exchange", key: "exchange"}, {
+    label: "Order No",
+    key: "orderNo"
+}, {label: "Type", key: "type"}, {label: "Amount", key: "amount"}, {label: "Fee", key: "fee"}, {
+    label: "Asset",
+    key: "asset"
+}, {label: "Status", key: "status"}, {label: "Date", key: "date"}];
 
-const gnosisColumns = [{ label: "Created At", key: "createdAt" },
-  { label: "Transaction Amount", key: "transactionAmountFormatted" },
-  { label: "Billing Amount", key: "billingAmountFormatted" },
-  { label: "Merchant", key: "merchantFormatted" },
-  { label: "Status", key: "status" }];
+const gnosisColumns = [{label: "Created At", key: "createdAt"}, {
+    label: "Transaction Amount",
+    key: "transactionAmountFormatted"
+}, {label: "Billing Amount", key: "billingAmountFormatted"}, {
+    label: "Merchant",
+    key: "merchantFormatted"
+}, {label: "Status", key: "status"}];
 
 const Transactions = () => {
-  const { transactions, loading, gnosisTransactions, approvedSum } = useFetchTransactions();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+    const {transactions, loading, gnosisTransactions, approvedSum, refetch} = useFetchTransactions();
 
-  if (loading) {
-    return (<Container>
-        <CircularProgress />
-      </Container>);
-  }
 
-  const formattedGnosisTransactions = gnosisTransactions.map((transaction) => ({
-    createdAt: new Date(transaction.createdAt).toLocaleString(),
-    transactionAmountFormatted: `${transaction.transactionAmount / 100} ${transaction.transactionCurrency.symbol}`,
-    billingAmountFormatted: `${transaction.billingAmount / 100} ${transaction.billingCurrency.symbol}`,
-    merchantFormatted: `${transaction.merchant.name.trim()}, ${transaction.merchant.city}`,
-    status: transaction.status
-  }));
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  return (<Container sx={{ marginTop: 10 }}>
-      <TransactionCards transactions={transactions} approvedSum={approvedSum} />
+    if (loading) {
+        return (<Container>
+            <CircularProgress/>
+        </Container>);
+    }
 
-    {!isMobile && <TransactionsTable
-      title="Gnosis Pay Transactions"
-      transactions={formattedGnosisTransactions}
-      columns={gnosisColumns}
-    />}
-    {!isMobile && <TransactionsTable
-      title="Binance & Kraken Transactions"
-      transactions={transactions}
-      columns={binanceTransactionColumns}
-    />}
+
+    const formattedGnosisTransactions = gnosisTransactions.map((transaction) => ({
+        createdAt: transaction.date,
+        transactionAmountFormatted: `${transaction.transactionAmount / 100} CHF`,
+        billingAmountFormatted: `${transaction.billingAmount / 100} EUR`,
+        merchantFormatted: `${transaction.merchant}`,
+        status: transaction.status
+    }));
+
+    return (<Container sx={{marginTop: 10}}>
+        <Button onClick={() => refetch()}>Refetch</Button>
+        <TransactionCards transactions={transactions} approvedSum={approvedSum}/>
+
+        {!isMobile && <TransactionsTable
+            title="Gnosis Pay Transactions"
+            transactions={formattedGnosisTransactions}
+            columns={gnosisColumns}
+        />}
+        {!isMobile && <TransactionsTable
+            title="Binance & Kraken Transactions"
+            transactions={transactions}
+            columns={binanceTransactionColumns}
+        />}
     </Container>);
 };
 

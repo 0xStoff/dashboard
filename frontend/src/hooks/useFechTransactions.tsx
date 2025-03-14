@@ -1,124 +1,98 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import axios from "axios";
 import apiClient from "../utils/api-client";
 
 const useFetchTransactions = () => {
-  const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [gnosisTransactions, setGnosisTransactions] = useState([]);
-  const [approvedSum, setApprovedSum] = useState(0);
-  const effectRan = useRef(false);
+    const [transactions, setTransactions] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [gnosisTransactions, setGnosisTransactions] = useState([]);
+    const [approvedSum, setApprovedSum] = useState(0);
+    const effectRan = useRef(false);
 
-  const fetchTransactionsFromServer = async (endpoint) => {
-    try {
-      const response = await apiClient.get(`/${endpoint}`);
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching transactions from ${endpoint}:`, error.message);
-      return [];
-    }
-  };
+    const fetchFormattedTransaction = async (exchange: string) => {
+        try {
+            const { data } = await apiClient.get(`/transactions?exchange=${exchange}`);
 
-  const fetchBinanceFiatPayments = async () => {
-    try {
-      const data = await fetchTransactionsFromServer("binance/fiat-payments");
-      return data?.map((tx) => ({
-        orderNo: tx.orderNo,
-        exchange: "Binance",
-        type: "Fiat Payment",
-        amount: parseFloat(tx.sourceAmount),
-        asset: tx.fiatCurrency,
-        fee: parseFloat(tx.totalFee) || 0,
-        status: tx.status,
-        date: new Date(tx.createTime).toLocaleDateString(),
-        timestamp: tx.createTime
-      })) || [];
-    } catch (error) {
-      return [];
-    }
-  };
+            return (
+                data?.filter(d => d.orderNo !== null).map((tx) => ({
+                    orderNo: tx.orderNo,
+                    exchange: tx.exchange,
+                    type: tx.type.toString(),
+                    amount: parseFloat(tx.amount),
+                    asset: tx.asset,
+                    fee: parseFloat(tx.fee) || 0,
+                    status: tx.status,
+                    date: tx.date,
+                    timestamp: tx.date
+                })) || []
+            );
+        } catch (error) {
+            return [];
+        }
+    };
 
-  const fetchBinanceFiatOrders = async () => {
-    try {
-      const data = await fetchTransactionsFromServer("binance/fiat-orders");
-      return data?.map((tx) => ({
-        orderNo: tx.orderNo,
-        exchange: "Binance",
-        type: "Fiat Order",
-        amount: parseFloat(tx.amount),
-        asset: tx.fiatCurrency,
-        fee: 0,
-        status: tx.status,
-        date: new Date(tx.createTime).toLocaleDateString(),
-        timestamp: tx.createTime
-      })) || [];
-    } catch (error) {
-      return [];
-    }
-  };
-
-  const fetchKrakenLedgers = async () => {
-    try {
-      const data = await fetchTransactionsFromServer("kraken/ledgers?asset=CHF.HOLD,EUR.HOLD,CHF,EUR");
-      return data?.map((tx) => ({
-        orderNo: tx.refid || "N/A",
-        exchange: "Kraken",
-        type: tx.type || "N/A",
-        amount: parseFloat(tx.amount),
-        asset: tx.asset || "N/A",
-        fee: parseFloat(tx.fee) || 0,
-        status: tx.type || "N/A",
-        date: new Date(tx.time * 1000).toLocaleDateString(),
-        timestamp: tx.time * 1000
-      })) || [];
-    } catch (error) {
-      return [];
-    }
-  };
-
-  useEffect(() => {
     const fetchTransactions = async () => {
-      if (effectRan.current) return; // Prevent double execution
-      effectRan.current = true;
+        try {
+            setLoading(true);
+            const [binanceLedgers, krakenLedgers] = await Promise.all([
+                fetchFormattedTransaction("binance"),
+                fetchFormattedTransaction("kraken")
+            ]);
 
-      try {
-        const [fiatPayments, fiatOrders, krakenLedgers] = await Promise.all([
-          fetchBinanceFiatPayments(),
-          fetchBinanceFiatOrders(),
-          fetchKrakenLedgers()
-        ]);
-
-        const sortedTransactions = [...fiatPayments, ...fiatOrders, ...krakenLedgers].sort((a, b) => b.timestamp - a.timestamp);
-        setTransactions(sortedTransactions);
-      } catch (error) {
-        console.error("Error fetching transactions:", error);
-      } finally {
-        setLoading(false);
-      }
+            const sortedTransactions = [...binanceLedgers, ...krakenLedgers].sort((a, b) => b.timestamp - a.timestamp);
+            setTransactions(sortedTransactions);
+        } catch (error) {
+            console.error("Error fetching transactions:", error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    fetchTransactions();
-
-    // Fetch Gnosis Transactions
     const fetchGnosisPayTransactions = async () => {
-      try {
-        const response = await apiClient.get(`/gnosispay/transactions`);
-        const transactions = response.data;
+        try {
+            const { data } = await apiClient.get(`/transactions?exchange=Gnosis Pay`);
+            setGnosisTransactions(data);
 
-        setGnosisTransactions(transactions);
-        const sum = transactions
-          .filter((transaction) => transaction.status === "Approved")
-          .reduce((total, transaction) => total + Number(transaction.transactionAmount), 0);
-        setApprovedSum(sum / 100);
-      } catch (error) {
-        console.error("Error fetching Gnosis Pay transactions:", error);
-      }
+            const sum = data
+                .filter(transaction => transaction.status === "Approved")
+                .reduce((total, transaction) => total + Number(transaction.transactionAmount), 0);
+
+            setApprovedSum(sum / 100);
+        } catch (error) {
+            console.error("Error fetching Gnosis Pay transactions:", error);
+        }
     };
 
-    fetchGnosisPayTransactions();
-  }, []);
 
-  return { transactions, loading, gnosisTransactions, approvedSum };
+    const fetchTransactionsFromServer = async (endpoint) => {
+        try {
+            const response = await apiClient.get(`/${endpoint}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching transactions from ${endpoint}:`, error.message);
+            return [];
+        }
+    };
+
+    const refetch = useCallback(async () => {
+        await Promise.all([
+            fetchTransactionsFromServer("kraken/ledgers?asset=CHF.HOLD,EUR.HOLD,CHF,EUR"),
+            fetchTransactionsFromServer("binance/fiat-payments"),
+            fetchTransactionsFromServer("binance/fiat-orders"),
+            fetchTransactionsFromServer("binance/fiat-orders"),
+            apiClient.get(`/gnosispay/transactions`)]);
+    }, []);
+
+
+    useEffect(() => {
+        if (effectRan.current) return;
+        effectRan.current = true;
+
+        fetchTransactions();
+        fetchGnosisPayTransactions();
+    }, []);
+
+    return { transactions, loading, gnosisTransactions, approvedSum, refetch };
 };
 
 export default useFetchTransactions;
