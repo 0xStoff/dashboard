@@ -117,6 +117,7 @@ router.get('/kraken/ledgers', async (req, res) => {
                 asset: entry.asset,
                 status: entry.status || "Completed",
                 date: new Date(entry.time * 1000),
+                transactionAmount: entry.transactionAmount || 0
             }, {
                 conflictFields: ["orderNo"]
             });

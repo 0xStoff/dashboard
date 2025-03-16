@@ -11,7 +11,6 @@ const useFetchTransactions = () => {
     const fetchFormattedTransaction = async (exchange: string) => {
         try {
             const response = await apiClient.get(`/transactions?exchange=${exchange}`);
-            console.log(`Raw response for ${exchange}:`, response.data);
             const { data } = response;
 
             return (
@@ -24,7 +23,8 @@ const useFetchTransactions = () => {
                     fee: parseFloat(tx.fee) || 0,
                     status: tx.status || "Unknown",
                     date: tx.date || "N/A",
-                    timestamp: tx.date || 0
+                    timestamp: tx.date || 0,
+                    chf_value: tx.transactionAmount || 0
                 })) || []
             );
         } catch (error) {
@@ -78,7 +78,7 @@ const useFetchTransactions = () => {
 
     const refetch = useCallback(async () => {
         await Promise.all([
-            fetchTransactionsFromServer("kraken/ledgers?asset=CHF.HOLD,EUR.HOLD,CHF,EUR"),
+            fetchTransactionsFromServer("kraken/ledgers?asset=CHF.HOLD,EUR.HOLD,CHF,EUR,XMR"),
             fetchTransactionsFromServer("binance/fiat-payments"),
             fetchTransactionsFromServer("binance/fiat-orders"),
             apiClient.get(`/gnosispay/transactions`)]);

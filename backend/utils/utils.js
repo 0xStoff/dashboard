@@ -167,6 +167,44 @@ function getKrakenSignature(urlPath, data, secret) {
 }
 
 
+export const fetchXMRHistoricalPrice = async (timestamp) => {
+  const xmrPair = "XXMRZUSD";
+  const chfPair = "USDCHF";
+  const interval = 1440;
+
+  try {
+    const xmrResponse = await axios.get(`https://api.kraken.com/0/public/OHLC`, {
+      params: { pair: xmrPair, interval, since: timestamp }
+    });
+
+    if (!xmrResponse.data || !xmrResponse.data.result || !xmrResponse.data.result[xmrPair]) {
+      console.error("Kraken API returned unexpected data for XMR/USD:", xmrResponse.data);
+      return null;
+    }
+
+    const xmrUsdPrice = parseFloat(xmrResponse.data.result[xmrPair][0][4]);
+
+    const chfResponse = await axios.get(`https://api.kraken.com/0/public/OHLC`, {
+      params: { pair: chfPair, interval, since: timestamp }
+    });
+
+    if (!chfResponse.data || !chfResponse.data.result || !chfResponse.data.result[chfPair]) {
+      console.error("Kraken API returned unexpected data for USD/CHF:", chfResponse.data);
+      return xmrUsdPrice;
+    }
+
+    const usdToChfRate = parseFloat(chfResponse.data.result[chfPair][0][4]);
+
+    const xmrChfPrice = xmrUsdPrice * usdToChfRate;
+
+
+    return xmrChfPrice;
+  } catch (error) {
+    console.error("Error fetching XMR historical price in CHF:", error.response?.data || error.message);
+    return null;
+  }
+};
+
 
 export async function fetchKrakenLedgers(apiKey, apiSecret, asset, type) {
   const now = Math.floor(Date.now() / 1000);
@@ -183,31 +221,36 @@ export async function fetchKrakenLedgers(apiKey, apiSecret, asset, type) {
     const signature = getKrakenSignature('/0/private/Ledgers', data, apiSecret);
 
     const config = {
-      method: 'post', url: 'https://api.kraken.com/0/private/Ledgers', headers: {
+      method: 'post',
+      url: 'https://api.kraken.com/0/private/Ledgers',
+      headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'API-Key': apiKey,
         'API-Sign': signature,
-      }, data,
+      },
+      data,
     };
 
     const response = await axios.request(config);
-
     const result = response.data?.result?.ledger || {};
     const ledgerEntries = Object.values(result);
 
-    if (ledgerEntries.length === 0) {
-      break;
+    if (ledgerEntries.length === 0) break;
+
+    for (let entry of ledgerEntries) {
+      if (entry.asset === "XXMR") {
+        const price = await fetchXMRHistoricalPrice(entry.time);
+        entry.transactionAmount = price ? price * Math.abs(entry.amount) : null;
+      }
     }
 
     allLedgers.push(...ledgerEntries);
-
     offset += ledgerEntries.length;
   }
 
   return allLedgers;
 }
-
 
 export const binanceCredentials = (req, res)=> {
   const apiKey = process.env.BINANCE_API_KEY;

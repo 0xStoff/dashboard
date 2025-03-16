@@ -5,7 +5,10 @@ import { toFixedString } from "../../utils/number-utils";
 
 const TransactionCards = ({ approvedSum, transactions }) => {
 
-  console.log(transactions)
+  const totalXmrWithdrawals = transactions
+      .filter((tx) => tx.type.toLowerCase() === "withdrawal")
+      .reduce((sum, tx) => sum + (parseFloat(tx.chf_value) || 0), 0);
+
   const totalWithdrawals = transactions
     .filter((tx) => tx.type.toLowerCase() === "withdrawal")
     .reduce((sum, tx) => sum + (parseFloat(tx.amount) || 0), 0);
@@ -30,6 +33,7 @@ const TransactionCards = ({ approvedSum, transactions }) => {
       <Box>
         <Typography variant="body2">gnosis {toFixedString(approvedSum)} CHF</Typography>
         <Typography variant="body2">kraken {toFixedString(totalWithdrawals)} CHF</Typography>
+        <Typography variant="body2">kraken xmr {toFixedString(totalXmrWithdrawals)} CHF</Typography>
         <Typography variant="body2">coinbase 1460.00 CHF</Typography>
         <Typography variant="body2">weed ca 6000.00 CHF</Typography>
       </Box>
@@ -37,7 +41,7 @@ const TransactionCards = ({ approvedSum, transactions }) => {
         <Card sx={{ padding: 3, borderRadius: 10, marginY: 3 }}>
           <Typography variant="h5">Withdrawals</Typography>
           <Typography variant="h4" fontWeight="bold">
-            CHF {toFixedString(totalWithdrawals - 1460 - 6000 - approvedSum)}
+            CHF {toFixedString(totalWithdrawals - 1460 - 6000 - approvedSum - totalXmrWithdrawals)}
           </Typography>
         </Card>
       </Tooltip>
