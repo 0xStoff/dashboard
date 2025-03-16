@@ -2,18 +2,24 @@ import React from "react";
 import { useSnackbar } from "@mui/base/useSnackbar";
 import { ClickAwayListener } from "@mui/base/ClickAwayListener";
 import { css, keyframes, styled } from "@mui/system";
+import { IconButton } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 
 const Snackbar = ({ open, message, handleClose }) => {
-  const { getRootProps, onClickAway } = useSnackbar({
+  const { getRootProps } = useSnackbar({
     onClose: handleClose,
     open,
-    autoHideDuration: 5000,
   });
 
   return open ? (
-    <ClickAwayListener onClickAway={onClickAway}>
-      <CustomSnackbar {...getRootProps()}>{message}</CustomSnackbar>
-    </ClickAwayListener>
+      <ClickAwayListener onClickAway={() => {}}>
+        <CustomSnackbar {...getRootProps()}>
+          {message}
+          <IconButton onClick={handleClose} size="small" sx={{ marginLeft: "auto", color: "inherit" }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </CustomSnackbar>
+      </ClickAwayListener>
   ) : null;
 };
 

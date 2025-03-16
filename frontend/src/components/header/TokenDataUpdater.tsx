@@ -144,7 +144,6 @@ const TokenDataUpdater = () => {
           </DialogActions>
         </Dialog>
 
-        {/* Snackbar for Notifications */}
         <Snackbar open={snackbarOpen} message={message} handleClose={() => setSnackbarOpen(false)} />
       </>
   );
