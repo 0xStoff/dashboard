@@ -33,10 +33,10 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress, req) => 
           price,
           price_24h_change: price_24h_change * 100,
         }
-        // ,
-        // {
-        //   conflictFields: ["chain_id", "symbol"],
-        // }
+        ,
+        {
+          conflictFields: ["chain_id", "symbol"],
+        }
       );
 
       const usd_value = amount * price;
@@ -67,9 +67,9 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress, req) => 
         name,
         logo_path: logoPath,
       }
-      // , {
-      //   conflictFields: ["chain_id", "name"]
-      // }
+      , {
+        conflictFields: ["chain_id", "name"]
+      }
       );
 
       await WalletProtocolModel.upsert({
