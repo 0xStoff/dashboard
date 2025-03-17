@@ -48,7 +48,7 @@ const fetchChains = async (req) => {
 
 const fetchWallets = async (req) => {
   const walletId = req.query.wallet_id || "all";
-  const walletWhereClause = walletId !== "all" ? { id: walletId } : {};
+  const walletWhereClause = walletId !== "all" ? { id: walletId, user_id: req.user.user.id } : { user_id: req.user.user.id };
   const searchQuery = req.query.query ? req.query.query.toLowerCase() : "";
 
   const wallets = await WalletModel.findAll({

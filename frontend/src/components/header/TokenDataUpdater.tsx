@@ -9,6 +9,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import Snackbar from "../utils/Snackbar";
 import { useFetchWallets } from "../../hooks/useFetchWallets";
 import {useWallets} from "../../context/WalletsContext";
+import apiClient from "../../utils/api-client";
 
 const TokenDataUpdater = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +24,7 @@ const TokenDataUpdater = () => {
     setIsLoading(true);
     localStorage.clear();
 
-    let endpoint = "/api/wallets/refetch";
+    let endpoint = "/wallets/refetch";
 
     switch (type) {
       case "all":
@@ -31,11 +32,11 @@ const TokenDataUpdater = () => {
         break;
       case "other":
         setMessage("🔄 Fetching Other Token Data...");
-        endpoint = "/api/wallets/refetch/other";
+        endpoint = "/wallets/refetch/other";
         break;
       case "evm":
         setMessage("🔄 Fetching EVM Token Data...");
-        endpoint = "/api/wallets/refetch/evm";
+        endpoint = "/wallets/refetch/evm";
         break;
       case "evm_wallet":
         if (!selectedWallet) {
@@ -45,7 +46,7 @@ const TokenDataUpdater = () => {
           return;
         }
         setMessage(`🔄 Fetching EVM Token Data for Wallet: ${selectedWallet}...`);
-        endpoint = `/api/wallets/refetch/evm/${selectedWallet}`;
+        endpoint = `/wallets/refetch/evm/${selectedWallet}`;
         break;
       default:
         setMessage("❌ Invalid fetch type.");
@@ -54,22 +55,12 @@ const TokenDataUpdater = () => {
     }
 
     setSnackbarOpen(true);
-    setModalOpen(false); // Close modal after selection
+    setModalOpen(false);
 
     try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await apiClient.post(endpoint);
 
-      if (!response.ok) {
-        throw new Error("Failed to update token data.");
-      }
-
-      const result = await response.json();
-      setMessage(result.message || "🎉 Token Data Fetched Successfully!");
+      setMessage(response.statusText || "🎉 Token Data Fetched Successfully!");
     } catch (error) {
       setMessage("❌ Error fetching token data.");
     } finally {
@@ -82,14 +73,12 @@ const TokenDataUpdater = () => {
 
   return (
       <>
-        {/* Icon Button to Open Modal */}
         <Tooltip title="Refetch Token Data">
           <IconButton color="primary" onClick={() => setModalOpen(true)}>
             <RefreshIcon fontSize="medium" />
           </IconButton>
         </Tooltip>
 
-        {/* Modal for Choosing Refetch Options */}
         <Dialog open={modalOpen} onClose={() => setModalOpen(false)} maxWidth="xs" fullWidth>
           <DialogTitle>Select Refetch Option</DialogTitle>
           <DialogContent>

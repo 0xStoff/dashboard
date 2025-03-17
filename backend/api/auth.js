@@ -2,91 +2,100 @@ import express from "express";
 import { ethers } from "ethers";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
+import UserModel from "../models/UserModel.js";
+import jwt from "jsonwebtoken"; // Import your user model
 
 dotenv.config();
 const router = express.Router();
-const ALLOWED_WALLET = process.env.AUTHORIZED_WALLET?.toLowerCase();
 
 router.use(cookieParser());
 
-global.activeSession = null;
-global.expectedMessages = {};
-
-
 function normalizeIP(ip) {
     if (!ip) return "";
-    if (ip === "::1") return "127.0.0.1"; // Convert IPv6 loopback to IPv4
-    if (ip.startsWith("::ffff:")) return ip.substring(7); // Convert "::ffff:127.0.0.1" to "127.0.0.1"
+    if (ip === "::1") return "127.0.0.1";
+    if (ip.startsWith("::ffff:")) return ip.substring(7);
     return ip;
 }
 
 
-router.get("/message", (req, res) => {
-    const ip = normalizeIP(req.ip);
-    const message = `Authenticate at ${new Date().toISOString()}`;
-    global.expectedMessages[ip] = message; // Store with normalized IP
-    res.json({ message });
-});
-
 router.get("/check", (req, res) => {
     const sessionToken = req.cookies?.sessionToken;
 
-    if (!sessionToken || !global.activeSession || global.activeSession.sessionToken !== sessionToken) {
+    if (!sessionToken) {
         return res.json({ success: false, error: "Not authenticated" });
     }
 
-    if (Date.now() > global.activeSession.expiresAt) {
-        global.activeSession = null;
+    try {
+        const decoded = jwt.verify(sessionToken, process.env.JWT_SECRET);
+        return res.json({ success: true, address: decoded.user.main_wallet });
+    } catch (error) {
         res.clearCookie("sessionToken");
-        return res.json({ success: false, error: "Session expired" });
+        return res.json({ success: false, error: "Session expired or invalid" });
+    }
+});
+
+router.get("/message", async (req, res) => {
+    const { wallet } = req.query;
+
+    if (!wallet) {
+        return res.status(400).json({ error: "Wallet address is required" });
     }
 
-    return res.json({ success: true, address: global.activeSession.address });
+    let user = await UserModel.findOne({ where: { main_wallet: wallet } });
+
+    if (!user) {
+        user = await UserModel.create({ main_wallet: wallet, nonce: ethers.id(Date.now().toString()) });
+    } else {
+        user.nonce = ethers.id(Date.now().toString());
+        await user.save();
+    }
+
+    res.json({ message: `Authenticate: ${user.nonce}` });
 });
 
 router.post("/login", async (req, res) => {
-    const { address, signature, message } = req.body;
-    const ip = normalizeIP(req.ip);
+    const { address, signature } = req.body;
 
-    if (!address || !signature || !message) {
-        return res.status(400).json({ error: "Missing address, signature, or message" });
+    if (!address || !signature) {
+        return res.status(400).json({ error: "Missing address or signature" });
     }
 
-    if (global.expectedMessages[ip] !== message) {
-        return res.status(403).json({ error: "Invalid authentication message" });
+    const user = await UserModel.findOne({ where: { main_wallet: address } });
+
+    if (!user) {
+        return res.status(401).json({ error: "User not found" });
     }
+
+    const expectedMessage = `Authenticate: ${user.nonce}`;
 
     try {
-        const recoveredAddress = ethers.verifyMessage(message, signature).toLowerCase();
+        const recoveredAddress = ethers.verifyMessage(expectedMessage, signature);
 
-        if (recoveredAddress !== address.toLowerCase()) {
+        if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
             return res.status(401).json({ error: "Signature verification failed" });
         }
 
-        if (address.toLowerCase() !== ALLOWED_WALLET) {
-            return res.status(403).json({ error: "Unauthorized wallet" });
-        }
+        const token = jwt.sign(
+            { user: user },
+            process.env.JWT_SECRET,
+            { expiresIn: "1h" }
+        );
 
-        const sessionToken = ethers.id(`${address}-${Date.now()}`);
-        global.activeSession = { address, sessionToken, expiresAt: Date.now() + 3600000 };
-
-        res.cookie("sessionToken", sessionToken, {
+        res.cookie("sessionToken", token, {
             httpOnly: true,
-            secure: true, // Ensure HTTPS is used
+            secure: true,
             sameSite: "Lax",
-            maxAge: 3600000, // 1 hour
+            maxAge: 3600000,
         });
 
         return res.json({ success: true, address });
     } catch (error) {
-        console.error("Error verifying signature:", error);
-        return res.status(500).json({ error: "Internal Server Error" });
+        console.error("🚨 Signature verification error:", error);
+        return res.status(500).json({ error: "Signature verification failed" });
     }
 });
 
-
 router.post("/logout", (req, res) => {
-    global.activeSession = null; // Clear session
     res.clearCookie("sessionToken");
     return res.json({ success: true, message: "Logged out" });
 });

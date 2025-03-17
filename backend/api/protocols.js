@@ -5,53 +5,50 @@ import { getHideSmallBalances } from "../utils/utils.js";
 
 const router = express.Router();
 
-/**
- * Fetch protocol data and include wallet details.
- */
-export const fetchProtocolData = async () => {
+export const fetchProtocolData = async (req) => {
   const protocols = await ProtocolModel.findAll({
     include: [{
-      model: WalletModel, attributes: ["id", "wallet", "tag", "chain"]
+      model: WalletModel, attributes: ["id", "wallet", "tag", "chain", "user_id"], where: { user_id: req.user.user.id },
     }], order: [["id", "ASC"]]
   });
 
   return protocols.map((protocol) => {
     const protocolData = protocol.get();
+    protocolData.user_id = req.user.user.id;
 
-    protocolData.wallets = protocolData.wallets.map((wallet) => {
-      const walletData = wallet.get();
-
-      if (walletData.wallets_protocols?.portfolio_item_list) {
-        walletData.portfolio_item_list = walletData.wallets_protocols.portfolio_item_list;
+    const walletSet = new Map();
+    protocolData.wallets.forEach((wallet) => {
+      const walletKey = `${wallet.id}-${wallet.wallet}`;
+      if (!walletSet.has(walletKey)) {
+        walletSet.set(walletKey, {
+          tag: wallet.tag,
+          id: wallet.id,
+          wallet: wallet.wallet,
+          chain: wallet.chain,
+          amount: wallet.amount || 0,
+          portfolio_item_list: wallet.wallets_protocols?.portfolio_item_list || [],
+        });
       }
-
-      delete walletData.wallets_protocols;
-      walletData.tokens = walletData.tokens || [];
-      return walletData;
     });
+
+    protocolData.wallets = Array.from(walletSet.values());
 
     delete protocolData.portfolio_item_list;
     return protocolData;
   });
 };
 
-/**
- * Helper function to add or update a position within a protocol.
- */
-
 
 export const addPosition = (protocolName, acc, tokens, itemName, walletTag, walletAmount, selectedChainId, item) => {
   const validTokens = tokens
     .filter((token) => selectedChainId === "all" || token.chain === selectedChainId)
-    .filter((token) => token.amount * token.price > 0.01 || item.stats.asset_usd_value > 0.01)
-
+    .filter((token) => token.amount * token.price > 0.01 || item.stats.asset_usd_value > 0.01);
 
   if (!validTokens.length) return;
 
   const tokenNames = validTokens.map((t) => t.name).join(" + ");
   const logoUrls = validTokens.map((t) => t.logo_url);
   const totalAmount = validTokens.reduce((sum, token) => sum + token.amount, 0);
-  // const totalUsdValue = validTokens.reduce((sum, token) => sum + token.amount * token.price, 0);
   const totalUsdValue = item.stats.asset_usd_value;
   const avgPrice = totalUsdValue / totalAmount;
 
@@ -60,8 +57,16 @@ export const addPosition = (protocolName, acc, tokens, itemName, walletTag, wall
 
   if (existingPositionIndex > -1) {
     const existingPosition = protocol.positions[existingPositionIndex];
+
+    // Ensure wallet is unique in existing position
     if (walletTag && walletAmount !== undefined) {
-      existingPosition.wallets.push({ tag: walletTag, amount: walletAmount });
+      const existingWallet = existingPosition.wallets.find(w => w.tag === walletTag);
+      if (!existingWallet) {
+        existingPosition.wallets.push({ tag: walletTag, amount: walletAmount });
+      }
+      // else {
+      //   existingWallet.amount += walletAmount; // Merge amounts if duplicate
+      // }
     }
   } else {
     protocol.positions.push({
@@ -80,9 +85,6 @@ export const addPosition = (protocolName, acc, tokens, itemName, walletTag, wall
 };
 
 
-/**
- * Unify positions by merging wallets with the same tokens, type, and chain.
- */
 export const unifyPositions = (positions) => {
   const unified = {};
 
@@ -100,22 +102,16 @@ export const unifyPositions = (positions) => {
   return Object.values(unified).sort((a, b) => b.usdValue - a.usdValue);
 };
 
-/**
- * API route to fetch all protocols.
- */
-router.get("/protocols", async (req, res) => {
-  try {
-    const protocols = await fetchProtocolData();
-    res.json(protocols);
-  } catch (err) {
-    console.error("Error fetching protocols:", err);
-    res.status(500).json({ error: "Failed to fetch protocols" });
-  }
-});
+// router.get("/protocols", async (req, res) => {
+//   try {
+//     const protocols = await fetchProtocolData();
+//     res.json(protocols);
+//   } catch (err) {
+//     console.error("Error fetching protocols:", err);
+//     res.status(500).json({ error: "Failed to fetch protocols" });
+//   }
+// });
 
-/**
- * API route to fetch grouped and filtered protocol data.
- */
 router.get("/protocols-table", async (req, res) => {
   try {
     const selectedChainId = req.query.chain || "all";
@@ -124,8 +120,7 @@ router.get("/protocols-table", async (req, res) => {
 
     const hideSmallBalances = await getHideSmallBalances();
 
-
-    const groupedByProtocol = (await fetchProtocolData()).reduce((acc, protocol) => {
+    const groupedByProtocol = (await fetchProtocolData(req)).reduce((acc, protocol) => {
       if (!acc[protocol.name]) {
         acc[protocol.name] = { name: protocol.name, positions: [], totalUSD: 0 };
       }
@@ -137,7 +132,7 @@ router.get("/protocols-table", async (req, res) => {
 
       if (protocol.wallets) {
         protocol.wallets
-          .filter((wallet) => walletId === "all" || wallet.id === Number(walletId))
+          .filter((wallet) => (walletId === "all" || wallet.id === Number(walletId)))
           .forEach((wallet) => wallet.portfolio_item_list.forEach((item) => addWalletPositions(item, wallet.tag)));
       } else {
         protocol.portfolio_item_list.forEach((item) => addWalletPositions(item, ""));
@@ -145,8 +140,6 @@ router.get("/protocols-table", async (req, res) => {
 
       return acc;
     }, {});
-
-
 
     let sortedGroupedProtocols = Object.values(groupedByProtocol)
       .map((protocol) => ({
@@ -184,4 +177,3 @@ router.get("/protocols-table", async (req, res) => {
 });
 
 export default router;
-

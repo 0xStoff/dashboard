@@ -18,8 +18,6 @@ import {
     Switch,
 } from "@mui/material";
 import {Add, Delete, Edit, ContentCopy} from "@mui/icons-material";
-import axios from "axios";
-import {useFetchWallets} from "../../hooks/useFetchWallets";
 import apiClient from "../../utils/api-client";
 import {useWallets} from "../../context/WalletsContext";
 

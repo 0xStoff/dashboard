@@ -23,6 +23,7 @@ import TokenModel from "./models/TokenModel.js";
 import WalletTokenModel from "./models/WalletTokenModel.js";
 import ProtocolModel from "./models/ProtocolModel.js";
 import WalletProtocolModel from "./models/WalletProtocolModel.js";
+import UserModel from "./models/UserModel.js";
 
 dotenv.config();
 
@@ -33,23 +34,17 @@ const server = http.createServer(app);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 🔹 Ensure CORS allows cookies
 app.use(cors({
-  origin: "http://localhost:8080", // Adjust for frontend
+  origin: "http://localhost:8080", // Adjust for your frontend
   credentials: true // 🔴 Must be `true` to allow cookies
 }));
 
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ limit: "1mb", extended: true }));
-app.use(cookieParser()); // 🔴 Ensures cookies can be read
+app.use(cookieParser()); // 🔴 Enables reading cookies for JWT auth
 
-// 🔹 Store active session (TEMPORARY, use Redis or DB in production)
-global.activeSession = null;
-
-// 🔹 Authentication Routes
 app.use("/api/auth", authRoutes);
 
-// 🔹 Protected API Routes (Require Authentication)
 app.use("/api", authenticateToken, chainsRoutes);
 app.use("/api", authenticateToken, walletRoutes);
 app.use("/api", authenticateToken, nonEvmRoutes);
@@ -61,13 +56,18 @@ app.use("/api/settings", authenticateToken, settingsRoutes);
 
 app.use("/logos", express.static(path.join(__dirname, "logos")));
 
-
-// 🔹 Database Setup
+// 🔹 Setup Database Associations
 const setupAssociations = () => {
+  UserModel.hasMany(WalletModel, { foreignKey: "user_id" });
+  WalletModel.belongsTo(UserModel, { foreignKey: "user_id" });
   WalletModel.belongsToMany(TokenModel, { through: WalletTokenModel, foreignKey: "wallet_id" });
   TokenModel.belongsToMany(WalletModel, { through: WalletTokenModel, foreignKey: "token_id" });
   WalletModel.belongsToMany(ProtocolModel, { through: WalletProtocolModel, foreignKey: "wallet_id" });
   ProtocolModel.belongsToMany(WalletModel, { through: WalletProtocolModel, foreignKey: "protocol_id" });
+  UserModel.hasMany(WalletTokenModel, { foreignKey: "user_id" });
+  WalletTokenModel.belongsTo(UserModel, { foreignKey: "user_id" });
+  UserModel.hasMany(WalletProtocolModel, { foreignKey: "user_id" });
+  WalletProtocolModel.belongsTo(UserModel, { foreignKey: "user_id" });
 };
 
 const initDb = async () => {

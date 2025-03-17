@@ -3,30 +3,24 @@ import axios from "axios";
 import { Wallet } from "../interfaces";
 import apiClient from "../utils/api-client";
 
-
 interface UseFetchWalletsReturn {
   wallets: Wallet[];
   loading: boolean;
 }
-export const useFetchWallets = (chain: string | null = null): {
+
+export const useFetchWallets = (): {
   fetchWallets: () => Promise<void>;
-  setWallets: (value: (prevWallets) => ({
-    chain: string;
-    wallet: string;
-    id: number;
-    tag: string;
-    show_chip: boolean
-  } | Wallet)[]) => void;
+  setWallets: (value: (((prevState: Wallet[]) => Wallet[]) | Wallet[])) => void;
   wallets: Wallet[];
-  loading: boolean
+  loading: boolean;
 } => {
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+
   const fetchWallets = async () => {
     try {
-      const url = chain ? `/wallets?chain=${chain}` : `/wallets`;
+      const response = await apiClient.get<Wallet[]>("/wallets");
 
-      const response = await apiClient.get<Wallet[]>(url);
       setWallets(response.data);
     } catch (error) {
       console.error("Failed to load wallets:", error);
@@ -37,7 +31,7 @@ export const useFetchWallets = (chain: string | null = null): {
 
   useEffect(() => {
     fetchWallets();
-  }, [chain]);
+  }, []);
 
   return { wallets, loading, fetchWallets, setWallets };
 };

@@ -17,7 +17,9 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
             });
 
             const data = await response.json();
+
             if (data.success) {
+                console.log(data)
                 setAccount(data.address);
                 setIsAuthenticated(true);
             } else {
@@ -40,35 +42,38 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
             const address = await signer.getAddress();
             setAccount(address);
 
-            await signMessage(address);
+            await authenticateUser(address);
         } catch (error) {
             console.error("Error connecting wallet:", error);
         }
     };
 
-    const signMessage = async (address: string) => {
+    const authenticateUser = async (address: string) => {
         try {
-            const messageResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/message`, {
+            // Request the nonce first
+            const nonceResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/message?wallet=${address}`, {
                 credentials: "include",
             });
 
-            if (!messageResponse.ok) {
-                throw new Error("Failed to fetch authentication message.");
-            }
+            if (!nonceResponse.ok) throw new Error("Failed to fetch nonce");
 
-            const { message } = await messageResponse.json();
+            const { message } = await nonceResponse.json();
+
+            // Sign the message
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
             const signature = await signer.signMessage(message);
 
-            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/login`, {
+            const loginResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
-                body: JSON.stringify({ address, signature, message }),
+                body: JSON.stringify({ address, signature }),
             });
 
-            const data = await response.json();
+            const data = await loginResponse.json();
+            console.log("Login Response:", data);
+
             if (data.success) {
                 console.log("✅ Wallet authenticated:", address);
                 setIsAuthenticated(true);
@@ -76,12 +81,11 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
             } else {
                 alert(data.error || "Unauthorized wallet.");
                 setIsAuthenticated(false);
-            }
-        } catch (error) {
-            console.error("Error signing message:", error);
+            } }
+        catch (error) {
+            console.error("Authentication error:", error);
         }
     };
-
     const logout = async () => {
         try {
             await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/logout`, {

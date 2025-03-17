@@ -11,7 +11,15 @@ const WalletProtocolModel = sequelize.define('wallets_protocols', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'wallets', // References the 'wallets' table
+      model: 'wallets',
+      key: 'id'
+    }
+  },
+  user_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'users',
       key: 'id'
     }
   },
@@ -19,17 +27,18 @@ const WalletProtocolModel = sequelize.define('wallets_protocols', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'protocols', // References the 'protocols' table
+      model: 'protocols',
       key: 'id'
     }
   },
   portfolio_item_list: {
-    type: DataTypes.JSON, // JSON type to store a list of items
+    type: DataTypes.JSON,
     allowNull: true,
   },
 }, {
   tableName: 'wallets_protocols',
   timestamps: false
 });
+
 
 export default WalletProtocolModel;

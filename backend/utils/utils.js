@@ -1,4 +1,4 @@
-import { Op, Sequelize } from "sequelize";
+import {Op} from "sequelize";
 import TokenModel from "../models/TokenModel.js";
 import WalletTokenModel from "../models/WalletTokenModel.js";
 import WalletModel from "../models/WalletModel.js";
@@ -20,14 +20,14 @@ export const getHideSmallBalances = async () => {
   return setting ? setting.value : 10;
 };
 
-export const fetchWalletData = async (chain, usd_value, walletId) => {
-  const walletWhereClause = {};
+export const fetchWalletData = async (chain, usd_value, walletId, userId) => {
+  const walletWhereClause = { user_id: userId };
   if (walletId && walletId !== 'all') walletWhereClause.id = walletId;
 
   const tokenWhereClause = {};
   if (chain && chain !== 'all') tokenWhereClause.chain_id = chain;
 
-  return await WalletModel.findAll({
+  return WalletModel.findAll({
     where: walletWhereClause,
     include: [
       {
@@ -53,6 +53,7 @@ export const fetchWalletData = async (chain, usd_value, walletId) => {
   });
 };
 
+
 export const transformData = async (wallets) => {
   const tokenMap = new Map();
   const hideSmallBalances = await getHideSmallBalances();
@@ -60,15 +61,15 @@ export const transformData = async (wallets) => {
   wallets.forEach(({ id: walletId, wallet: walletAddress, tag, chain, tokens }) => {
     tokens.forEach((token) => {
       const {
-              name,
-              chain_id,
-              symbol,
-              decimals,
-              logo_path,
-              price,
-              price_24h_change,
-              wallets_tokens: { amount, is_core },
-            } = token;
+        name,
+        chain_id,
+        symbol,
+        decimals,
+        logo_path,
+        price,
+        price_24h_change,
+        wallets_tokens: { amount, is_core },
+      } = token;
 
       const tokenKey = `${name}-${chain_id}`;
 
@@ -82,45 +83,44 @@ export const transformData = async (wallets) => {
         price_24h_change: price_24h_change || null,
         amount: parseFloat(amount),
         is_core,
-        wallets: [
-          {
-            tag,
-            id: walletId,
-            wallet: walletAddress,
-            amount: parseFloat(amount),
-          },
-        ],
+        wallets: new Map(), // Use Map to ensure unique wallets
       };
 
       if (!tokenMap.has(tokenKey)) {
-        tokenMap.set(tokenKey, newTokenData);
-      } else {
-        const existingToken = tokenMap.get(tokenKey);
-        existingToken.amount += parseFloat(amount);
-        existingToken.wallets.push({
+        newTokenData.wallets.set(walletId, {
           tag,
           id: walletId,
           wallet: walletAddress,
           amount: parseFloat(amount),
         });
+        tokenMap.set(tokenKey, newTokenData);
+      } else {
+        const existingToken = tokenMap.get(tokenKey);
+        existingToken.amount += parseFloat(amount);
+
+        // Prevent duplicate wallet entries
+        if (!existingToken.wallets.has(walletId)) {
+          existingToken.wallets.set(walletId, {
+            tag,
+            id: walletId,
+            wallet: walletAddress,
+            amount: parseFloat(amount),
+          });
+        } else {
+          existingToken.wallets.get(walletId).amount += parseFloat(amount); // Merge amounts
+        }
       }
     });
   });
 
-
   return [...tokenMap.values()]
-    .reduce((acc, token) => {
-      const total_usd_value = token.amount * token.price;
-      if (total_usd_value > hideSmallBalances) {
-        acc.push({
-          ...token,
-          total_usd_value,
-        });
-      }
-      return acc;
-    }, [])
-    .sort((a, b) => b.total_usd_value - a.total_usd_value);
-
+      .map((token) => ({
+        ...token,
+        wallets: [...token.wallets.values()], // Convert Map back to array
+        total_usd_value: token.amount * token.price,
+      }))
+      .filter((token) => token.total_usd_value > hideSmallBalances)
+      .sort((a, b) => b.total_usd_value - a.total_usd_value);
 };
 
 const createBinanceSignature = (queryString, secret) => {

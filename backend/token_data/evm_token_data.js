@@ -6,7 +6,7 @@ import WalletProtocolModel from "../models/WalletProtocolModel.js";
 import WalletTokenModel from "../models/WalletTokenModel.js";
 import TokenModel from "../models/TokenModel.js";
 
-export const fetchAndSaveEvmTokenData = async (walletId, walletAddress) => {
+export const fetchAndSaveEvmTokenData = async (walletId, walletAddress, req) => {
   try {
     // Fetch tokens
     const tokens = await fetchDebankData("/user/all_token_list", {
@@ -32,15 +32,17 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress) => {
           logo_path: logoPath,
           price,
           price_24h_change: price_24h_change * 100,
-        },
-        {
-          conflictFields: ["chain_id", "symbol"],
         }
+        // ,
+        // {
+        //   conflictFields: ["chain_id", "symbol"],
+        // }
       );
 
       const usd_value = amount * price;
 
       await WalletTokenModel.upsert({
+        user_id: req.user.user.id,
         wallet_id: walletId,
         token_id: dbToken.id,
         amount,
@@ -50,7 +52,7 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress) => {
     }
 
     const protocols = await fetchDebankData("/user/all_complex_protocol_list", {
-      id: walletAddress
+      id: walletAddress,
     });
 
 
@@ -64,13 +66,14 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress) => {
         chain_id: chain,
         name,
         logo_path: logoPath,
-        // portfolio_item_list,
-        // total_usd: portfolio_item_list.reduce((sum, item) => sum + item.stats.asset_usd_value, 0)
-      }, {
-        conflictFields: ["chain_id", "name"]
-      });
+      }
+      // , {
+      //   conflictFields: ["chain_id", "name"]
+      // }
+      );
 
       await WalletProtocolModel.upsert({
+        user_id: req.user.user.id,
         wallet_id: walletId, protocol_id: dbProtocol.id, portfolio_item_list
       }, {
         conflictFields: ["wallet_id", "protocol_id"]
@@ -83,14 +86,15 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress) => {
   }
 };
 
-export const fetchAndSaveEvmTokenDataForAllWallets = async () => {
+export const fetchAndSaveEvmTokenDataForAllWallets = async (req) => {
   try {
     const wallets = await WalletModel.findAll({
       order: [["id", "ASC"]], where: { chain: "evm" }
     });
 
+
     for (const wallet of wallets) {
-      await fetchAndSaveEvmTokenData(wallet.id, wallet.wallet);
+      await fetchAndSaveEvmTokenData(wallet.id, wallet.wallet, req);
     }
 
     console.log("Token and protocol data for all wallets successfully updated");

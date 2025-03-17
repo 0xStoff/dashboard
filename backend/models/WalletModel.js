@@ -5,7 +5,8 @@ const WalletModel = sequelize.define('wallets', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
-        autoIncrement: true
+        autoIncrement: true,
+        allowNull: false
     },
     wallet: {
         type: DataTypes.STRING,
@@ -23,8 +24,16 @@ const WalletModel = sequelize.define('wallets', {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true
+    },
+    user_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'users',
+            key: 'id'
+        }
     }
-},{
+}, {
     timestamps: false,
 });
 

@@ -6,7 +6,6 @@ CREATE TABLE wallets
     chain  VARCHAR(10),
     show_chip  BOOLEAN DEFAULT TRUE
 );
-
 CREATE TABLE evm_chains
 (
     id               SERIAL PRIMARY KEY,
@@ -81,4 +80,7 @@ CREATE TABLE net_worth (
                            total_usd  DECIMAL(20, 8) NOT NULL,
                            UNIQUE (date)
 );
+
+
+
 

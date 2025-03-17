@@ -71,6 +71,7 @@ const WalletTable: React.FC<{ tokens: Token[], chainList: any[], setSelectedToke
     });
   }, [tokens, sortConfig]);
 
+
   const handleSortChange = (key: "holdings" | "change") => {
     setSortConfig((prev) => ({
       key,

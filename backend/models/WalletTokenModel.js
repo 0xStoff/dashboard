@@ -15,6 +15,14 @@ const WalletTokenModel = sequelize.define('wallets_tokens', {
             key: 'id'
         }
     },
+    user_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'users',
+            key: 'id'
+        }
+    },
     token_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -39,5 +47,6 @@ const WalletTokenModel = sequelize.define('wallets_tokens', {
     tableName: 'wallets_tokens',
     timestamps: false
 });
+
 
 export default WalletTokenModel;

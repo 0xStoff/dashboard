@@ -67,6 +67,7 @@ const App: React.FC = () => {
     const [selectedToken, setSelectedToken] = useState<Token | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
+
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
     const walletId: string = selectedItem?.id || "all";

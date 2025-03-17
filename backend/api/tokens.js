@@ -10,14 +10,19 @@ router.get('/tokens', async (req, res) => {
         const walletId = req.query.wallet_id || "all";
         const searchQuery = req.query.query ? req.query.query.toLowerCase() : "";
 
-        const wallets = await fetchWalletData(chain, usd_value, walletId);
+        const userId = req.user?.user?.id;
+        if (!userId) {
+            return res.status(401).json({ error: "Unauthorized: Missing user ID" });
+        }
+
+        const wallets = await fetchWalletData(chain, usd_value, walletId, userId);
         const result = await transformData(wallets);
 
         const filteredTokens = searchQuery
-          ? result.filter(token =>
-            token.symbol.toLowerCase().includes(searchQuery)
-          )
-          : result;
+            ? result.filter(token =>
+                token.symbol.toLowerCase().includes(searchQuery)
+            )
+            : result;
 
         res.json(filteredTokens);
     } catch (err) {
