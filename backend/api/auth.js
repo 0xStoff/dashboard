@@ -10,13 +10,6 @@ const router = express.Router();
 
 router.use(cookieParser());
 
-function normalizeIP(ip) {
-    if (!ip) return "";
-    if (ip === "::1") return "127.0.0.1";
-    if (ip.startsWith("::ffff:")) return ip.substring(7);
-    return ip;
-}
-
 
 router.get("/check", (req, res) => {
     const sessionToken = req.cookies?.sessionToken;
@@ -85,7 +78,7 @@ router.post("/login", async (req, res) => {
             httpOnly: true,
             secure: true,
             sameSite: "Lax",
-            maxAge: 3600000,
+            maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
 
         return res.json({ success: true, address });
