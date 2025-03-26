@@ -55,7 +55,7 @@ const TransactionCards = ({ approvedSum, transactions }) => {
   weedWithdrawals: 10000,
   initialDeposit: 6715.0
   }
-  const lastNetWorth = (netWorth?.[netWorth.length - 1]?.totalNetWorth || 0) * rate;
+  const lastNetWorth = netWorth.totalNetWorth * rate;
 
   const netWithdrawals = totalWithdrawals - staticData.coinbaseWithdrawals - staticData.weedWithdrawals - approvedSum - totalXmrWithdrawals;
   const totalDepositsWithInitial = totalDeposits + staticData.initialDeposit;
