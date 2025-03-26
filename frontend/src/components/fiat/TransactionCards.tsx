@@ -1,16 +1,34 @@
-import React from "react";
+import React, {useEffect, useState} from "react";
 import { Card, Tooltip, Typography } from "@mui/material";
 import { Box, Container } from "@mui/system";
 import { toFixedString } from "../../utils/number-utils";
 import {useFetchNetWorth} from "../../hooks/useFetchNetWorth";
 import {useFetchTokens} from "../../hooks/useFetchTokens";
 
+
+export const useExchangeRate = (from: string, to: string) => {
+  const [rate, setRate] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const getRate = async () => {
+      setLoading(true);
+      const res = await fetch(`https://api.exchangerate.host/latest?base=${from}&symbols=${to}`);
+      const data = await res.json();
+      setRate(data.rates[to]);
+      setLoading(false);
+    };
+
+    getRate();
+  }, [from, to]);
+
+  return { rate, loading };
+};
+
 const TransactionCards = ({ approvedSum, transactions }) => {
   const { netWorth , loading} = useFetchNetWorth();
-  const searchQuery = 'usd';
-  const { tokens, loading: tokensLoading } = useFetchTokens({searchQuery});
+  const { rate: usdToChf, loading: exchangeLoading } = useExchangeRate('USD', 'CHF');
 
-  console.log(tokens)
   const totalXmrWithdrawals = transactions
       .filter((tx) => tx.type.toLowerCase() === "withdrawal")
       .reduce((sum, tx) => sum + (parseFloat(tx.chf_value) || 0), 0);
@@ -30,7 +48,7 @@ const TransactionCards = ({ approvedSum, transactions }) => {
   weedWithdrawals: 10000,
   initialDeposit: 6715.0
   }
-  const lastNetWorth = (netWorth?.[netWorth.length - 1]?.totalNetWorth || 0) * 0.9;
+  const lastNetWorth = (netWorth?.[netWorth.length - 1]?.totalNetWorth || 0) * rate;
 
   const netWithdrawals = totalWithdrawals - staticData.coinbaseWithdrawals - staticData.weedWithdrawals - approvedSum - totalXmrWithdrawals;
   const totalDepositsWithInitial = totalDeposits + staticData.initialDeposit;
@@ -72,7 +90,7 @@ const TransactionCards = ({ approvedSum, transactions }) => {
       loading ? "Loading..." : (
         <Box>
           <Typography variant="body2">+ total withdrawals: CHF {toFixedString(netWithdrawals, 0)}</Typography>
-          <Typography variant="body2">+ networth (0.9x): CHF {toFixedString(lastNetWorth, 0)}</Typography>
+          <Typography variant="body2">+ networth: CHF {toFixedString(lastNetWorth, 0)}</Typography>
           <Typography variant="body2">- total deposits: CHF {toFixedString(totalDepositsWithInitial, 0)}</Typography>
         </Box>
       )
@@ -80,7 +98,7 @@ const TransactionCards = ({ approvedSum, transactions }) => {
       <Card sx={{ padding: 3, borderRadius: 10, marginY: 3 }}>
         <Typography variant="h5">Net Profit</Typography>
         <Typography variant="h4" fontWeight="bold">
-          {loading ? "Loading..." : `CHF ${toFixedString(netProfit, 0)}`}
+          {loading || exchangeLoading ? "Loading..." : `CHF ${toFixedString(netProfit, 0)}`}
         </Typography>
       </Card>
     </Tooltip>
