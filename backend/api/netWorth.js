@@ -5,17 +5,25 @@ const router = express.Router();
 
 
 router.get("/net-worth", async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 100;
+  const includeDetails = req.query.includeDetails !== 'false';
+  const offset = (page - 1) * limit;
+
   try {
     const netWorthData = await NetWorth.findAll({
       order: [["date", "ASC"]],
+      limit,
+      offset,
     });
-
 
     const formattedData = netWorthData.map(entry => ({
       date: entry.date,
       totalNetWorth: parseFloat(entry.totalNetWorth),
-      tokenHistory: entry.history?.tokens || [],
-      protocolHistory: entry.history?.protocolsTable || []
+      ...(includeDetails && {
+        tokenHistory: entry.history?.tokens || [],
+        protocolHistory: entry.history?.protocolsTable || []
+      }),
     }));
 
     res.json(formattedData);
@@ -54,5 +62,3 @@ router.post("/net-worth", async (req, res) => {
 });
 
 export default router;
-
-
