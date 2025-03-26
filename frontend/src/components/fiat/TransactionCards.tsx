@@ -52,7 +52,7 @@ const TransactionCards = ({ approvedSum, transactions }) => {
       <Card sx={{ padding: 3, borderRadius: 10, marginY: 3 }}>
         <Typography variant="h5">Net Profit</Typography>
         <Typography variant="h4" fontWeight="bold">
-          CHF {toFixedString(totalWithdrawals - 1460 - 6000 - approvedSum - totalXmrWithdrawals - (netWorth?.[netWorth.length - 1]?.totalNetWorth || 0))}
+          CHF {toFixedString((netWorth?.[netWorth.length - 1]?.totalNetWorth || 0) * 0.9 - totalWithdrawals)}
         </Typography>
       </Card>
 
