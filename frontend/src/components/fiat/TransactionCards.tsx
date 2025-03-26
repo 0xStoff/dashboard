@@ -5,7 +5,7 @@ import { toFixedString } from "../../utils/number-utils";
 import {useFetchNetWorth} from "../../hooks/useFetchNetWorth";
 
 const TransactionCards = ({ approvedSum, transactions }) => {
-  const { netWorth } = useFetchNetWorth();
+  const { netWorth , loading} = useFetchNetWorth();
 
   const totalXmrWithdrawals = transactions
       .filter((tx) => tx.type.toLowerCase() === "withdrawal")
@@ -64,12 +64,27 @@ const TransactionCards = ({ approvedSum, transactions }) => {
         </Typography>
       </Card>
 
+    <Tooltip title={
+      loading ? "Loading..." : (
+        <Box>
+          <Typography variant="body2">+ total withdrawals: CHF {toFixedString(totalWithdrawals, 0)}</Typography>
+          <Typography variant="body2">+ total deposits: CHF {toFixedString(totalDeposits, 0)}</Typography>
+          <Typography variant="body2">+ initial deposit: CHF {toFixedString(staticData.initialDeposit, 0)}</Typography>
+          <Typography variant="body2">- coinbase: CHF {staticData.coinbaseWithdrawals}</Typography>
+          <Typography variant="body2">- weed: CHF {staticData.weedWithdrawals}</Typography>
+          <Typography variant="body2">- gnosis: CHF {toFixedString(approvedSum, 0)}</Typography>
+          <Typography variant="body2">- kraken xmr: CHF {toFixedString(totalXmrWithdrawals, 0)}</Typography>
+          <Typography variant="body2">- last networth (0.9x): CHF {toFixedString(lastNetWorth, 0)}</Typography>
+        </Box>
+      )
+    } arrow>
       <Card sx={{ padding: 3, borderRadius: 10, marginY: 3 }}>
         <Typography variant="h5">Net Profit</Typography>
         <Typography variant="h4" fontWeight="bold">
-          CHF {toFixedString(netProfit, 0)}
+          {loading ? "Loading..." : `CHF ${toFixedString(netProfit, 0)}`}
         </Typography>
       </Card>
+    </Tooltip>
 
     </Container>);
 };
