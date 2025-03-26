@@ -1,37 +1,43 @@
-import { useState, useEffect } from 'react';
+import {useState, useEffect} from 'react';
 import axios from "axios";
-import { Token } from "../interfaces";
+import {Token} from "../interfaces";
 import apiClient from "../utils/api-client";
 
 
 interface UseFetchTokensReturn {
-  tokens: Token[];
-  totalTokenUSD: string | number;
-  loading: boolean;
+    tokens: Token[];
+    totalTokenUSD: string | number;
+    loading: boolean;
 }
 
-export const useFetchTokens = (chain: string | null = 'all', walletId: string | null = 'all', searchQuery: string): UseFetchTokensReturn => {
-  const [tokens, setTokens] = useState<Token[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+interface UseFetchTokensParams {
+    searchQuery: string;
+    chain?: string | null;
+    walletId?: string | null;
+}
 
-  useEffect(() => {
-    const loadTokens = async () => {
-      try {
-        const url = `/tokens?chain=${chain}&wallet_id=${walletId}&query=${searchQuery}`;
+export const useFetchTokens = ({chain = 'all', walletId = 'all', searchQuery}: UseFetchTokensParams): UseFetchTokensReturn => {
+    const [tokens, setTokens] = useState<Token[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
 
-        const response = await apiClient.get(url);
-        setTokens(response.data);
-      } catch (error) {
-        console.error('Failed to load tokens:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    useEffect(() => {
+        const loadTokens = async () => {
+            try {
+                const url = `/tokens?chain=${chain}&wallet_id=${walletId}&query=${searchQuery}`;
 
-    loadTokens();
-  }, [searchQuery, chain, walletId]);
+                const response = await apiClient.get(url);
+                setTokens(response.data);
+            } catch (error) {
+                console.error('Failed to load tokens:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-  const totalTokenUSD = (tokens).reduce((sum, item) => sum + item.total_usd_value, 0) || 0;
+        loadTokens();
+    }, [searchQuery, chain, walletId]);
 
-  return { tokens, totalTokenUSD, loading };
+    const totalTokenUSD = (tokens).reduce((sum, item) => sum + item.total_usd_value, 0) || 0;
+
+    return {tokens, totalTokenUSD, loading};
 };

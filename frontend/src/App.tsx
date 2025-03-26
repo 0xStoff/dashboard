@@ -75,7 +75,11 @@ const App: React.FC = () => {
     const { netWorth, loading: netWorthLoading, saveNetWorth } = useFetchNetWorth();
     const { wallets, loading: walletsLoading, fetchWallets, setWallets } = useFetchWallets();
     const { chains, loading: chainsLoading } = useFetchChains(walletId, searchQuery);
-    const { tokens, totalTokenUSD, loading: tokensLoading } = useFetchTokens(selectedChainId, walletId, searchQuery);
+    const { tokens, totalTokenUSD, loading: tokensLoading } = useFetchTokens({
+        chain: selectedChainId,
+        walletId,
+        searchQuery,
+    });
     const { protocolsTable, totalProtocolUSD, loading: protocolsTableLoading } =
         useFetchProtocolsTable(selectedChainId, walletId, searchQuery);
 

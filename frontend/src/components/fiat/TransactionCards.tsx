@@ -3,10 +3,14 @@ import { Card, Tooltip, Typography } from "@mui/material";
 import { Box, Container } from "@mui/system";
 import { toFixedString } from "../../utils/number-utils";
 import {useFetchNetWorth} from "../../hooks/useFetchNetWorth";
+import {useFetchTokens} from "../../hooks/useFetchTokens";
 
 const TransactionCards = ({ approvedSum, transactions }) => {
   const { netWorth , loading} = useFetchNetWorth();
+  const searchQuery = 'usd';
+  const { tokens, loading: tokensLoading } = useFetchTokens({searchQuery});
 
+  console.log(tokens)
   const totalXmrWithdrawals = transactions
       .filter((tx) => tx.type.toLowerCase() === "withdrawal")
       .reduce((sum, tx) => sum + (parseFloat(tx.chf_value) || 0), 0);
