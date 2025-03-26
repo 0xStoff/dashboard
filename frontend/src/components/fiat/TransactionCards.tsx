@@ -50,18 +50,19 @@ const TransactionCards = ({ approvedSum, transactions }) => {
       </Tooltip>
 
       <Card sx={{ padding: 3, borderRadius: 10, marginY: 3 }}>
+        <Typography variant="h5">Fees</Typography>
+        <Typography variant="h4" fontWeight="bold">
+          CHF {toFixedString(totalFees)}
+        </Typography>
+      </Card>
+
+      <Card sx={{ padding: 3, borderRadius: 10, marginY: 3 }}>
         <Typography variant="h5">Net Profit</Typography>
         <Typography variant="h4" fontWeight="bold">
           CHF {toFixedString(totalWithdrawals - 1460 - 6000 - approvedSum - totalXmrWithdrawals - (netWorth?.[netWorth.length - 1]?.totalNetWorth || 0) * 0.9 )}
         </Typography>
       </Card>
 
-      <Card sx={{ padding: 3, borderRadius: 10, marginY: 3 }}>
-        <Typography variant="h5">Fees</Typography>
-        <Typography variant="h4" fontWeight="bold">
-          CHF {toFixedString(totalFees)}
-        </Typography>
-      </Card>
     </Container>);
 };
 
