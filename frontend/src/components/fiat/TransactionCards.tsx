@@ -2,8 +2,11 @@ import React from "react";
 import { Card, Tooltip, Typography } from "@mui/material";
 import { Box, Container } from "@mui/system";
 import { toFixedString } from "../../utils/number-utils";
+import {useFetchNetWorth} from "../../hooks/useFetchNetWorth";
 
 const TransactionCards = ({ approvedSum, transactions }) => {
+  const { netWorth } = useFetchNetWorth();
+
 
   const totalXmrWithdrawals = transactions
       .filter((tx) => tx.type.toLowerCase() === "withdrawal")
@@ -45,6 +48,13 @@ const TransactionCards = ({ approvedSum, transactions }) => {
           </Typography>
         </Card>
       </Tooltip>
+
+      <Card sx={{ padding: 3, borderRadius: 10, marginY: 3 }}>
+        <Typography variant="h5">Net Profit</Typography>
+        <Typography variant="h4" fontWeight="bold">
+          CHF {toFixedString((netWorth?.[netWorth.length - 1]?.totalNetWorth || 0) - totalWithdrawals)}
+        </Typography>
+      </Card>
 
       <Card sx={{ padding: 3, borderRadius: 10, marginY: 3 }}>
         <Typography variant="h5">Fees</Typography>
