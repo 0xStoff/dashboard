@@ -3,31 +3,38 @@ import { Card, Tooltip, Typography } from "@mui/material";
 import { Box, Container } from "@mui/system";
 import { toFixedString } from "../../utils/number-utils";
 import {useFetchNetWorth} from "../../hooks/useFetchNetWorth";
-import {useFetchTokens} from "../../hooks/useFetchTokens";
+import axios from "axios";
 
-
-export const useExchangeRate = (from: string, to: string) => {
-  const [rate, setRate] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const getRate = async () => {
-      setLoading(true);
-      const res = await fetch(`https://api.exchangerate.host/latest?base=${from}&symbols=${to}`);
-      const data = await res.json();
-      setRate(data.rates[to]);
-      setLoading(false);
-    };
-
-    getRate();
-  }, [from, to]);
-
-  return { rate, loading };
+const fetchUsdToChfRate = async () => {
+  try {
+    const response = await axios.get("https://api.coingecko.com/api/v3/simple/price", {
+      params: {
+        ids: "usd",
+        vs_currencies: "chf",
+        x_cg_demo_api_key: process.env.COINGECKO_API_KEY,
+      },
+    });
+    return response.data.usd?.chf ?? null;
+  } catch (error) {
+    console.error("Error fetching USD to CHF rate:", error);
+    return null;
+  }
 };
 
 const TransactionCards = ({ approvedSum, transactions }) => {
   const { netWorth , loading} = useFetchNetWorth();
-  const { rate, loading: exchangeLoading } = useExchangeRate('USD', 'CHF');
+  const [rate, setRate] = useState(1);
+  const [exchangeLoading, setExchangeLoading] = useState(true);
+
+  useEffect(() => {
+    const getRate = async () => {
+      setExchangeLoading(true);
+      const fetchedRate = await fetchUsdToChfRate();
+      if (fetchedRate) setRate(fetchedRate);
+      setExchangeLoading(false);
+    };
+    getRate();
+  }, []);
 
   const totalXmrWithdrawals = transactions
       .filter((tx) => tx.type.toLowerCase() === "withdrawal")
