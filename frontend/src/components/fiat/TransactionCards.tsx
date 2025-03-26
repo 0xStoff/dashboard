@@ -67,14 +67,9 @@ const TransactionCards = ({ approvedSum, transactions }) => {
     <Tooltip title={
       loading ? "Loading..." : (
         <Box>
-          <Typography variant="body2">+ total withdrawals: CHF {toFixedString(totalWithdrawals, 0)}</Typography>
-          <Typography variant="body2">+ total deposits: CHF {toFixedString(totalDeposits, 0)}</Typography>
-          <Typography variant="body2">+ initial deposit: CHF {toFixedString(staticData.initialDeposit, 0)}</Typography>
-          <Typography variant="body2">- coinbase: CHF {staticData.coinbaseWithdrawals}</Typography>
-          <Typography variant="body2">- weed: CHF {staticData.weedWithdrawals}</Typography>
-          <Typography variant="body2">- gnosis: CHF {toFixedString(approvedSum, 0)}</Typography>
-          <Typography variant="body2">- kraken xmr: CHF {toFixedString(totalXmrWithdrawals, 0)}</Typography>
-          <Typography variant="body2">- last networth (0.9x): CHF {toFixedString(lastNetWorth, 0)}</Typography>
+          <Typography variant="body2">+ total withdrawals: CHF {toFixedString(netWithdrawals, 0)}</Typography>
+          <Typography variant="body2">+ networth (0.9x): CHF {toFixedString(lastNetWorth, 0)}</Typography>
+          <Typography variant="body2">- total deposits: CHF {toFixedString(totalDepositsWithInitial, 0)}</Typography>
         </Box>
       )
     } arrow>
