@@ -5,22 +5,41 @@ const router = express.Router();
 
 
 router.get("/net-worth", async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 100;
-  const includeDetails = req.query.includeDetails !== 'false';
-  const offset = (page - 1) * limit;
+  const { page, limit, includeDetails, latest } = req.query;
 
   try {
+    if (latest === 'true') {
+      const latestEntry = await NetWorth.findOne({
+        order: [["date", "DESC"]],
+      });
+
+      if (!latestEntry) {
+        return res.status(404).json({ error: "No net worth data found" });
+      }
+
+      return res.json({
+        date: latestEntry.date,
+        totalNetWorth: parseFloat(latestEntry.totalNetWorth),
+        tokenHistory: latestEntry.history?.tokens || [],
+        protocolHistory: latestEntry.history?.protocolsTable || [],
+      });
+    }
+
+    const pg = parseInt(page) || 1;
+    const lim = parseInt(limit) || 100;
+    const offset = (pg - 1) * lim;
+    const include = includeDetails !== 'false';
+
     const netWorthData = await NetWorth.findAll({
       order: [["date", "ASC"]],
-      limit,
-      offset,
+      limit: limit ? lim : undefined,
+      offset: limit ? offset : undefined,
     });
 
     const formattedData = netWorthData.map(entry => ({
       date: entry.date,
       totalNetWorth: parseFloat(entry.totalNetWorth),
-      ...(includeDetails && {
+      ...(include && {
         tokenHistory: entry.history?.tokens || [],
         protocolHistory: entry.history?.protocolsTable || []
       }),

@@ -10,14 +10,18 @@ interface UseFetchNetWorthReturn {
   saveNetWorth: (totalNetWorth: number, historyData: HistoryData) => Promise<void>;
 }
 
-export const useFetchNetWorth = (): UseFetchNetWorthReturn => {
+interface UseFetchNetWorthParams {
+  latest?: boolean | null;
+  includeDetails?: boolean | null;
+}
+export const useFetchNetWorth = ({latest = true, includeDetails = true}: UseFetchNetWorthParams): UseFetchNetWorthReturn => {
   const [netWorth, setNetWorth] = useState<NetWorthData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const loadNetWorth = async () => {
       try {
-        const response = await apiClient.get<NetWorthData[]>(`/net-worth`);
+        const response = await apiClient.get<NetWorthData[]>(`/net-worth?latest=${latest}&includeDetails=${includeDetails}`);
         setNetWorth(response.data);
       } catch (error) {
         console.error("Failed to load net worth:", error);
