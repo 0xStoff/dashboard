@@ -27,7 +27,7 @@ const TransactionCards = ({ approvedSum, transactions }) => {
       <Card sx={{ padding: 3, borderRadius: 10, marginY: 3 }}>
         <Typography variant="h5">Deposits</Typography>
         <Typography variant="h4" fontWeight="bold">
-          CHF {toFixedString(totalDeposits + 6715.0)}
+          CHF {toFixedString(totalDeposits + 6715.0, 0)}
         </Typography>
       </Card>
 
