@@ -167,7 +167,7 @@ router.post('/wallets/refetch/evm/:walletId', async (req, res) => {
 
         console.log(`🔄 Refetching EVM token data for wallet ID: ${walletId}`);
 
-        await fetchAndSaveEvmTokenData(wallet.id, wallet.wallet);
+        await fetchAndSaveEvmTokenData(wallet.id, wallet.wallet, req);
 
         console.log(`✅ EVM token data fetched successfully for wallet ID: ${walletId}`);
         res.status(200).json({ message: `✅ EVM token data refetched for wallet ID: ${walletId}` });
