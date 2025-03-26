@@ -9,12 +9,7 @@ interface UseFetchNetWorthReturn {
   loading: boolean;
   saveNetWorth: (totalNetWorth: number, historyData: HistoryData) => Promise<void>;
 }
-
-interface UseFetchNetWorthParams {
-  latest?: boolean | null;
-  includeDetails?: boolean | null;
-}
-export const useFetchNetWorth = ({latest = true, includeDetails = true}: UseFetchNetWorthParams): UseFetchNetWorthReturn => {
+export const useFetchNetWorth = ({latest, includeDetails}): UseFetchNetWorthReturn => {
   const [netWorth, setNetWorth] = useState<NetWorthData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 

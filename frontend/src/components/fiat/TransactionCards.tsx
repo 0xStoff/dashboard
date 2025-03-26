@@ -22,7 +22,7 @@ const fetchUsdToChfRate = async () => {
 };
 
 const TransactionCards = ({ approvedSum, transactions }) => {
-  const { netWorth , loading} = useFetchNetWorth({latest: false, includeDetails: false});
+  const { netWorth , loading} = useFetchNetWorth({latest: true, includeDetails: false});
   const [rate, setRate] = useState(1);
   const [exchangeLoading, setExchangeLoading] = useState(true);
 
