@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
 import { HistoryData, NetWorthData } from "../interfaces";
 import apiClient from "../utils/api-client";
 
@@ -11,10 +10,10 @@ interface UseFetchNetWorthReturn {
 }
 
 interface UseFetchNetWorthParams {
-  latest?: boolean | null;
-  includeDetails?: boolean | null;
+  latest?: string | null;
+  includeDetails?: string | null;
 }
-export const useFetchNetWorth = ({latest = true, includeDetails = true}: UseFetchNetWorthParams): UseFetchNetWorthReturn => {
+export const useFetchNetWorth = ({latest = 'true', includeDetails = 'true'}: UseFetchNetWorthParams): UseFetchNetWorthReturn => {
   const [netWorth, setNetWorth] = useState<NetWorthData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
