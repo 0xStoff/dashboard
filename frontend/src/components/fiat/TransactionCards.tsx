@@ -27,7 +27,7 @@ export const useExchangeRate = (from: string, to: string) => {
 
 const TransactionCards = ({ approvedSum, transactions }) => {
   const { netWorth , loading} = useFetchNetWorth();
-  const { rate: usdToChf, loading: exchangeLoading } = useExchangeRate('USD', 'CHF');
+  const { rate, loading: exchangeLoading } = useExchangeRate('USD', 'CHF');
 
   const totalXmrWithdrawals = transactions
       .filter((tx) => tx.type.toLowerCase() === "withdrawal")
