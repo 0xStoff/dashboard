@@ -11,7 +11,7 @@ const fetchUsdToChfRate = async () => {
       params: {
         ids: "usd",
         vs_currencies: "chf",
-        x_cg_demo_api_key: process.env.COINGECKO_API_KEY,
+        x_cg_demo_api_key: process.env.REACT_APP_COINGECKO_API_KEY,
       },
     });
     return response.data.usd?.chf ?? null;
