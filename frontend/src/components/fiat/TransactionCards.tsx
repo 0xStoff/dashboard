@@ -23,7 +23,7 @@ const TransactionCards = ({ approvedSum, transactions }) => {
 
   const staticData = {
   coinbaseWithdrawals: 1460,
-  weedWithdrawals: 6000,
+  weedWithdrawals: 10000,
   initialDeposit: 6715.0
   }
   const lastNetWorth = (netWorth?.[netWorth.length - 1]?.totalNetWorth || 0) * 0.9;
