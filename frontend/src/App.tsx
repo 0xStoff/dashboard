@@ -231,9 +231,9 @@ const App: React.FC = () => {
                                         flexDirection: { xs: "column", md: "row" },
                                     }}>
                                         <ChainList chains={chains} chainIdState={[selectedChainId, setSelectedChainId]} />
-                                        <WalletTable tokens={tokens} chainList={chains} setSelectedToken={setSelectedToken} />
+                                        <WalletTable tokens={tokens} chainList={chains} selectedToken={selectedToken} setSelectedToken={setSelectedToken} />
                                     </Container>
-                                    <ProtocolTable protocols={protocolsTable} setSelectedToken={setSelectedToken} />
+                                    <ProtocolTable selectedToken={selectedToken} protocols={protocolsTable} setSelectedToken={setSelectedToken} />
                                 </>
                             ) : (
                                 <Transactions />

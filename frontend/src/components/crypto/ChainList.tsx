@@ -11,7 +11,7 @@ const styles = {
   }, tableRow: (isActive: boolean) => ({
     cursor: "pointer",
     opacity: isActive ? 1 : 0.5,
-    "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.08)" },
+    // "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.08)" },
     "&:last-child td, &:last-child th": { border: 0 }
   }), tableCell: { border: 0 }
 };

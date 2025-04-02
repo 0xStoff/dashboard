@@ -8,7 +8,6 @@ import TokenModel from "../models/TokenModel.js";
 
 export const fetchAndSaveEvmTokenData = async (walletId, walletAddress, req) => {
   try {
-    // Fetch tokens
     const tokens = await fetchDebankData("/user/all_token_list", {
         id: walletAddress,
         is_all: false,
