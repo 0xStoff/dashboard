@@ -13,6 +13,24 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress, req) => 
         is_all: false,
     });
 
+    const fetchedTokenSymbols = tokens.map(t => t.symbol);
+    const existingWalletTokens = await WalletTokenModel.findAll({
+      where: {
+        user_id: req.user.user.id,
+        wallet_id: walletId,
+      },
+      include: [{
+        model: TokenModel,
+        as: 'token'
+      }]
+    });
+
+    for (const walletToken of existingWalletTokens) {
+      if (!fetchedTokenSymbols.includes(walletToken.token.symbol)) {
+        await walletToken.destroy();
+      }
+    }
+
     for (const token of tokens) {
       const { id, chain, name, symbol, decimals, logo_url, amount, raw_amount, price, price_24h_change } = token;
 
@@ -54,7 +72,23 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress, req) => 
       id: walletAddress,
     });
 
+    const fetchedProtocolNames = protocols.map(p => p.name);
+    const existingWalletProtocols = await WalletProtocolModel.findAll({
+      where: {
+        user_id: req.user.user.id,
+        wallet_id: walletId,
+      },
+      include: [{
+        model: ProtocolModel,
+        as: 'protocol'
+      }]
+    });
 
+    for (const walletProtocol of existingWalletProtocols) {
+      if (!fetchedProtocolNames.includes(walletProtocol.protocol.name)) {
+        await walletProtocol.destroy();
+      }
+    }
 
     for (const protocol of protocols) {
       const { id, chain, name, logo_url, portfolio_item_list } = protocol;
