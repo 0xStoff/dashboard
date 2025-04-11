@@ -9,8 +9,8 @@ import TokenModel from "../models/TokenModel.js";
 export const fetchAndSaveEvmTokenData = async (walletId, walletAddress, req) => {
   try {
     const tokens = await fetchDebankData("/user/all_token_list", {
-        id: walletAddress,
-        is_all: false,
+      id: walletAddress,
+      is_all: false,
     });
 
     for (const token of tokens) {
@@ -23,19 +23,19 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress, req) => 
       const logoPath = existingToken?.logo_path || (logo_url ? await downloadLogo(logo_url, id) : null);
 
       const [dbToken] = await TokenModel.upsert(
-        {
-          chain_id: chain,
-          name,
-          symbol,
-          decimals,
-          logo_path: logoPath,
-          price,
-          price_24h_change: price_24h_change * 100,
-        }
-        ,
-        {
-          conflictFields: ["chain_id", "symbol"],
-        }
+          {
+            chain_id: chain,
+            name,
+            symbol,
+            decimals,
+            logo_path: logoPath,
+            price,
+            price_24h_change: price_24h_change * 100,
+          }
+          ,
+          {
+            conflictFields: ["chain_id", "symbol"],
+          }
       );
 
       const usd_value = amount * price;
@@ -62,13 +62,13 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress, req) => 
       const logoPath = logo_url ? await downloadLogo(logo_url, id) : null;
 
       const [dbProtocol] = await ProtocolModel.upsert({
-        chain_id: chain,
-        name,
-        logo_path: logoPath,
-      }
-      , {
-        conflictFields: ["chain_id", "name"]
-      }
+            chain_id: chain,
+            name,
+            logo_path: logoPath,
+          }
+          , {
+            conflictFields: ["chain_id", "name"]
+          }
       );
 
       await WalletProtocolModel.upsert({
