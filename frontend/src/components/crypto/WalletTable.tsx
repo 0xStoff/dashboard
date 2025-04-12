@@ -35,7 +35,7 @@ const styles = {
         position: "absolute",
         bottom: 0,
         right: 0,
-        border: "1px solid",
+        // border: "1px solid",
         borderColor: "background.paper"
     }, sortButton: {
         position: "absolute", top: 10, right: 10
