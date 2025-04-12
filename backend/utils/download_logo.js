@@ -13,25 +13,31 @@ if (!fs.existsSync(LOGO_DIR)) {
 }
 
 export const downloadLogo = async (logoUrl, id) => {
-    const logoPath = path.join(LOGO_DIR, `${id}.png`);
 
-    const writer = fs.createWriteStream(logoPath);
 
-    try {
-        const response = await axios({
-            url: logoUrl,
-            method: 'GET',
-            responseType: 'stream',
-        });
-
-        response.data.pipe(writer);
-
-        return new Promise((resolve, reject) => {
-            writer.on('finish', () => resolve(`${id}.png`));
-            writer.on('error', reject);
-        });
-    } catch (error) {
-        console.error(`Error downloading logo for chain ${id}: ${error.message}`);
-        return path.join(LOGO_DIR, 'default.png');
-    }
+    return new Promise((resolve) => {
+      resolve(`${id}.png`)
+    });
+    //
+    // const logoPath = path.join(LOGO_DIR, `${id}.png`);
+    //
+    // const writer = fs.createWriteStream(logoPath);
+    //
+    // try {
+    //     const response = await axios({
+    //         url: logoUrl,
+    //         method: 'GET',
+    //         responseType: 'stream',
+    //     });
+    //
+    //     response.data.pipe(writer);
+    //
+    //     return new Promise((resolve, reject) => {
+    //         writer.on('finish', () => resolve(`${id}.png`));
+    //         writer.on('error', reject);
+    //     });
+    // } catch (error) {
+    //     console.error(`Error downloading logo for chain ${id}: ${error.message}`);
+    //     return path.join(LOGO_DIR, 'default.png');
+    // }
 };
