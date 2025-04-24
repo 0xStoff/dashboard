@@ -269,15 +269,6 @@ export const fetchStaticData = async () => {
     amount: 1400,
     wallet: "0x41eD1e75d836C5C974030432fDB222f30A274f90"
   }, {
-    id: "magic",
-    name: "MAGIC",
-    symbol: "MAGIC",
-    decimals: 16,
-    logo_url: "https://cryptologos.cc/logos/magic-token-magic-logo.png?v=040",
-    priceKey: "magic",
-    amount: 4349,
-    wallet: "0x770353615119F0f701118d3A4eaf1FE57fA00F84"
-  }, {
     id: "kraken",
     name: "KRAKEN",
     symbol: "KRAKEN",
