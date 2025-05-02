@@ -142,6 +142,9 @@ router.get('/gnosispay/transactions', async (req, res) => {
 
 
         for (const tx of transactions) {
+            const createdAt = new Date(tx.createdAt);
+            const isValidDate = !isNaN(createdAt.getTime());
+
             await TransactionModel.upsert({
                 exchange: "Gnosis Pay",
                 orderNo: tx.createdAt,
@@ -150,7 +153,7 @@ router.get('/gnosispay/transactions', async (req, res) => {
                 fee: null,
                 asset: null,
                 status: tx.status || "Unknown",
-                date: new Date(tx.createdAt),
+                date: isValidDate ? createdAt : null,
                 merchant: tx.merchant?.name || "Unknown",
                 transactionAmount: tx.transactionAmount,
                 billingAmount: tx.billingAmount,
