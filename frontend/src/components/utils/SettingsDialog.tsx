@@ -27,7 +27,7 @@ function SettingsDialog({ openSettings, setOpenSettings }) {
     try {
       setHideSmallBalances(newValue);
 
-      await axios.post("http://localhost:3000/api/settings/hidesmallbalances", {
+      await apiClient.post("/settings/hidesmallbalances", {
         value: newValue,
       });
     } catch (error) {
