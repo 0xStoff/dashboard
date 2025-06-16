@@ -40,6 +40,8 @@ const Transactions = () => {
             year: "numeric",
             month: "2-digit",
             day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
         }),
         transactionAmountFormatted: `${transaction.transactionAmount / 100} CHF`,
         billingAmountFormatted: `${transaction.billingAmount / 100} EUR`,
