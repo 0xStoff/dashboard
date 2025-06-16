@@ -36,7 +36,11 @@ const Transactions = () => {
 
 
     const formattedGnosisTransactions = gnosisTransactions.map((transaction) => ({
-        createdAt: transaction.date,
+        createdAt: new Date(transaction.date).toLocaleDateString("de-CH", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+        }),
         transactionAmountFormatted: `${transaction.transactionAmount / 100} CHF`,
         billingAmountFormatted: `${transaction.billingAmount / 100} EUR`,
         merchantFormatted: `${transaction.merchant}`,
