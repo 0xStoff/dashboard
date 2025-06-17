@@ -19,7 +19,6 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
             const data = await response.json();
 
             if (data.success) {
-                console.log(data)
                 setAccount(data.address);
                 setIsAuthenticated(true);
             } else {
@@ -72,10 +71,8 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
             });
 
             const data = await loginResponse.json();
-            console.log("Login Response:", data);
 
             if (data.success) {
-                console.log("✅ Wallet authenticated:", address);
                 setIsAuthenticated(true);
                 window.location.reload()
             } else {

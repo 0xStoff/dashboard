@@ -162,8 +162,9 @@ router.get('/gnosispay/transactions', async (req, res) => {
 
         res.json(transactions);
     } catch (error) {
-        console.error("Error fetching Gnosis Pay transactions:", error.message);
-        res.status(500).json({error: "Failed to fetch Gnosis Pay transactions", details: error.message});
+        const details = error.response?.data || error.message || error.toString();
+        console.error("Error fetching Gnosis Pay transactions:", details);
+        res.status(500).json({ error: "Failed to fetch Gnosis Pay transactions", details });
     }
 });
 router.get('/transactions', async (req, res) => {
@@ -183,7 +184,7 @@ router.get('/transactions', async (req, res) => {
         res.json(transactions);
     } catch (error) {
         console.error("Error fetching transactions from DB:", error);
-        res.status(500).json({error: "Failed to fetch transactions from DB", details: error.message});
+        res.status(500).json({ error: "Failed to fetch transactions from DB", details: error });
     }
 });
 export default router;
