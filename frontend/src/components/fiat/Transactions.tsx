@@ -14,14 +14,14 @@ import useFetchTransactions from "../../hooks/useFechTransactions";
 import { useTheme } from "@mui/material/styles";
 
 const binanceTransactionColumns = [
+    { label: "Date", key: "date" },
     { label: "Exchange", key: "exchange" },
-    { label: "Order No", key: "orderNo" },
+    // { label: "Order No", key: "orderNo" },
     { label: "Type", key: "type" },
     { label: "Amount", key: "amount" },
     { label: "Fee", key: "fee" },
     { label: "Asset", key: "asset" },
     { label: "Status", key: "status" },
-    { label: "Date", key: "date" }
 ];
 
 const gnosisColumns = [
