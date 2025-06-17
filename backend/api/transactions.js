@@ -140,6 +140,25 @@ router.get('/gnosispay/transactions', async (req, res) => {
 
         const transactions = response.data;
 
+        const fetchEurToChfRate = async () => {
+            try {
+                const response = await axios.get("https://api.coingecko.com/api/v3/simple/price", {
+                    params: {
+                        ids: "monerium-eur-money-2",
+                        vs_currencies: "chf",
+                        x_cg_demo_api_key: process.env.COINGECKO_API_KEY,
+                    },
+                });
+
+                return response.data["monerium-eur-money-2"]?.chf ?? null;
+            } catch (error) {
+                console.error("Error fetching USD to CHF rate:", error);
+                return null;
+            }
+        };
+
+        const rate = await fetchEurToChfRate()
+
 
         for (const tx of transactions) {
             const createdAt = new Date(tx.createdAt);
@@ -155,8 +174,8 @@ router.get('/gnosispay/transactions', async (req, res) => {
                 status: tx.status || "Unknown",
                 date: isValidDate ? createdAt : null,
                 merchant: tx.merchant?.name || "Unknown",
-                transactionAmount: tx.transactionAmount,
-                billingAmount: tx.billingAmount,
+                transactionAmount: tx.transactionCurrency?.code === '978' ? Math.round(tx.transactionAmount * rate) : tx.transactionAmount,
+                billingAmount: tx.billingCurrency?.code === '978' ? tx.billingAmount : null,
             });
         }
 
