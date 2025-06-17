@@ -43,7 +43,7 @@ const filterByDateRange = (items, dateKey, startDate: Date, endDate: Date) => {
 
 const Transactions = () => {
     const { transactions, loading, gnosisTransactions, refetch } = useFetchTransactions();
-    const [startDate, setStartDate] = useState(new Date('2025-06-01'));
+    const [startDate, setStartDate] = useState(new Date('2020-01-01'));
     const [endDate, setEndDate] = useState(new Date());
 
     const theme = useTheme();
