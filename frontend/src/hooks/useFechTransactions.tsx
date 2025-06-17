@@ -5,7 +5,6 @@ const useFetchTransactions = () => {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [gnosisTransactions, setGnosisTransactions] = useState([]);
-    const [approvedSum, setApprovedSum] = useState(0);
     const effectRan = useRef(false);
 
     const fetchFormattedTransaction = async (exchange: string) => {
@@ -55,11 +54,6 @@ const useFetchTransactions = () => {
             const { data } = await apiClient.get(`/transactions?exchange=Gnosis Pay`);
             setGnosisTransactions(data);
 
-            const sum = data
-                .filter(transaction => transaction.status === "Approved")
-                .reduce((total, transaction) => total + Number(transaction.transactionAmount), 0);
-
-            setApprovedSum(sum / 100);
         } catch (error) {
             console.error("Error fetching Gnosis Pay transactions:", error);
         }
@@ -93,7 +87,7 @@ const useFetchTransactions = () => {
         fetchGnosisPayTransactions();
     }, []);
 
-    return { transactions, loading, gnosisTransactions, approvedSum, refetch };
+    return { transactions, loading, gnosisTransactions, refetch };
 };
 
 export default useFetchTransactions;

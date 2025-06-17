@@ -21,7 +21,7 @@ const fetchUsdToChfRate = async () => {
   }
 };
 
-const TransactionCards = ({ approvedSum, transactions }) => {
+const TransactionCards = ({ approvedSum, transactions, totalFees }) => {
   const { netWorth , loading} = useFetchNetWorth({latest: true, includeDetails: false});
   const [rate, setRate] = useState(1);
   const [exchangeLoading, setExchangeLoading] = useState(true);
@@ -48,24 +48,21 @@ const TransactionCards = ({ approvedSum, transactions }) => {
     .filter((tx) => ["deposit", "credit card", "bank transfer"].includes(tx.type.toLowerCase()))
     .reduce((sum, tx) => sum + (parseFloat(tx.amount) || 0), 0);
 
-  const totalFees = transactions.reduce((sum, tx) => sum + (parseFloat(tx.fee) || 0), 0);
-
-  const staticData = {
-  coinbaseWithdrawals: 1460,
-  weedWithdrawals: 10000,
-  initialDeposit: 6715.0
-  }
+  // const staticData = {
+  // coinbaseWithdrawals: 1460,
+  // weedWithdrawals: 10000,
+  // initialDeposit: 6715.0
+  // }
   const lastNetWorth = netWorth.totalNetWorth * rate;
 
-  const netWithdrawals = totalWithdrawals - staticData.coinbaseWithdrawals - staticData.weedWithdrawals - approvedSum - totalXmrWithdrawals;
-  const totalDepositsWithInitial = totalDeposits + staticData.initialDeposit;
-  const netProfit = totalWithdrawals + totalDepositsWithInitial - staticData.coinbaseWithdrawals - staticData.weedWithdrawals - approvedSum - totalXmrWithdrawals - lastNetWorth;
+  const netWithdrawals = totalWithdrawals - approvedSum - totalXmrWithdrawals;
+  const netProfit = totalWithdrawals + totalDeposits - approvedSum - totalXmrWithdrawals - lastNetWorth;
 
   return (<Container sx={{ display: {md: "flex" }, justifyContent: "space-between", marginBottom: 5 }}>
       <Card sx={{ padding: 3, borderRadius: 10, marginY: 3 }}>
         <Typography variant="h5">Deposits</Typography>
         <Typography variant="h4" fontWeight="bold">
-          CHF {toFixedString(totalDepositsWithInitial, 0)}
+          CHF {toFixedString(totalDeposits, 0)}
         </Typography>
       </Card>
 
@@ -74,8 +71,8 @@ const TransactionCards = ({ approvedSum, transactions }) => {
         <Typography variant="body2">gnosis {toFixedString(approvedSum, 0)} CHF</Typography>
         <Typography variant="body2">kraken {toFixedString(totalWithdrawals, 0)} CHF</Typography>
         <Typography variant="body2">kraken xmr {toFixedString(totalXmrWithdrawals, 0)} CHF</Typography>
-        <Typography variant="body2">coinbase ${staticData.coinbaseWithdrawals} CHF</Typography>
-        <Typography variant="body2">weed ca ${staticData.weedWithdrawals} CHF</Typography>
+        {/*<Typography variant="body2">coinbase ${staticData.coinbaseWithdrawals} CHF</Typography>*/}
+        {/*<Typography variant="body2">weed ca ${staticData.weedWithdrawals} CHF</Typography>*/}
       </Box>
     } arrow>
         <Card sx={{ padding: 3, borderRadius: 10, marginY: 3 }}>
@@ -98,7 +95,7 @@ const TransactionCards = ({ approvedSum, transactions }) => {
         <Box>
           <Typography variant="body2">+ total withdrawals: CHF {toFixedString(netWithdrawals, 0)}</Typography>
           <Typography variant="body2">+ networth: CHF {toFixedString(lastNetWorth, 0)}</Typography>
-          <Typography variant="body2">- total deposits: CHF {toFixedString(totalDepositsWithInitial, 0)}</Typography>
+          <Typography variant="body2">- total deposits: CHF {toFixedString(totalDeposits, 0)}</Typography>
         </Box>
       )
     } arrow>

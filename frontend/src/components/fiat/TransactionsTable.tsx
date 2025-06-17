@@ -81,24 +81,6 @@ const TransactionsTable = ({title, transactions, columns}) => {
                                             </TableCell>);
                                     }
 
-                                    // if (column.key === "date") {
-                                    //     return (<TableCell key={colIndex}>
-                                    //             <Typography variant="body2">
-                                    //                 {new Intl.DateTimeFormat("en-US", {
-                                    //                     weekday: "short",
-                                    //                     year: "numeric",
-                                    //                     month: "short",
-                                    //                     day: "numeric"
-                                    //                 }).format(new Date(value))}
-                                    //             </Typography>
-                                    //             <Typography variant="caption" color="text.secondary">
-                                    //                 {new Date(value).toLocaleTimeString([], {
-                                    //                     hour: "2-digit", minute: "2-digit"
-                                    //                 })}
-                                    //             </Typography>
-                                    //         </TableCell>);
-                                    // }
-
                                     return <TableCell key={colIndex}>{value}</TableCell>;
                                 })}
                             </TableRow>))}
