@@ -249,7 +249,7 @@ export const fetchStaticData = async () => {
     logo_url: "https://cryptologos.cc/logos/flow-flow-logo.png?v=035",
     priceKey: "flow",
     wallet: "14MVcXjexqZTnqz4zSBhEbTzMdCL6mSVnVhsVMdKgx2Jvue2",
-    amount: 730
+    amount: 500
   }, {
     id: "strk",
     name: "Starknet",
