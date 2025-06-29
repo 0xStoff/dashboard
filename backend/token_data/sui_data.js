@@ -240,7 +240,7 @@ export const fetchStaticData = async () => {
     logo_url: "https://cryptologos.cc/logos/polkadot-new-dot-logo.png?v=035",
     priceKey: "polkadot",
     wallet: "14MVcXjexqZTnqz4zSBhEbTzMdCL6mSVnVhsVMdKgx2Jvue2",
-    amount: 70
+    amount: 50
   }, {
     id: "flow",
     name: "Flow",
@@ -257,7 +257,7 @@ export const fetchStaticData = async () => {
     decimals: 16,
     logo_url: "https://cryptologos.cc/logos/starknet-token-strk-logo.png?v=040",
     priceKey: "starknet",
-    amount: 890,
+    amount: 700,
     wallet: "0x0266289d06695abf63A6a962F7671437086824F1C3C87b009e1eD3d89404Efef"
   }, {
     id: "bvm",
