@@ -266,7 +266,7 @@ export const fetchStaticData = async () => {
     decimals: 16,
     logo_url: "https://cryptologos.cc/logos/bitcoin-plus-xbc-logo.png?v=040",
     priceKey: "bvm",
-    amount: 1400,
+    amount: 1000,
     wallet: "0x41eD1e75d836C5C974030432fDB222f30A274f90"
   }, {
     id: "kraken",
