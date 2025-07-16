@@ -14,10 +14,35 @@ export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
 
     const connection = new Connection(solMetaData.endpoint);
     const owner = new PublicKey(walletAddress);
-    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(owner, {programId: TOKEN_PROGRAM_ID});
-    const balance = await connection.getBalance(owner);
 
+    // pump manually for now
+    const pumpAccount = await connection.getParsedTokenAccountsByOwner(owner, {
+        mint: new PublicKey("pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn"),
+        programId: TOKEN_PROGRAM_ID
+    });
+    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(owner, {programId: TOKEN_PROGRAM_ID});
+    // Manually include pumpAccount in tokenAccounts if not already present
+    if (pumpAccount.value.length > 0) {
+        const pumpMint = "pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn";
+        const alreadyIncluded = tokenAccounts.value.some(acc => acc.account.data.parsed.info.mint === pumpMint);
+        if (!alreadyIncluded) {
+            for (const pumpAcc of pumpAccount.value) {
+                tokenAccounts.value.push({
+                    pubkey: pumpAcc.pubkey,
+                    account: {
+                        data: {
+                            parsed: pumpAcc.account.data.parsed
+                        }
+                    }
+                });
+            }
+        }
+    }
+    const balance = await connection.getBalance(owner);
     const solPrice = await fetchTokenPrice('solana') || {usd: 0};
+
+
+
 
     let tokenData = [{
         amount: balance / 10 ** 9,
@@ -34,20 +59,41 @@ export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
         const parsedAccountInfo = accountInfo.account.data.parsed.info;
         const tokenAddress = parsedAccountInfo.mint;
 
+        console.log("Processing token:", tokenAddress);
         const tokenInfo = raydium.token.tokenList.find(token => token.address === tokenAddress);
 
         if (tokenInfo) {
             const tokenPrice = await fetchTokenPrice(tokenInfo.extensions.coingeckoId || '');
+
             if (tokenPrice) {
                 tokenData.push({
-                    ...tokenInfo, amount: parsedAccountInfo.tokenAmount.uiAmount, usd: tokenPrice.usd, price_24h_change: tokenPrice.usd_24h_change
+                    ...tokenInfo,
+                    amount: parsedAccountInfo.tokenAmount.uiAmount,
+                    usd: tokenPrice.usd,
+                    price_24h_change: tokenPrice.usd_24h_change
                 });
             }
         }
+        else if (tokenAddress === "pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn") {
+            const tokenPrice = await fetchTokenPrice("pump-fun");
+            tokenData.push({
+                symbol: "PUMP",
+                name: "Pump",
+                logoURI: 'https://s2.coinmarketcap.com/static/img/coins/64x64/36507.png',
+                decimals: 9,
+                address: tokenAddress,
+                amount: parsedAccountInfo.tokenAmount.uiAmount,
+                usd: tokenPrice?.usd || 0,
+                price_24h_change: tokenPrice?.usd_24h_change || 0
+            });
+        }
+        const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+        await delay(500);
     }
 
     tokenData = tokenData.filter(token => token.amount > 0);
 
+    console.log(tokenData)
     for (const token of tokenData) {
         const {name, symbol, decimals, logoURI, amount, usd, price_24h_change} = token;
 
