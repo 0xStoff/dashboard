@@ -1,9 +1,10 @@
 import React, { useCallback, useState } from "react";
+import { formatDistanceToNow, isToday, format } from "date-fns";
 import {
   IconButton, Tooltip, CircularProgress,
   Button, Dialog, DialogActions,
   DialogContent, DialogTitle, Box, Select,
-  MenuItem, FormControl, InputLabel
+  MenuItem, FormControl, InputLabel, Typography
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import Snackbar from "../utils/Snackbar";
@@ -17,6 +18,15 @@ const TokenDataUpdater = () => {
   const [message, setMessage] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedWallet, setSelectedWallet] = useState("");
+  const [lastUpdated, setLastUpdated] = useState<string | null>(() => localStorage.getItem("lastUpdated"));
+  const formatLastUpdated = (timestamp: string | null) => {
+    if (!timestamp) return "—";
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return "—";
+    return isToday(date)
+      ? `Today, ${format(date, "HH:mm")}`
+      : formatDistanceToNow(date, { addSuffix: true });
+  };
 
   const { wallets, loading: walletsLoading } = useWallets();
 
@@ -61,6 +71,9 @@ const TokenDataUpdater = () => {
       const response = await apiClient.post(endpoint);
 
       setMessage(response.statusText || "🎉 Token Data Fetched Successfully!");
+      const now = new Date().toISOString();
+      setLastUpdated(now);
+      localStorage.setItem("lastUpdated", now);
     } catch (error) {
       setMessage("❌ Error fetching token data.");
     } finally {
@@ -81,6 +94,9 @@ const TokenDataUpdater = () => {
 
         <Dialog open={modalOpen} onClose={() => setModalOpen(false)} maxWidth="xs" fullWidth>
           <DialogTitle>Select Refetch Option</DialogTitle>
+          <Typography sx={{ mb: 1, textAlign: 'center', fontSize: 14, color: 'gray' }}>
+            Last Updated: {lastUpdated ? formatLastUpdated(lastUpdated) : "—"}
+          </Typography>
           <DialogContent>
             <Box display="flex" flexDirection="column" gap={2} mt={1}>
               <Button onClick={() => handleUpdate("all")} variant="contained" disabled={isLoading}>
