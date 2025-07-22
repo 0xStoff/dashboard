@@ -38,15 +38,33 @@ const fetchBalances = async (chain) => {
 const fetchStakings = async (chain) => {
     return await Promise.all(chain.wallets.map(async wallet => {
         try {
-            const {data: {delegation_responses}} = await axios.get(`${chain.endpoint}/cosmos/staking/v1beta1/delegations/${wallet}`);
-            return {
-                chain: chain.name, type: 'Staking', data: delegation_responses.map(d => ({
-                    validator: d.delegation.validator_address,
-                    amount: parseInt(d.balance.amount, 10) / Math.pow(10, chain.decimals)
+            const [delegationsRes, unbondingsRes] = await Promise.all([
+                axios.get(`${chain.endpoint}/cosmos/staking/v1beta1/delegations/${wallet}`),
+                axios.get(`${chain.endpoint}/cosmos/staking/v1beta1/delegators/${wallet}/unbonding_delegations`)
+            ]);
+
+            const activeDelegations = delegationsRes.data.delegation_responses.map(d => ({
+                validator: d.delegation.validator_address,
+                amount: parseInt(d.balance.amount, 10) / Math.pow(10, chain.decimals),
+                status: 'bonded'
+            }));
+
+            const unbondingDelegations = unbondingsRes.data.unbonding_responses.flatMap(u =>
+                u.entries.map(entry => ({
+                    validator: u.validator_address,
+                    amount: parseInt(entry.balance, 10) / Math.pow(10, chain.decimals),
+                    status: 'unbonding',
+                    completion_time: entry.completion_time
                 }))
+            );
+
+            return {
+                chain: chain.name,
+                type: 'Staking',
+                data: [...activeDelegations, ...unbondingDelegations]
             };
         } catch (error) {
-            return {chain: chain.name, type: 'Staking', data: [], error: error.message};
+            return { chain: chain.name, type: 'Staking', data: [], error: error.message };
         }
     }));
 };
