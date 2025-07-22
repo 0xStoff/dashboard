@@ -132,9 +132,23 @@ router.get('/kraken/ledgers', async (req, res) => {
 
 router.get('/gnosispay/transactions', async (req, res) => {
     try {
+        const sessionRes = await axios.get("https://app.gnosispay.com/auth/session", {
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+            },
+        });
+
+        const sessionCookie = sessionRes.headers['set-cookie'];
+        if (!sessionCookie) {
+            throw new Error("Session cookie not found");
+        }
+
         const response = await axios.get("https://app.gnosispay.com/api/v1/transactions", {
             headers: {
-                "Content-Type": "application/json", Accept: "application/json", Cookie: process.env.COOKIE,
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Cookie: sessionCookie.join("; ")
             },
         });
 
@@ -149,16 +163,14 @@ router.get('/gnosispay/transactions', async (req, res) => {
                         x_cg_demo_api_key: process.env.COINGECKO_API_KEY,
                     },
                 });
-
                 return response.data["monerium-eur-money-2"]?.chf ?? null;
             } catch (error) {
-                console.error("Error fetching USD to CHF rate:", error);
+                console.error("Error fetching EUR to CHF rate:", error);
                 return null;
             }
         };
 
-        const rate = await fetchEurToChfRate()
-
+        const rate = await fetchEurToChfRate();
 
         for (const tx of transactions) {
             const createdAt = new Date(tx.createdAt);
