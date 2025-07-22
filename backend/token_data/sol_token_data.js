@@ -62,7 +62,9 @@ export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
         const tokenInfo = raydium.token.tokenList.find(token => token.address === tokenAddress);
 
         if (tokenInfo) {
-            const tokenPrice = await fetchTokenPrice(tokenInfo.extensions.coingeckoId || '');
+            let coingeckoId = tokenInfo.extensions.coingeckoId;
+           if(tokenInfo.symbol === "PENGU") coingeckoId = 'pudgy-penguins';
+            const tokenPrice = await fetchTokenPrice(coingeckoId || '');
 
             if (tokenPrice) {
                 tokenData.push({
