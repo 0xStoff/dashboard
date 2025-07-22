@@ -143,6 +143,7 @@ router.get('/gnosispay/transactions', async (req, res) => {
         if (!sessionCookie) {
             throw new Error("Session cookie not found");
         }
+        console.log(sessionCookie)
 
         const response = await axios.get("https://app.gnosispay.com/api/v1/transactions", {
             headers: {
