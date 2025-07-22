@@ -48,6 +48,7 @@ export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
         amount: balance / 10 ** 9,
         usd: solPrice.usd,
         price_24h_change: solPrice.usd_24h_change,
+        logoURI: "SOL.png",
         ...nonEvmChains.find(chain => chain.id === 'sol')
     }];
 
