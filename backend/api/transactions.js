@@ -143,7 +143,6 @@ router.get('/gnosispay/transactions', async (req, res) => {
         if (!sessionCookie) {
             throw new Error("Session cookie not found");
         }
-        console.log(sessionCookie)
 
         const response = await axios.get("https://app.gnosispay.com/api/v1/transactions", {
             headers: {
@@ -177,6 +176,11 @@ router.get('/gnosispay/transactions', async (req, res) => {
             const createdAt = new Date(tx.createdAt);
             const isValidDate = !isNaN(createdAt.getTime());
 
+            if (!isValidDate) {
+                console.warn("Skipping transaction with invalid date:", tx);
+                continue;
+            }
+
             await TransactionModel.upsert({
                 exchange: "Gnosis Pay",
                 orderNo: tx.createdAt,
@@ -185,7 +189,7 @@ router.get('/gnosispay/transactions', async (req, res) => {
                 fee: null,
                 asset: null,
                 status: tx.status || "Unknown",
-                date: isValidDate ? createdAt : null,
+                date: createdAt,
                 merchant: tx.merchant?.name || "Unknown",
                 transactionAmount: tx.transactionCurrency?.code === '978' ? Math.round(tx.transactionAmount * rate) : tx.transactionAmount,
                 billingAmount: tx.billingCurrency?.code === '978' ? tx.billingAmount : null,
