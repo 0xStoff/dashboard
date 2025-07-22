@@ -146,7 +146,7 @@ router.get('/gnosispay/transactions', async (req, res) => {
         }
 
         console.log("env: ", process.env.COOKIE)
-        console.log("sessionCookie: ", sessionCookie)
+        console.log("sessionCookie: ", sessionCookie.join('; '))
 
 
 
