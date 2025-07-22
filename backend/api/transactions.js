@@ -133,23 +133,6 @@ router.get('/kraken/ledgers', async (req, res) => {
 router.get('/gnosispay/transactions', async (req, res) => {
     try {
 
-        const sessionRes = await axios.get("https://app.gnosispay.com/auth/session", {
-            headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-            },
-        });
-
-        const sessionCookie = sessionRes.headers['set-cookie'];
-        if (!sessionCookie) {
-            throw new Error("Session cookie not found");
-        }
-
-        console.log("env: ", process.env.COOKIE)
-        console.log("sessionCookie: ", sessionCookie.join('; '))
-
-
-
         const response = await axios.get("https://app.gnosispay.com/api/v1/transactions", {
             headers: {
                 "Content-Type": "application/json", Accept: "application/json", Cookie: process.env.COOKIE,
