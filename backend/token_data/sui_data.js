@@ -207,16 +207,32 @@ export const fetchAptosData = async () => {
     poolAddress: "0xdb5247f859ce63dbe8940cf8773be722a60dcc594a8be9aca4b76abceb251b8e", delegatorAddress: aptosAddress
   }), aptosConf.getAccountAPTAmount({ accountAddress: aptosAddress }), fetchTokenPriceCoingecko("aptos")]);
 
-  let totalStake = 0;
+  let unlockedTotal = 0;
+  let withdrawnTotal = 0;
+  let addedStake = 0;
+
   stakingActivities.forEach(activity => {
-    if (activity.event_type === "0x1::delegation_pool::AddStakeEvent") {
-      totalStake += activity.amount;
-    } else if (activity.event_type === "0x1::delegation_pool::UnlockStakeEvent") {
-      totalStake -= activity.amount;
+    const type = activity.event_type;
+
+    if (type === "0x1::delegation_pool::AddStakeEvent") {
+      addedStake += activity.amount;
+    } else if (
+      type === "0x1::delegation_pool::UnlockStakeEvent" ||
+      type === "0x1::delegation_pool::UnlockStake"
+    ) {
+      unlockedTotal += activity.amount;
+    } else if (
+      type === "0x1::delegation_pool::WithdrawStakeEvent" ||
+      type === "0x1::delegation_pool::WithdrawStake"
+    ) {
+      withdrawnTotal += activity.amount;
     }
   });
 
-  const aptosAmount = totalStake / 10 ** 8 + aptosBalance / 10 ** 8;
+  const undelegated = (unlockedTotal - withdrawnTotal) / 1e8;
+  const liquid = aptosBalance / 1e8;
+  const aptosAmount = undelegated + liquid;
+
   const tokens = [createTokenData("aptos", "Aptos", "APT", 8, "https://cryptologos.cc/logos/aptos-apt-logo.png?v=035", aptosPrice, aptosAmount, "Aptos", 39, aptosAddress)];
 
   return createChainData(39, ["aptos"], "Aptos", tokens, aptosAddress);

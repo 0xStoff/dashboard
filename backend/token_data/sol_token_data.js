@@ -59,7 +59,6 @@ export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
         const parsedAccountInfo = accountInfo.account.data.parsed.info;
         const tokenAddress = parsedAccountInfo.mint;
 
-        console.log("Processing token:", tokenAddress);
         const tokenInfo = raydium.token.tokenList.find(token => token.address === tokenAddress);
 
         if (tokenInfo) {
@@ -93,7 +92,6 @@ export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
 
     tokenData = tokenData.filter(token => token.amount > 0);
 
-    console.log(tokenData)
     for (const token of tokenData) {
         const {name, symbol, decimals, logoURI, amount, usd, price_24h_change} = token;
 
