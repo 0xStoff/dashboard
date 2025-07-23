@@ -24,6 +24,7 @@
     "express": "^4.21.0",
     "got": "^14.4.6",
     "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^3.3.2",
     "pg": "^8.13.0",
     "puppeteer": "^24.2.0",
     "sequelize": "^6.37.3",
