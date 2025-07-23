@@ -212,7 +212,7 @@ const App: React.FC = () => {
                                         totalUSDValue={totalUSDValue}
                                         selectedItemState={[selectedItem, setSelectedItem]}
                                     />
-                                    {showChart && <NetWorthChart data={netWorth} />}
+                                    {showChart && <NetWorthChart setShowChart={setShowChart} data={netWorth} />}
 
                                     {selectedToken && (
                                         <div ref={tokenChartRef}>

@@ -1,7 +1,9 @@
 import React from "react";
+import CloseIcon from '@mui/icons-material/Close';
 import {formatNumber, toFixedString} from "../../utils/number-utils";
 import Chart from "../utils/Chart";
-import {Typography} from "@mui/material";
+import {Avatar, Button, Typography} from "@mui/material";
+import {ColoredChip} from "../utils/ChipWithTooltip";
 
 
 const processProtocolHistory = (netWorthHistory, selectedItem) => {
@@ -30,7 +32,7 @@ const processTokenHistory = (netWorthHistory, selectedItem) => {
         .filter(Boolean);
 };
 
-export const TokenChart = ({ netWorthHistory, selectedToken }) => {
+export const TokenChart = ({ netWorthHistory, selectedToken, setSelectedToken }) => {
     if (!netWorthHistory || netWorthHistory.length === 0) return null;
 
     let processedData = processTokenHistory(netWorthHistory, selectedToken);
@@ -41,7 +43,28 @@ export const TokenChart = ({ netWorthHistory, selectedToken }) => {
     }
 
     return (<>
-        <Typography marginY={5}>{selectedToken}</Typography>
+            <div style={{ display: 'flex', alignItems: 'center', marginTop: 20, gap: 8 }}>
+                <ColoredChip
+                    label={selectedToken}
+                    fillPercentage={0}
+                    variant="outlined"
+                />
+                <Button
+                    onClick={() => setSelectedToken(null)}
+                    variant="text"
+                    size="small"
+                    sx={{
+                        color: '#f44336',
+                        minWidth: 'auto',
+                        padding: '4px',
+                        fontWeight: 'bold',
+                        borderRadius: '50%',
+                    }}
+                >
+                    <CloseIcon fontSize="small" />
+                </Button>
+            </div>
+
         <Chart
             data={processedData}
             lines={[

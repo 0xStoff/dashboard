@@ -15,9 +15,15 @@ const displayedAmounts = {
 
 function applyTokenAmountsFromDisplay(entry, displayedAmountsMap) {
     for (const token of entry.tokens) {
+        if (token.chain_id !== 'cosmos') continue;
         const displayed = displayedAmountsMap[token.symbol];
         if (displayed !== undefined) {
             token.amount = displayed;
+            if (token.wallets && Array.isArray(token.wallets)) {
+                for (const wallet of token.wallets) {
+                    wallet.amount = displayed;
+                }
+            }
             token.total_usd_value = parseFloat((token.amount * token.price).toFixed(6));
         }
     }
@@ -54,18 +60,28 @@ async function run() {
 
         console.log(`Processing entry ${entry.id}`);
         for (const token of historyObj.tokens) {
+            if (token.chain_id !== 'cosmos') continue;
             if (displayedAmounts[token.symbol] !== undefined) {
                 console.log(` - ${token.symbol}: original amount = ${token.amount}, new amount = ${displayedAmounts[token.symbol]}`);
             }
         }
 
         const updatedHistory = applyTokenAmountsFromDisplay(historyObj, displayedAmounts);
-        // Update the totalNetWorth field based on the new values
-        await entry.update({
-            history: updatedHistory,
-            totalNetWorth: updatedHistory.totalTokenUSD + updatedHistory.totalProtocolUSD
-        });
-        console.log(`Updated entry ${entry.id}`);
+        // Log the computed values before saving
+        const newTotal = updatedHistory.totalTokenUSD + updatedHistory.totalProtocolUSD;
+        console.log(`new totalNetWorth: ${newTotal}`);
+        console.dir(updatedHistory, { depth: null });
+
+        try {
+            await entry.update({
+                history: updatedHistory,
+                totalNetWorth: newTotal
+            });
+            await entry.reload();
+            console.log(`Confirmed update for ${entry.id}: new totalNetWorth = ${entry.totalNetWorth}`);
+        } catch (err) {
+            console.error(`Failed to update entry ${entry.id}`, err);
+        }
     }
 }
 
