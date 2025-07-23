@@ -3,7 +3,7 @@
   "scripts": {
     "start": "concurrently \"cd backend && yarn start\" \"cd frontend && yarn start\"",
     "setup": "yarn install && cd backend && yarn install && cd ../frontend && yarn install",
-    "db:init": "psql -U stoff -d crypto_dashboard -f backend/db_init.sql"
+    "db:init": "psql -U stoff -d crypto_dashboard -f backend/scripts/db_init.sql"
 
   },
   "devDependencies": {
