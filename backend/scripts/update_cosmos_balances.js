@@ -41,12 +41,30 @@ async function run() {
                 [Op.between]: [new Date('2025-06-25'), new Date('2025-07-22')]
             }
         },
-        attributes: ['id', 'history']
+        attributes: ['id', 'history', 'date', 'totalNetWorth']
     });
 
     for (const entry of entries) {
-        const updatedHistory = applyTokenAmountsFromDisplay(entry.history, displayedAmounts);
-        await entry.update({ history: updatedHistory });
+        const raw = entry.history;
+        const historyObj = typeof raw === 'string'
+            ? JSON.parse(raw)
+            : Buffer.isBuffer(raw)
+                ? JSON.parse(raw.toString())
+                : raw;
+
+        console.log(`Processing entry ${entry.id}`);
+        for (const token of historyObj.tokens) {
+            if (displayedAmounts[token.symbol] !== undefined) {
+                console.log(` - ${token.symbol}: original amount = ${token.amount}, new amount = ${displayedAmounts[token.symbol]}`);
+            }
+        }
+
+        const updatedHistory = applyTokenAmountsFromDisplay(historyObj, displayedAmounts);
+        // Update the totalNetWorth field based on the new values
+        await entry.update({
+            history: updatedHistory,
+            totalNetWorth: updatedHistory.totalTokenUSD + updatedHistory.totalProtocolUSD
+        });
         console.log(`Updated entry ${entry.id}`);
     }
 }
