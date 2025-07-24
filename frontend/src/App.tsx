@@ -66,7 +66,7 @@ const App: React.FC = () => {
     const [showChart, setShowChart] = useState<boolean>(false);
     const [selectedToken, setSelectedToken] = useState<Token | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-    const [currency, setCurrency] = useState<'CHF' | '$'>('CHF');
+    const [currency, setCurrency] = useState<'CHF' | '$'>('$');
 
 
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
