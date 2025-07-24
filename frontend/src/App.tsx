@@ -66,6 +66,7 @@ const App: React.FC = () => {
     const [showChart, setShowChart] = useState<boolean>(false);
     const [selectedToken, setSelectedToken] = useState<Token | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+    const [currency, setCurrency] = useState<'CHF' | '$'>('CHF');
 
 
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -173,6 +174,8 @@ const App: React.FC = () => {
             <CssBaseline />
 
             <NavHeader
+                currency={currency}
+                setCurrency={setCurrency}
                 isAuthenticated={isAuthenticated}
                 isCryptoView={isCryptoView}
                 setIsCryptoView={setIsCryptoView}
@@ -208,6 +211,7 @@ const App: React.FC = () => {
                                         </Box>
                                     )}
                                     <Header
+                                        currency={currency}
                                         wallets={wallets}
                                         totalUSDValue={totalUSDValue}
                                         selectedItemState={[selectedItem, setSelectedItem]}
