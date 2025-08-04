@@ -1,40 +1,29 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, {useEffect, useState, useCallback, useRef} from "react";
 import {
-    ChainList,
-    NavHeader,
-    ProtocolTable,
-    Transactions,
-    WalletTable
+    ChainList, NavHeader, ProtocolTable, Transactions, WalletTable
 } from "./components";
 import {
-    Box,
-    CircularProgress,
-    Container,
-    CssBaseline,
-    IconButton,
-    Typography,
-    useMediaQuery
+    Box, CircularProgress, Container, CssBaseline, IconButton, Typography, useMediaQuery
 } from "@mui/material";
-import { ThemeProvider } from "@mui/system";
-import { useFetchWallets } from "./hooks/useFetchWallets";
-import { useFetchChains } from "./hooks/useFetchChains";
-import { useFetchTokens } from "./hooks/useFetchTokens";
-import { useFetchProtocolsTable } from "./hooks/useFetchProtocolsTable";
-import { theme } from "./utils/theme";
-import { NetWorthChart } from "./components/crypto/NetWorthChart";
-import { useFetchNetWorth } from "./hooks/useFetchNetWorth";
+import {ThemeProvider} from "@mui/system";
+import {useFetchWallets} from "./hooks/useFetchWallets";
+import {useFetchChains} from "./hooks/useFetchChains";
+import {useFetchTokens} from "./hooks/useFetchTokens";
+import {useFetchProtocolsTable} from "./hooks/useFetchProtocolsTable";
+import {theme} from "./utils/theme";
+import {NetWorthChart} from "./components/crypto/NetWorthChart";
+import {useFetchNetWorth} from "./hooks/useFetchNetWorth";
 import Header from "./components/header/Header";
-import { Chain, Protocol, Token } from "./interfaces";
-import { BarChart, SyncAlt } from "@mui/icons-material";
-import { TokenChart } from "./components/crypto/TokenChart";
+import {Chain, Protocol, Token} from "./interfaces";
+import {BarChart, SyncAlt} from "@mui/icons-material";
+import {TokenChart} from "./components/crypto/TokenChart";
 import {WalletsProvider} from "./context/WalletsContext";
 
 interface SelectedItem {
     id: string;
     tag: string;
     chains: {
-        total_usd_value: number;
-        chain_list: Chain[];
+        total_usd_value: number; chain_list: Chain[];
     };
     tokens: Token[];
     protocolsTable: Protocol[];
@@ -45,10 +34,10 @@ export const useDelay = (delay: number) => {
 
     useEffect(() => {
         // if (condition) {
-            const timeout = setTimeout(() => {
-                setShouldRender(true);
-            }, delay);
-            return () => clearTimeout(timeout);
+        const timeout = setTimeout(() => {
+            setShouldRender(true);
+        }, delay);
+        return () => clearTimeout(timeout);
         // } else {
         //     setShouldRender(false);
         // }
@@ -73,16 +62,17 @@ const App: React.FC = () => {
 
     const walletId: string = selectedItem?.id || "all";
 
-    const { netWorth, loading: netWorthLoading, saveNetWorth } = useFetchNetWorth({latest: false, includeDetails: true});
-    const { wallets, loading: walletsLoading, fetchWallets, setWallets } = useFetchWallets();
-    const { chains, loading: chainsLoading } = useFetchChains(walletId, searchQuery);
-    const { tokens, totalTokenUSD, loading: tokensLoading } = useFetchTokens({
-        chain: selectedChainId,
-        walletId,
-        searchQuery,
+    const {netWorth, loading: netWorthLoading, saveNetWorth} = useFetchNetWorth({latest: false, includeDetails: true});
+    const {wallets, loading: walletsLoading, fetchWallets, setWallets} = useFetchWallets();
+    const {chains, loading: chainsLoading} = useFetchChains(walletId, searchQuery);
+    const {tokens, totalTokenUSD, loading: tokensLoading} = useFetchTokens({
+        chain: selectedChainId, walletId, searchQuery,
     });
-    const { protocolsTable, totalProtocolUSD, loading: protocolsTableLoading } =
-        useFetchProtocolsTable(selectedChainId, walletId, searchQuery);
+    const {
+        protocolsTable,
+        totalProtocolUSD,
+        loading: protocolsTableLoading
+    } = useFetchProtocolsTable(selectedChainId, walletId, searchQuery);
 
     const totalUSDValue: number = totalTokenUSD + totalProtocolUSD;
 
@@ -94,7 +84,7 @@ const App: React.FC = () => {
             const selectedData = {
                 id: "all",
                 tag: "all",
-                chains: { total_usd_value: totalUSDValue, chain_list: chains },
+                chains: {total_usd_value: totalUSDValue, chain_list: chains},
                 tokens,
                 protocolsTable,
             };
@@ -102,12 +92,7 @@ const App: React.FC = () => {
             setSelectedItem(selectedData);
 
             await saveNetWorth(totalUSDValue, {
-                wallets,
-                chains,
-                tokens,
-                protocolsTable,
-                totalProtocolUSD,
-                totalTokenUSD,
+                wallets, chains, tokens, protocolsTable, totalProtocolUSD, totalTokenUSD,
             });
 
         } catch (error) {
@@ -116,7 +101,6 @@ const App: React.FC = () => {
             setLoading(false);
         }
     }, [totalUSDValue, chains, tokens, protocolsTable]);
-
 
 
     useEffect(() => {
@@ -154,7 +138,6 @@ const App: React.FC = () => {
     }, []);
 
 
-
     const tokenChartRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -168,87 +151,74 @@ const App: React.FC = () => {
     const delay = useDelay(2000);
 
 
-    return (
-        <WalletsProvider>
-        <ThemeProvider theme={theme}>
-            <CssBaseline />
+    return (<WalletsProvider>
+            <ThemeProvider theme={theme}>
+                <CssBaseline/>
 
-            <NavHeader
-                currency={currency}
-                setCurrency={setCurrency}
-                isAuthenticated={isAuthenticated}
-                isCryptoView={isCryptoView}
-                setIsCryptoView={setIsCryptoView}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                setIsAuthenticated={setIsAuthenticated}
-            />
+                <NavHeader
+                    currency={currency}
+                    setCurrency={setCurrency}
+                    isAuthenticated={isAuthenticated}
+                    isCryptoView={isCryptoView}
+                    setIsCryptoView={setIsCryptoView}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    setIsAuthenticated={setIsAuthenticated}
+                />
 
-            {loading ? (
-                <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
-                    <CircularProgress />
-                </Box>
-            ) : !isAuthenticated && delay ? (
-                <Typography margin={20} variant="h4">
-                    Connect your Wallet to see the dashboard
-                </Typography>
-            ) : (
-                <Container sx={{ marginY: 10 }}>
-                    {!selectedItem && delay && <Typography>No data available</Typography>}
+                {loading ? (<Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+                        <CircularProgress/>
+                    </Box>) : !isAuthenticated && delay ? (<Typography margin={20} variant="h4">
+                        Connect your Wallet to see the dashboard
+                    </Typography>) : (<Container sx={{marginY: 10}}>
+                        {!selectedItem && delay && <Typography>No data available</Typography>}
 
-                    {selectedItem && (
-                        <>
-                            {isCryptoView ? (
-                                <>
-                                    {!isMobile && (
-                                        <Box display="flex" justifyContent="flex-end" mb={2}>
-                                            <IconButton
-                                                color="primary"
-                                                onClick={() => setShowChart((prev) => !prev)}
-                                            >
-                                                {showChart ? <SyncAlt fontSize="medium" /> : <BarChart fontSize="medium" />}
-                                            </IconButton>
-                                        </Box>
-                                    )}
-                                    <Header
-                                        currency={currency}
-                                        wallets={wallets}
-                                        totalUSDValue={totalUSDValue}
-                                        selectedItemState={[selectedItem, setSelectedItem]}
-                                    />
-                                    {showChart && <NetWorthChart setShowChart={setShowChart} data={netWorth} />}
+                        {selectedItem && (<>
+                                {isCryptoView ? (<>
+                                        {!isMobile && (<Box display="flex" justifyContent="flex-end" mb={2}>
+                                                <IconButton
+                                                    color="primary"
+                                                    onClick={() => setShowChart((prev) => !prev)}
+                                                >
+                                                    {showChart ? <SyncAlt fontSize="medium"/> :
+                                                        <BarChart fontSize="medium"/>}
+                                                </IconButton>
+                                            </Box>)}
+                                        <Header
+                                            currency={currency}
+                                            wallets={wallets}
+                                            totalUSDValue={totalUSDValue}
+                                            selectedItemState={[selectedItem, setSelectedItem]}
+                                        />
+                                        {showChart && <NetWorthChart setShowChart={setShowChart} data={netWorth}/>}
 
-                                    {selectedToken && (
-                                        <div ref={tokenChartRef}>
-                                            <TokenChart
-                                                netWorthHistory={netWorth}
-                                                selectedToken={selectedToken}
-                                                setSelectedToken={setSelectedToken}
-                                            />
-                                        </div>
-                                    )}
+                                        {selectedToken && (<div ref={tokenChartRef}>
+                                                <TokenChart
+                                                    netWorthHistory={netWorth}
+                                                    selectedToken={selectedToken}
+                                                    setSelectedToken={setSelectedToken}
+                                                />
+                                            </div>)}
 
-                                    <Container sx={{
-                                        display: "flex",
-                                        gap: 3,
-                                        marginY: 3,
-                                        flexDirection: { xs: "column", md: "row" },
-                                    }}>
-                                        <ChainList chains={chains} chainIdState={[selectedChainId, setSelectedChainId]} />
-                                        <WalletTable tokens={tokens} chainList={chains} selectedToken={selectedToken} setSelectedToken={setSelectedToken} />
-                                    </Container>
-                                    <ProtocolTable selectedToken={selectedToken} protocols={protocolsTable} setSelectedToken={setSelectedToken} />
-                                </>
-                            ) : (
-                                <Transactions />
-                            )}
-                        </>
-                    )}
-                </Container>
-            )}
-        </ThemeProvider>
-            </WalletsProvider>
-            );
+                                        <Container sx={{
+                                            display: "flex",
+                                            gap: 3,
+                                            marginY: 3,
+                                            flexDirection: {xs: "column", md: "row"},
+                                        }}>
+                                            <ChainList chains={chains}
+                                                       chainIdState={[selectedChainId, setSelectedChainId]}/>
+                                            <WalletTable tokens={tokens} chainList={chains}
+                                                         selectedToken={selectedToken}
+                                                         setSelectedToken={setSelectedToken}/>
+                                        </Container>
+                                        <ProtocolTable selectedToken={selectedToken} protocols={protocolsTable}
+                                                       setSelectedToken={setSelectedToken}/>
+                                    </>) : (<Transactions/>)}
+                            </>)}
+                    </Container>)}
+            </ThemeProvider>
+        </WalletsProvider>);
 };
 
 export default App;
