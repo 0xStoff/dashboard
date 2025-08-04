@@ -49,7 +49,7 @@ const ProtocolTable: React.FC<{
                             </Typography>
                             {protocol.positions.map((position, index) => (
                                 <Grid key={index} container marginTop={2} alignItems="center">
-                                    <Grid sx={{display: "flex"}} item xs={isMobile ? 2 : 1}>
+                                    <Grid sx={{display: "flex"}} item xs={isMobile ? 4 : 2}>
                                         {position.logoUrls.map((url, i) => (<Avatar
                                                 key={i}
                                                 alt={position.tokenNames}
