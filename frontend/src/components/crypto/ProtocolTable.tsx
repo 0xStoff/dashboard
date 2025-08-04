@@ -63,7 +63,7 @@ const ProtocolTable: React.FC<{
                                     </Grid>}
 
 
-                                    <Grid item xs={isMobile ? 4 : 2}>
+                                    <Grid item xs={isMobile ? 4 : 1}>
                                         <Chip label={position.type} variant="filled"
                                               size={isMobile ? "small" : "medium"}/>
                                         {position.wallets.map((wallet, i) => (<ColoredChip
