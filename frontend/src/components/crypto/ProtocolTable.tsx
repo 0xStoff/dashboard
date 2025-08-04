@@ -63,7 +63,7 @@ const ProtocolTable: React.FC<{
                                     </Grid>}
 
 
-                                    <Grid item xs={isMobile ? 4 : 1}>
+                                    <Grid item xs={isMobile ? 4 : 2}>
                                         <Chip label={position.type} variant="filled"
                                               size={isMobile ? "small" : "medium"}/>
                                         {position.wallets.map((wallet, i) => (<ColoredChip
@@ -79,7 +79,7 @@ const ProtocolTable: React.FC<{
                                         <Typography align="right">$ {formatNumber(position.price, "price")}</Typography>
                                     </Grid>}
 
-                                    {!isMobile && (<Grid item xs={2}>
+                                    {!isMobile && (<Grid item xs={1}>
                                             <Typography
                                                 align="right">{formatNumber(position.amount, "amount")}</Typography>
                                         </Grid>)}
