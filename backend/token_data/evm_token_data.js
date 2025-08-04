@@ -50,6 +50,26 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress, req) => 
       });
     }
 
+    const existingTokens = await WalletTokenModel.findAll({
+      where: { wallet_id: walletId },
+      include: [{
+        model: TokenModel,
+        where: { chain_id: "evm" }
+      }]
+    });
+
+    const currentTokenKeys = new Set(tokens.map(t => `${t.chain}_${t.symbol}`));
+
+    for (const dbToken of existingTokens) {
+      const key = `${dbToken.Token.chain_id}_${dbToken.Token.symbol}`;
+      if (!currentTokenKeys.has(key)) {
+        await WalletTokenModel.update(
+          { amount: 0, usd_value: 0 },
+          { where: { wallet_id: walletId, token_id: dbToken.token_id } }
+        );
+      }
+    }
+
     const protocols = await fetchDebankData("/user/all_complex_protocol_list", {
       id: walletAddress,
     });
@@ -77,6 +97,26 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress, req) => 
       }, {
         conflictFields: ["wallet_id", "protocol_id"]
       });
+    }
+
+    const existingProtocols = await WalletProtocolModel.findAll({
+      where: { wallet_id: walletId },
+      include: [{
+        model: ProtocolModel,
+        where: { chain_id: "evm" }
+      }]
+    });
+
+    const currentProtocolKeys = new Set(protocols.map(p => `${p.chain}_${p.name}`));
+
+    for (const dbProtocol of existingProtocols) {
+      const key = `${dbProtocol.Protocol.chain_id}_${dbProtocol.Protocol.name}`;
+      if (!currentProtocolKeys.has(key)) {
+        await WalletProtocolModel.update(
+          { portfolio_item_list: [] },
+          { where: { wallet_id: walletId, protocol_id: dbProtocol.protocol_id } }
+        );
+      }
     }
 
     console.log(`Token and protocol data successfully saved/updated for wallet ID ${walletId}`);
