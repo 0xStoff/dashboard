@@ -7,137 +7,97 @@ import WalletTokenModel from "../models/WalletTokenModel.js";
 import TokenModel from "../models/TokenModel.js";
 
 export const fetchAndSaveEvmTokenData = async (walletId, walletAddress, req) => {
-  try {
-    const tokens = await fetchDebankData("/user/all_token_list", {
-      id: walletAddress,
-      is_all: false,
-    });
+    try {
+        const tokens = await fetchDebankData("/user/all_token_list", {
+            id: walletAddress,
+            is_all: false,
+        });
 
-    for (const token of tokens) {
-      const { id, chain, name, symbol, decimals, logo_url, amount, raw_amount, price, price_24h_change } = token;
+        for (const token of tokens) {
+            const { id, chain, name, symbol, decimals, logo_url, amount, raw_amount, price, price_24h_change } = token;
 
-      const existingToken = await TokenModel.findOne({
-        where: { chain_id: chain, symbol },
-      });
+            const existingToken = await TokenModel.findOne({
+                where: { chain_id: chain, symbol },
+            });
 
-      const logoPath = existingToken?.logo_path || (logo_url ? await downloadLogo(logo_url, id) : null);
+            const logoPath = existingToken?.logo_path || (logo_url ? await downloadLogo(logo_url, id) : null);
 
-      const [dbToken] = await TokenModel.upsert(
-          {
-            chain_id: chain,
-            name,
-            symbol,
-            decimals,
-            logo_path: logoPath,
-            price,
-            price_24h_change: price_24h_change * 100,
-          }
-          ,
-          {
-            conflictFields: ["chain_id", "symbol"],
-          }
-      );
+            const [dbToken] = await TokenModel.upsert(
+                {
+                    chain_id: chain,
+                    name,
+                    symbol,
+                    decimals,
+                    logo_path: logoPath,
+                    price,
+                    price_24h_change: price_24h_change * 100,
+                }
+                ,
+                {
+                    conflictFields: ["chain_id", "symbol"],
+                }
+            );
 
-      const usd_value = amount * price;
+            const usd_value = amount * price;
 
-      await WalletTokenModel.upsert({
-        user_id: req.user.user.id,
-        wallet_id: walletId,
-        token_id: dbToken.id,
-        amount,
-        raw_amount,
-        usd_value,
-      });
+            await WalletTokenModel.upsert({
+                user_id: req.user.user.id,
+                wallet_id: walletId,
+                token_id: dbToken.id,
+                amount,
+                raw_amount,
+                usd_value,
+            });
+        }
+
+        const protocols = await fetchDebankData("/user/all_complex_protocol_list", {
+            id: walletAddress,
+        });
+
+
+
+        for (const protocol of protocols) {
+            const { id, chain, name, logo_url, portfolio_item_list } = protocol;
+
+            const logoPath = logo_url ? await downloadLogo(logo_url, id) : null;
+
+            const [dbProtocol] = await ProtocolModel.upsert({
+                    chain_id: chain,
+                    name,
+                    logo_path: logoPath,
+                }
+                , {
+                    conflictFields: ["chain_id", "name"]
+                }
+            );
+
+            await WalletProtocolModel.upsert({
+                user_id: req.user.user.id,
+                wallet_id: walletId, protocol_id: dbProtocol.id, portfolio_item_list
+            }, {
+                conflictFields: ["wallet_id", "protocol_id"]
+            });
+        }
+
+        console.log(`Token and protocol data successfully saved/updated for wallet ID ${walletId}`);
+    } catch (error) {
+        console.error(`Error fetching or saving data for wallet ID ${walletId}:`, error.message);
     }
-
-    const existingTokens = await WalletTokenModel.findAll({
-      where: { wallet_id: walletId },
-      include: [{
-        model: TokenModel,
-        where: { chain_id: "evm" }
-      }]
-    });
-
-    const currentTokenKeys = new Set(tokens.map(t => `${t.chain}_${t.symbol}`));
-
-    for (const dbToken of existingTokens) {
-      const key = `${dbToken.Token.chain_id}_${dbToken.Token.symbol}`;
-      if (!currentTokenKeys.has(key)) {
-        await WalletTokenModel.update(
-          { amount: 0, usd_value: 0 },
-          { where: { wallet_id: walletId, token_id: dbToken.token_id } }
-        );
-      }
-    }
-
-    const protocols = await fetchDebankData("/user/all_complex_protocol_list", {
-      id: walletAddress,
-    });
-
-
-
-    for (const protocol of protocols) {
-      const { id, chain, name, logo_url, portfolio_item_list } = protocol;
-
-      const logoPath = logo_url ? await downloadLogo(logo_url, id) : null;
-
-      const [dbProtocol] = await ProtocolModel.upsert({
-            chain_id: chain,
-            name,
-            logo_path: logoPath,
-          }
-          , {
-            conflictFields: ["chain_id", "name"]
-          }
-      );
-
-      await WalletProtocolModel.upsert({
-        user_id: req.user.user.id,
-        wallet_id: walletId, protocol_id: dbProtocol.id, portfolio_item_list
-      }, {
-        conflictFields: ["wallet_id", "protocol_id"]
-      });
-    }
-
-    const existingProtocols = await WalletProtocolModel.findAll({
-      where: { wallet_id: walletId },
-      include: [{
-        model: ProtocolModel,
-        where: { chain_id: "evm" }
-      }]
-    });
-
-    const currentProtocolKeys = new Set(protocols.map(p => `${p.chain}_${p.name}`));
-
-    for (const dbProtocol of existingProtocols) {
-      const key = `${dbProtocol.Protocol.chain_id}_${dbProtocol.Protocol.name}`;
-      if (!currentProtocolKeys.has(key)) {
-        await WalletProtocolModel.update(
-          { portfolio_item_list: [] },
-          { where: { wallet_id: walletId, protocol_id: dbProtocol.protocol_id } }
-        );
-      }
-    }
-
-    console.log(`Token and protocol data successfully saved/updated for wallet ID ${walletId}`);
-  } catch (error) {
-    console.error(`Error fetching or saving data for wallet ID ${walletId}:`, error.message);
-  }
 };
 
 export const fetchAndSaveEvmTokenDataForAllWallets = async (req) => {
-  try {
-    const wallets = await WalletModel.findAll({
-      order: [["id", "ASC"]], where: { chain: "evm" }
-    });
+    try {
+        const wallets = await WalletModel.findAll({
+            order: [["id", "ASC"]], where: { chain: "evm" }
+        });
 
 
-    for (const wallet of wallets) {
-      await fetchAndSaveEvmTokenData(wallet.id, wallet.wallet, req);
+        for (const wallet of wallets) {
+            await fetchAndSaveEvmTokenData(wallet.id, wallet.wallet, req);
+        }
+
+        console.log("Token and protocol data for all wallets successfully updated");
+    } catch (error) {
+        console.error("Error fetching data for all wallets:", error.message);
     }
-
-    console.log("Token and protocol data for all wallets successfully updated");
-  } catch (error) {
-    console.error("Error fetching data for all wallets:", error.message);
-  }
 };
