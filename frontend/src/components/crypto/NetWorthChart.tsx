@@ -1,4 +1,3 @@
-// src/components/networth/NetWorthChart.tsx
 import React, { useMemo } from "react";
 import {
     ResponsiveContainer,
@@ -13,7 +12,7 @@ import {
 import {
     buildCashflowSeries,
     buildWithdrawalAdjustedNetWorth,
-} from "../../utils/cashflow";
+} from "../utils/cashflow";
 
 type NetWorthData = {
     date: string;
