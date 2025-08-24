@@ -5,6 +5,7 @@ import {toFixedString} from "../../utils/number-utils";
 import {Button, Stack, Switch, Typography} from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import useFetchTransactions from "../../hooks/useFechTransactions";
+import { buildCashflowSeries, buildWithdrawalAdjustedNetWorth } from "../utils/cashflow";
 
 const processDailyData = (data) => {
     const groupedData = {};
@@ -24,7 +25,23 @@ const processDailyData = (data) => {
 };
 
 
-export const NetWorthChart = ({data, setShowChart}) => {
+export const NetWorthChart: React.FC<Props> = ({
+                                                   netWorthHistory,
+                                                   transactions,
+                                                   gnosisTransactions,
+                                                   startDate,
+                                                   endDate
+                                               }) => {
+    const cashflow = useMemo(
+        () => buildCashflowSeries(transactions, gnosisTransactions, startDate, endDate),
+        [transactions, gnosisTransactions, startDate, endDate]
+    );
+
+    const series = useMemo(
+        () => buildWithdrawalAdjustedNetWorth(netWorthHistory, cashflow),
+        [netWorthHistory, cashflow]
+    );
+
     const { transactions } = useFetchTransactions();
     const [showAdjusted, setShowAdjusted] = useState(false);
 
