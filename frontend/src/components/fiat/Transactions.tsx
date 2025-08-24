@@ -14,6 +14,50 @@ import useFetchTransactions from "../../hooks/useFechTransactions";
 import { useTheme } from "@mui/material/styles";
 import CashflowChart from "../crypto/CashflowChart";
 
+const toDay = (d: Date) =>
+    new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+        .toISOString()
+        .slice(0, 10);
+
+// Classify a transaction into deposit/withdrawal with normalized amount
+type FlowKind = "deposit" | "withdrawal" | null;
+const classifyTx = (tx: any): { kind: FlowKind; amount: number } => {
+    const type = (tx.type || "").toLowerCase();
+    const exchange = (tx.exchange || "").toLowerCase();
+    const status = (tx.status || "").toLowerCase();
+
+    // Select amount field and normalize units
+    let amount = 0;
+    if (exchange === "gnosis pay") {
+        // transactionAmount is CHF cents -> convert to CHF
+        amount = (Number(tx.transactionAmount) || 0) / 100;
+    } else {
+        amount = Number(tx.amount) || 0;
+    }
+
+    // Deposits (fiat in)
+    if (["deposit", "credit card", "bank transfer"].includes(type)) {
+        return { kind: "deposit", amount: Math.abs(amount) };
+    }
+
+    // Explicit withdrawals (e.g., Kraken/Binance)
+    if (type === "withdrawal") {
+        return { kind: "withdrawal", amount: Math.abs(amount) };
+    }
+
+    // Gnosis Pay card spending -> treat settled/approved transactions as withdrawals
+    if (exchange === "gnosis pay" && type === "transaction") {
+        const settled =
+            ["approved", "completed", "success", "successful"].some((s) =>
+                status.includes(s)
+            ) || !status;
+        return { kind: settled ? "withdrawal" : null, amount: Math.abs(amount) };
+    }
+
+    // Ignore everything else (trades, internal transfers, etc.)
+    return { kind: null, amount: 0 };
+};
+
 const binanceTransactionColumns = [
     { label: "Date", key: "date" },
     { label: "Exchange", key: "exchange" },
@@ -33,19 +77,12 @@ const gnosisColumns = [
     { label: "Status", key: "status" }
 ];
 
-
-
-const filterByDateRange = (items, dateKey, startDate: Date, endDate: Date) => {
+const filterByDateRange = (items: any[], dateKey: string, startDate: Date, endDate: Date) => {
     return items.filter(item => {
         const itemDate = new Date(item[dateKey]);
         return itemDate >= startDate && itemDate <= endDate;
     });
 };
-
-
-const toDay = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
-    .toISOString()
-    .slice(0, 10);
 
 const Transactions = () => {
     const { transactions, loading, gnosisTransactions, refetch } = useFetchTransactions();
@@ -64,7 +101,7 @@ const Transactions = () => {
     }
 
     const filteredTransactionsByDate = filterByDateRange(transactions, "date", startDate, endDate);
-    const filteredGnosisTransactionsByDate = filterByDateRange(gnosisTransactions, "date", startDate, endDate)
+    const filteredGnosisTransactionsByDate = filterByDateRange(gnosisTransactions, "date", startDate, endDate);
 
     const formattedGnosisTransactions = filteredGnosisTransactionsByDate.map(({ date, transactionAmount, billingAmount, merchant, status }) => ({
         createdAt: new Date(date).toLocaleString("de-CH", {
@@ -84,30 +121,36 @@ const Transactions = () => {
         .filter(transaction => transaction.status === "Approved")
         .reduce((total, transaction) => total + Number(transaction.transactionAmount), 0) / 100;
 
+    // Include Gnosis Pay in aggregation
+    const gnosisForAggregation = filteredGnosisTransactionsByDate.map(tx => ({
+        exchange: "Gnosis Pay",
+        type: "transaction",
+        transactionAmount: tx.transactionAmount, // CHF cents
+        status: tx.status,
+        date: tx.date
+    }));
+    const allForAggregation = [...filteredTransactionsByDate, ...gnosisForAggregation];
 
-    const deposits = filteredTransactionsByDate.filter(tx => ["deposit", "credit card", "bank transfer"].includes(tx.type?.toLowerCase()));
-    const withdrawals = filteredTransactionsByDate.filter(tx => tx.type?.toLowerCase() === "withdrawal");
+    // Totals for cards using unified classification
+    const deposits = allForAggregation.filter(tx => classifyTx(tx).kind === "deposit");
+    const withdrawals = allForAggregation.filter(tx => classifyTx(tx).kind === "withdrawal");
     const totalFees = filteredTransactionsByDate.reduce((sum, tx) => sum + (parseFloat(tx.fee) || 0), 0);
 
-
-    // Build daily cashflow series
+    // Build daily cashflow series using unified classification
     const dayMap = new Map<string, { deposits: number; withdrawals: number }>();
-    for (const tx of filteredTransactionsByDate) {
+    for (const tx of allForAggregation) {
         const t = new Date(tx.date);
         if (isNaN(t.getTime())) continue;
         const key = toDay(t);
-        const type = (tx.type || "").toLowerCase();
-        const amt = Number(tx.amount) || 0;
 
-        // Consider fees as outflows if you want: uncomment next line to subtract fees from deposits/withdrawals
-        // const fee = Number(tx.fee) || 0;
+        const { kind, amount } = classifyTx(tx);
+        if (!kind) continue;
 
-        if (["deposit", "credit card", "bank transfer"].includes(type)) {
-            const prev = dayMap.get(key) || { deposits: 0, withdrawals: 0 };
-            dayMap.set(key, { ...prev, deposits: prev.deposits + amt });
-        } else if (type === "withdrawal") {
-            const prev = dayMap.get(key) || { deposits: 0, withdrawals: 0 };
-            dayMap.set(key, { ...prev, withdrawals: prev.withdrawals + Math.abs(amt) });
+        const prev = dayMap.get(key) || { deposits: 0, withdrawals: 0 };
+        if (kind === "deposit") {
+            dayMap.set(key, { ...prev, deposits: prev.deposits + amount });
+        } else {
+            dayMap.set(key, { ...prev, withdrawals: prev.withdrawals + amount });
         }
     }
 
@@ -130,9 +173,6 @@ const Transactions = () => {
             netCumulative: +cum.toFixed(2),
         };
     });
-
-    // Optional: if you have a holdings series, shape it like this and pass it to CashflowChart
-    // const holdingsSeries = [{ date: "2024-01-01", value: 12345 }, ...];
 
     return (
         <Container sx={{ marginTop: 10 }}>
@@ -189,7 +229,6 @@ const Transactions = () => {
             )}
         </Container>
     );
-
 };
 
 export default Transactions;
