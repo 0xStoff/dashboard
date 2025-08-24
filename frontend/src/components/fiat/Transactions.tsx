@@ -12,6 +12,7 @@ import TransactionsTable from "./TransactionsTable";
 import TransactionCards from "./TransactionCards";
 import useFetchTransactions from "../../hooks/useFechTransactions";
 import { useTheme } from "@mui/material/styles";
+import CashflowChart from "../crypto/CashflowChart";
 
 const binanceTransactionColumns = [
     { label: "Date", key: "date" },
@@ -33,6 +34,7 @@ const gnosisColumns = [
 ];
 
 
+
 const filterByDateRange = (items, dateKey, startDate: Date, endDate: Date) => {
     return items.filter(item => {
         const itemDate = new Date(item[dateKey]);
@@ -40,6 +42,10 @@ const filterByDateRange = (items, dateKey, startDate: Date, endDate: Date) => {
     });
 };
 
+
+const toDay = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+    .toISOString()
+    .slice(0, 10);
 
 const Transactions = () => {
     const { transactions, loading, gnosisTransactions, refetch } = useFetchTransactions();
@@ -83,6 +89,51 @@ const Transactions = () => {
     const withdrawals = filteredTransactionsByDate.filter(tx => tx.type?.toLowerCase() === "withdrawal");
     const totalFees = filteredTransactionsByDate.reduce((sum, tx) => sum + (parseFloat(tx.fee) || 0), 0);
 
+
+    // Build daily cashflow series
+    const dayMap = new Map<string, { deposits: number; withdrawals: number }>();
+    for (const tx of filteredTransactionsByDate) {
+        const t = new Date(tx.date);
+        if (isNaN(t.getTime())) continue;
+        const key = toDay(t);
+        const type = (tx.type || "").toLowerCase();
+        const amt = Number(tx.amount) || 0;
+
+        // Consider fees as outflows if you want: uncomment next line to subtract fees from deposits/withdrawals
+        // const fee = Number(tx.fee) || 0;
+
+        if (["deposit", "credit card", "bank transfer"].includes(type)) {
+            const prev = dayMap.get(key) || { deposits: 0, withdrawals: 0 };
+            dayMap.set(key, { ...prev, deposits: prev.deposits + amt });
+        } else if (type === "withdrawal") {
+            const prev = dayMap.get(key) || { deposits: 0, withdrawals: 0 };
+            dayMap.set(key, { ...prev, withdrawals: prev.withdrawals + Math.abs(amt) });
+        }
+    }
+
+    // Fill missing days so the cumulative line is continuous
+    const days: string[] = [];
+    for (let d = toDay(startDate), dt = new Date(d); dt <= new Date(toDay(endDate)); dt.setUTCDate(dt.getUTCDate() + 1)) {
+        days.push(toDay(dt));
+    }
+
+    let cum = 0;
+    const cashflowData = days.map(day => {
+        const entry = dayMap.get(day) || { deposits: 0, withdrawals: 0 };
+        const net = entry.deposits - entry.withdrawals;
+        cum += net;
+        return {
+            date: day,
+            deposits: +entry.deposits.toFixed(2),
+            withdrawals: +entry.withdrawals.toFixed(2),
+            net,
+            netCumulative: +cum.toFixed(2),
+        };
+    });
+
+    // Optional: if you have a holdings series, shape it like this and pass it to CashflowChart
+    // const holdingsSeries = [{ date: "2024-01-01", value: 12345 }, ...];
+
     return (
         <Container sx={{ marginTop: 10 }}>
             <Button onClick={refetch}>Refetch</Button>
@@ -110,6 +161,17 @@ const Transactions = () => {
                 />
             </Box>
 
+            <Box sx={{ mb: 4 }}>
+                <Typography variant="h6" sx={{ mb: 1 }}>
+                    Cash flows over time
+                </Typography>
+                <CashflowChart
+                    data={cashflowData}
+                    // holdingsSeries={holdingsSeries} // pass your holdings series when available
+                    height={360}
+                />
+            </Box>
+
             {!isMobile && (
                 <TransactionsTable
                     title="Gnosis Pay Transactions"
@@ -127,6 +189,7 @@ const Transactions = () => {
             )}
         </Container>
     );
+
 };
 
 export default Transactions;

@@ -35,12 +35,21 @@ const Chart = ({data, lines, xAxisFormatter, leftYAxisFormatter, rightYAxisForma
                     if (active && payload && payload.length) {
                         const index = data.findIndex((d) => d.date === label);
                         const currentData = data[index] || {};
-                        const currentValue = currentData.totalNetWorth ?? currentData.usdValue;
+                        const currentValue = currentData.totalNetWorth ?? currentData.usdValue ?? currentData.pnlAdjusted;
                         const balance = currentData.balance ?? 0;
-
+                        const dep = currentData.cumDeposits ?? 0;
+                        const wdr = currentData.cumWithdrawals ?? 0;
+                        const pnlAdj = currentData.pnlAdjusted ?? null;
 
                         return (<Card sx={{borderRadius: "10px", padding: "15px"}}>
                             <Typography fontWeight="bold">{`$ ${toFixedString(currentValue, 2)}`}</Typography>
+                            {pnlAdj !== null && <Typography>{`Adj: $ ${toFixedString(pnlAdj, 2)}`}</Typography>}
+                            {(dep || wdr) ? (
+                                <>
+                                    <Typography>{`Deposits: $ ${toFixedString(dep, 0)}`}</Typography>
+                                    <Typography>{`Withdrawals: $ ${toFixedString(wdr, 0)}`}</Typography>
+                                </>
+                            ) : null}
                             {balance ? <Typography>{`Balance: ${formatNumber(balance, "amount")}`}</Typography> : null}
                             <Typography variant="caption">{label}</Typography>
                         </Card>);
