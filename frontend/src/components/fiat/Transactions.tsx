@@ -17,7 +17,7 @@ import {
     buildCashflowSeries,
     classifyTx,
     toDay
-} from "../utils/cashflow";
+} from "../../utils/cashflow";
 
 const binanceTransactionColumns = [
     { label: "Date", key: "date" },
