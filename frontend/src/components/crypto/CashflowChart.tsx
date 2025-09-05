@@ -1,5 +1,5 @@
 // CashflowChart.tsx
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -13,12 +13,12 @@ import {
 } from "recharts";
 
 type CashflowPoint = {
-  date: string; // YYYY-MM-DD
-  deposits: number; // >0
-  withdrawals: number; // >0 (shown positive for bar)
-  net: number; // deposits - withdrawals (per day)
-  netCumulative: number; // cumulative sum of net up to day
-  adjusted?: number; // optional, computed if holdings provided
+  date: string;            // YYYY-MM-DD
+  deposits: number;        // >0
+  withdrawals: number;     // >0 (shown positive for bar)
+  net: number;             // deposits - withdrawals (per day)
+  netCumulative: number;   // cumulative sum of net up to day
+  adjusted?: number;       // optional, computed if holdings provided
 };
 
 type HoldingPoint = {
