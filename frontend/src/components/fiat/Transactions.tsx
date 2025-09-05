@@ -13,11 +13,50 @@ import TransactionCards from "./TransactionCards";
 import useFetchTransactions from "../../hooks/useFechTransactions";
 import { useTheme } from "@mui/material/styles";
 import CashflowChart from "../crypto/CashflowChart";
-import {
-    buildCashflowSeries,
-    classifyTx,
-    toDay
-} from "../../utils/cashflow";
+
+const toDay = (d: Date) =>
+    new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+        .toISOString()
+        .slice(0, 10);
+
+// Classify a transaction into deposit/withdrawal with normalized amount
+type FlowKind = "deposit" | "withdrawal" | null;
+const classifyTx = (tx: any): { kind: FlowKind; amount: number } => {
+    const type = (tx.type || "").toLowerCase();
+    const exchange = (tx.exchange || "").toLowerCase();
+    const status = (tx.status || "").toLowerCase();
+
+    // Select amount field and normalize units
+    let amount = 0;
+    if (exchange === "gnosis pay") {
+        // transactionAmount is CHF cents -> convert to CHF
+        amount = (Number(tx.transactionAmount) || 0) / 100;
+    } else {
+        amount = Number(tx.amount) || 0;
+    }
+
+    // Deposits (fiat in)
+    if (["deposit", "credit card", "bank transfer"].includes(type)) {
+        return { kind: "deposit", amount: Math.abs(amount) };
+    }
+
+    // Explicit withdrawals (e.g., Kraken/Binance)
+    if (type === "withdrawal") {
+        return { kind: "withdrawal", amount: Math.abs(amount) };
+    }
+
+    // Gnosis Pay card spending -> treat settled/approved transactions as withdrawals
+    if (exchange === "gnosis pay" && type === "transaction") {
+        const settled =
+            ["approved", "completed", "success", "successful"].some((s) =>
+                status.includes(s)
+            ) || !status;
+        return { kind: settled ? "withdrawal" : null, amount: Math.abs(amount) };
+    }
+
+    // Ignore everything else (trades, internal transfers, etc.)
+    return { kind: null, amount: 0 };
+};
 
 const binanceTransactionColumns = [
     { label: "Date", key: "date" },
@@ -82,7 +121,7 @@ const Transactions = () => {
         .filter(transaction => transaction.status === "Approved")
         .reduce((total, transaction) => total + Number(transaction.transactionAmount), 0) / 100;
 
-    // Totals for cards using unified classification (merge Gnosis for aggregation)
+    // Include Gnosis Pay in aggregation
     const gnosisForAggregation = filteredGnosisTransactionsByDate.map(tx => ({
         exchange: "Gnosis Pay",
         type: "transaction",
@@ -92,17 +131,48 @@ const Transactions = () => {
     }));
     const allForAggregation = [...filteredTransactionsByDate, ...gnosisForAggregation];
 
+    // Totals for cards using unified classification
     const deposits = allForAggregation.filter(tx => classifyTx(tx).kind === "deposit");
     const withdrawals = allForAggregation.filter(tx => classifyTx(tx).kind === "withdrawal");
     const totalFees = filteredTransactionsByDate.reduce((sum, tx) => sum + (parseFloat(tx.fee) || 0), 0);
 
-    // Cashflow series for chart (unified, includes Gnosis Pay)
-    const cashflowData = buildCashflowSeries(
-        filteredTransactionsByDate,
-        filteredGnosisTransactionsByDate,
-        startDate,
-        endDate
-    );
+    // Build daily cashflow series using unified classification
+    const dayMap = new Map<string, { deposits: number; withdrawals: number }>();
+    for (const tx of allForAggregation) {
+        const t = new Date(tx.date);
+        if (isNaN(t.getTime())) continue;
+        const key = toDay(t);
+
+        const { kind, amount } = classifyTx(tx);
+        if (!kind) continue;
+
+        const prev = dayMap.get(key) || { deposits: 0, withdrawals: 0 };
+        if (kind === "deposit") {
+            dayMap.set(key, { ...prev, deposits: prev.deposits + amount });
+        } else {
+            dayMap.set(key, { ...prev, withdrawals: prev.withdrawals + amount });
+        }
+    }
+
+    // Fill missing days so the cumulative line is continuous
+    const days: string[] = [];
+    for (let d = toDay(startDate), dt = new Date(d); dt <= new Date(toDay(endDate)); dt.setUTCDate(dt.getUTCDate() + 1)) {
+        days.push(toDay(dt));
+    }
+
+    let cum = 0;
+    const cashflowData = days.map(day => {
+        const entry = dayMap.get(day) || { deposits: 0, withdrawals: 0 };
+        const net = entry.deposits - entry.withdrawals;
+        cum += net;
+        return {
+            date: day,
+            deposits: +entry.deposits.toFixed(2),
+            withdrawals: +entry.withdrawals.toFixed(2),
+            net,
+            netCumulative: +cum.toFixed(2),
+        };
+    });
 
     return (
         <Container sx={{ marginTop: 10 }}>
@@ -137,6 +207,7 @@ const Transactions = () => {
                 </Typography>
                 <CashflowChart
                     data={cashflowData}
+                    // holdingsSeries={holdingsSeries} // pass your holdings series when available
                     height={360}
                 />
             </Box>
