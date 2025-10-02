@@ -23,7 +23,7 @@ const TransactionCards = ({
                               totalFees,
                               fetchRubicSwaps }) => {  const { netWorth , loading} = useFetchNetWorth({latest: true, includeDetails: false});
   const { rate, loading: exchangeLoading } = useUsdToChfRate();
-  const { wallets } = useWallets();
+  const wallets = useWallets();
 
   const totalXmrWithdrawals = transactions
       .filter((tx) => tx.type.toLowerCase() === "withdrawal")
@@ -43,7 +43,7 @@ const TransactionCards = ({
       try {
         let total = 0;
         for (const w of wallets) {
-          const swaps = (await (fetchRubicSwaps || defaultFetchRubicSwaps)(w)) || [];
+          const swaps = (await (fetchRubicSwaps || defaultFetchRubicSwaps)(w.wallet)) || [];
           for (const s of swaps) {
             const toSym = (
               s.toSymbol || s.to_symbol || s.output_symbol || s.outputSymbol || s?.to_token?.symbol || ""
