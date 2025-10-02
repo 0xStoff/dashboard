@@ -7,7 +7,6 @@ import TokenModel from "../models/TokenModel.js";
 import WalletTokenModel from "../models/WalletTokenModel.js";
 import WalletModel from "../models/WalletModel.js";
 
-// ---- Jupiter-only token list (maps to our existing structure) ----
 async function fetchSolTokenList() {
     try {
         // Verified tokens are a good baseline

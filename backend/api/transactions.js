@@ -1,11 +1,7 @@
 import express from 'express';
 import axios from 'axios';
-import CryptoJS from 'crypto-js';
 import dotenv from 'dotenv';
-import * as querystring from "querystring";
-import crypto from 'crypto';
 import TransactionModel from "../models/TransactionsModel.js";
-import WalletModel from "../models/WalletModel.js";
 import {Op} from "sequelize";
 import {binanceCredentials, fetchBinanceData, fetchKrakenLedgers} from "../utils/utils.js";
 
