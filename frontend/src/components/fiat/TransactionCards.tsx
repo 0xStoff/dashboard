@@ -23,9 +23,8 @@ const TransactionCards = ({
                               totalFees,
                               fetchRubicSwaps }) => {  const { netWorth , loading} = useFetchNetWorth({latest: true, includeDetails: false});
   const { rate, loading: exchangeLoading } = useUsdToChfRate();
-  const wallets = useWallets();
+  const { wallets } = useWallets();
 
-  console.log(wallets)
 
   const totalXmrWithdrawals = transactions
       .filter((tx) => tx.type.toLowerCase() === "withdrawal")
