@@ -121,6 +121,7 @@ export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
 
     // Use JSON token list(s) instead of SDK
     const tokenListByMint = await fetchSolTokenList();
+    console.log(tokenListByMint)
 
     for (const accountInfo of tokenAccounts.value) {
         const parsedAccountInfo = accountInfo.account.data.parsed.info;
