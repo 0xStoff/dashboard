@@ -49,24 +49,15 @@ export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
         ...nonEvmChains.find(chain => chain.id === 'sol')
     }];
 
-    let raydium;
-    try {
-        raydium = await Raydium.load({ connection, owner, disableLoadToken: false });
-    } catch (e) {
-        if (e?.code === 'ENOTFOUND' || /ENOTFOUND|getaddrinfo/i.test(String(e))) {
-            console.warn('Raydium token list fetch failed (DNS). Continuing without token list.');
-        } else {
-            console.warn('Raydium load failed:', e?.message || e);
-        }
-        // Minimal fallback shape to prevent downstream crashes
-        raydium = { token: { tokenList: [] } };
-    }
+    const raydium = await Raydium.load({
+        connection, owner
+    });
 
     for (const accountInfo of tokenAccounts.value) {
         const parsedAccountInfo = accountInfo.account.data.parsed.info;
         const tokenAddress = parsedAccountInfo.mint;
 
-        const tokenInfo = raydium?.token?.tokenList?.find(token => token.address === tokenAddress);
+        const tokenInfo = raydium.token.tokenList.find(token => token.address === tokenAddress);
 
         if (tokenInfo) {
             let coingeckoId = tokenInfo.extensions.coingeckoId;
