@@ -25,6 +25,8 @@ const TransactionCards = ({
   const { rate, loading: exchangeLoading } = useUsdToChfRate();
   const wallets = useWallets();
 
+  console.log(wallets)
+
   const totalXmrWithdrawals = transactions
       .filter((tx) => tx.type.toLowerCase() === "withdrawal")
       .reduce((sum, tx) => sum + (parseFloat(tx.chf_value) || 0), 0);
