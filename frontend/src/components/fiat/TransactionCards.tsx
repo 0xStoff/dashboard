@@ -99,9 +99,9 @@ const TransactionCards = ({
             <Typography variant="body2">gnosis {toFixedString(approvedSum, 0)} CHF</Typography>
             <Typography variant="body2">kraken {toFixedString(totalWithdrawals, 0)} CHF</Typography>
             <Typography variant="body2">kraken xmr {toFixedString(totalXmrWithdrawals, 0)} CHF</Typography>
-            <Typography variant="body2">rubic → XMR {toFixedString(rubicXmrSum, 0)} CHF</Typography>
+            <Typography variant="body2">rubic xmr {toFixedString(rubicXmrSum, 0)} CHF</Typography>
+            <Typography variant="body2">weed ca 5555 CHF</Typography>
             {/*<Typography variant="body2">coinbase ${staticData.coinbaseWithdrawals} CHF</Typography>*/}
-            {/*<Typography variant="body2">weed ca ${staticData.weedWithdrawals} CHF</Typography>*/}
         </Box>} arrow>
             <Card sx={{padding: 3, borderRadius: 10, marginY: 3}}>
                 <Typography variant="h5">Withdrawals</Typography>
@@ -122,7 +122,7 @@ const TransactionCards = ({
                 <Typography variant="body2">+ total withdrawals: CHF {toFixedString(totalWithdrawals, 0)}</Typography>
                 <Typography variant="body2">- gnosis (approved): CHF {toFixedString(approvedSum, 0)}</Typography>
                 <Typography variant="body2">- kraken xmr: CHF {toFixedString(totalXmrWithdrawals, 0)}</Typography>
-                <Typography variant="body2">- rubic → XMR: CHF {toFixedString(rubicXmrSum, 0)}</Typography>
+                <Typography variant="body2">- rubic XMR: CHF {toFixedString(rubicXmrSum, 0)}</Typography>
                 <Typography variant="body2">- total deposits: CHF {toFixedString(totalDeposits, 0)}</Typography>
                 <Typography variant="body2">- networth: CHF {toFixedString(lastNetWorth, 0)}</Typography>
             </Box>)} arrow>

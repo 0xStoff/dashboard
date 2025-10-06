@@ -247,7 +247,7 @@ export const fetchStaticData = async () => {
     logo_url: "https://cryptologos.cc/logos/dogecoin-doge-logo.png?v=035",
     priceKey: "dogecoin",
     wallet: "DRbbCDmZKR6p8xwx2926iM6BuPnxTS7reV",
-    amount: 2000
+    amount: 1500
   }, {
     id: "dot",
     name: "Polkadot",
