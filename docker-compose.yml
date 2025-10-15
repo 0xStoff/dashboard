@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend
+    container_name: dashboard-backend
+    env_file: ./backend/.env
+    working_dir: /app/backend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app/backend
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend
+    container_name: dashboard-frontend
+    working_dir: /app/frontend
+    ports:
+      - "8080:3000"
+    env_file: ./frontend/.env
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:3000/api
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: dashboard-db
+    environment:
+      POSTGRES_USER: stoff
+      POSTGRES_PASSWORD: stoff
+      POSTGRES_DB: crypto_dashboard
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./backend/db_data:/var/lib/postgresql/data
+      - ./backend/db_init.sql:/docker-entrypoint-initdb.d/db_init.sql:ro
+    restart: unless-stopped
