@@ -6,10 +6,8 @@ services:
     working_dir: /app
     env_file: ./frontend/.env
     environment:
-      # Point to your backend later; for now it's fine if backend isn't up yet
       REACT_APP_API_BASE_URL: "http://localhost:3000/api"
-      YARN_NETWORK_TIMEOUT: "600000"          # 10min
-      # Optional: registry pin can help some ISPs
+      YARN_NETWORK_TIMEOUT: "600000"
       NPM_CONFIG_REGISTRY: "https://registry.npmjs.org/"
     command: >
       sh -lc "
@@ -20,7 +18,7 @@ services:
         yarn start
       "
     ports:
-      - "8080:3000"     # host:container
+      - "8080:3000"
     volumes:
       - ./frontend:/app
       - frontend_yarn:/usr/local/share/.cache/yarn
