@@ -1,0 +1,45 @@
+version: "3.9"
+
+services:
+  backend:
+    container_name: dashboard-backend
+    build:
+      context: ./backend
+    working_dir: /app
+    env_file:
+      - ./backend/.env
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_USER: stoff
+      DB_PASSWORD: abc123
+      DB_NAME: crypto_dashboard
+      DB_PORT: 5432
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    volumes:
+      - ./backend:/app
+    command: >
+      sh -c "
+        npm install &&
+        npm run start
+      "
+    restart: unless-stopped
+
+  postgres:
+    container_name: dashboard-postgres
+    image: postgres:16
+    environment:
+      POSTGRES_USER: stoff
+      POSTGRES_PASSWORD: abc123
+      POSTGRES_DB: crypto_dashboard
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
