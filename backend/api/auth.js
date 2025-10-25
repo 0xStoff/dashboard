@@ -74,11 +74,13 @@ router.post("/login", async (req, res) => {
             { expiresIn: "24h" }
         );
 
-        res.cookie("sessionToken", token, {
+        const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+        res.cookie('sessionToken', token, {
             httpOnly: true,
-            secure: true,
-            sameSite: "Lax",
-            maxAge: 24 * 60 * 60 * 1000, // 1 day
+            secure: isHttps,
+            sameSite: isHttps ? 'None' : 'Lax',
+            path: '/',
+            maxAge: 24 * 60 * 60 * 1000
         });
 
         return res.json({ success: true, address });
