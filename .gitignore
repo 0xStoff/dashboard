@@ -29,6 +29,6 @@ yarn-debug.log*
 yarn-error.log*
 
 
-backend/db_data
+/backend/db_data
 hetzner_db.dump
 ._.DS_Store
