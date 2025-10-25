@@ -10,8 +10,7 @@ RUN yarn build
 FROM node:20-alpine AS backend
 WORKDIR /app/backend
 COPY backend/package*.json ./
-RUN yarn install --frozen-lockfile
+RUN yarn install
 COPY backend/ .
-ENV NODE_ENV=production
 EXPOSE 3000
 CMD ["yarn", "start"]

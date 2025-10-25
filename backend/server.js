@@ -35,8 +35,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.use(cors({
-  origin: "http://localhost:8080", // Adjust for your frontend
-  credentials: true // 🔴 Must be `true` to allow cookies
+    origin: ["http://stoffpi.local:8080", "http://localhost:8080"],
+    credentials: true
 }));
 
 app.use(express.json({ limit: "1mb" }));
@@ -58,30 +58,30 @@ app.use("/logos", express.static(path.join(__dirname, "logos")));
 
 // 🔹 Setup Database Associations
 const setupAssociations = () => {
-  UserModel.hasMany(WalletModel, { foreignKey: "user_id" });
-  WalletModel.belongsTo(UserModel, { foreignKey: "user_id" });
-  WalletModel.belongsToMany(TokenModel, { through: WalletTokenModel, foreignKey: "wallet_id" });
-  TokenModel.belongsToMany(WalletModel, { through: WalletTokenModel, foreignKey: "token_id" });
-  WalletModel.belongsToMany(ProtocolModel, { through: WalletProtocolModel, foreignKey: "wallet_id" });
-  ProtocolModel.belongsToMany(WalletModel, { through: WalletProtocolModel, foreignKey: "protocol_id" });
-  UserModel.hasMany(WalletTokenModel, { foreignKey: "user_id" });
-  WalletTokenModel.belongsTo(UserModel, { foreignKey: "user_id" });
-  UserModel.hasMany(WalletProtocolModel, { foreignKey: "user_id" });
-  WalletProtocolModel.belongsTo(UserModel, { foreignKey: "user_id" });
+    UserModel.hasMany(WalletModel, { foreignKey: "user_id" });
+    WalletModel.belongsTo(UserModel, { foreignKey: "user_id" });
+    WalletModel.belongsToMany(TokenModel, { through: WalletTokenModel, foreignKey: "wallet_id" });
+    TokenModel.belongsToMany(WalletModel, { through: WalletTokenModel, foreignKey: "token_id" });
+    WalletModel.belongsToMany(ProtocolModel, { through: WalletProtocolModel, foreignKey: "wallet_id" });
+    ProtocolModel.belongsToMany(WalletModel, { through: WalletProtocolModel, foreignKey: "protocol_id" });
+    UserModel.hasMany(WalletTokenModel, { foreignKey: "user_id" });
+    WalletTokenModel.belongsTo(UserModel, { foreignKey: "user_id" });
+    UserModel.hasMany(WalletProtocolModel, { foreignKey: "user_id" });
+    WalletProtocolModel.belongsTo(UserModel, { foreignKey: "user_id" });
 };
 
 const initDb = async () => {
-  setupAssociations();
-  await sequelize.sync();
+    setupAssociations();
+    await sequelize.sync();
 };
 
 initDb().then(() => {
-  console.log("✅ Database synced");
+    console.log("✅ Database synced");
 
-  server.listen(port, () => {
-    console.log(`✅ Server running on port ${port}`);
-  });
+    server.listen(port, "0.0.0.0", () => {
+        console.log(`✅ Server running on port ${port}`);
+    });
 
 }).catch(error => {
-  console.error("❌ Failed to sync database:", error);
+    console.error("❌ Failed to sync database:", error);
 });

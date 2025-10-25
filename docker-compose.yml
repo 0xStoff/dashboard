@@ -1,0 +1,87 @@
+services:
+  postgres:
+    container_name: dashboard-postgres
+    image: postgres:16
+    environment:
+      DB_HOST: postgres
+      DB_USER: stoff
+      DB_PASSWORD: abc123
+      DB_NAME: crypto_dashboard
+      DB_PORT: 5432
+      DATABASE_URL: "postgres://stoff:abc123@postgres:5432/crypto_dashboard"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stoff -d crypto_dashboard"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    container_name: dashboard-backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend
+    working_dir: /app/backend
+    environment:
+      DB_HOST: postgres
+      DB_USER: stoff
+      DB_PASSWORD: abc123
+      DB_NAME: crypto_dashboard
+      DB_PORT: 5432
+      DATABASE_URL: "postgres://stoff:abc123@postgres:5432/crypto_dashboard"
+      HOST: "0.0.0.0"
+      PORT: "3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+    command: >
+      sh -c "
+        corepack enable &&
+        yarn config set network-timeout 600000 -g &&
+        yarn config set network-concurrency 1 -g &&
+        npm config set registry https://registry.npmjs.org/ &&
+        yarn install --ignore-optional &&
+        yarn start
+      "
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  frontend:
+    container_name: dashboard-frontend
+    image: node:20-alpine
+    working_dir: /app
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8080"
+      WDS_SOCKET_HOST: "0.0.0.0"
+      WDS_SOCKET_PORT: "8080"
+      CHOKIDAR_USEPOLLING: "true"
+      PYTHON: "python3"
+    command: >
+      sh -c "
+        apk add --no-cache python3 make g++ >/dev/null 2>&1 || true &&
+        corepack enable &&
+        yarn config set network-timeout 600000 -g &&
+        yarn config set network-concurrency 1 -g &&
+        npm config set registry https://registry.npmjs.org/ &&
+        yarn install --ignore-optional &&
+        yarn start
+      "
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./frontend:/app
+      - frontend_yarn:/usr/local/share/.cache/yarn
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  frontend_yarn:
