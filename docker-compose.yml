@@ -11,8 +11,6 @@ services:
       DATABASE_URL: "postgres://stoff:abc123@postgres:5432/crypto_dashboard"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U stoff -d crypto_dashboard"]
       interval: 5s
@@ -36,6 +34,10 @@ services:
       DATABASE_URL: "postgres://stoff:abc123@postgres:5432/crypto_dashboard"
       HOST: "0.0.0.0"
       PORT: "3000"
+      VIRTUAL_HOST: "api.dashboard.stoeff.xyz"
+      VIRTUAL_PORT: "3000"
+      LETSENCRYPT_HOST: "api.dashboard.stoeff.xyz"
+      LETSENCRYPT_EMAIL: "christoph.tiger@hotmail.com"
     depends_on:
       postgres:
         condition: service_healthy
@@ -50,9 +52,10 @@ services:
         yarn install --ignore-optional &&
         yarn start
       "
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     restart: unless-stopped
+    networks: [proxy]
 
   frontend:
     container_name: dashboard-frontend
@@ -65,6 +68,11 @@ services:
       WDS_SOCKET_PORT: "8080"
       CHOKIDAR_USEPOLLING: "true"
       PYTHON: "python3"
+      VIRTUAL_HOST: "dashboard.stoeff.xyz"
+      VIRTUAL_PORT: "8080"
+      LETSENCRYPT_HOST: "dashboard.stoeff.xyz"
+      LETSENCRYPT_EMAIL: "christoph.tiger@hotmail.com"
+      PUBLIC_API_BASE: "https://api.dashboard.stoeff.xyz"
     command: >
       sh -c "
         apk add --no-cache python3 make g++ >/dev/null 2>&1 || true &&
@@ -75,13 +83,18 @@ services:
         yarn install --ignore-optional &&
         yarn start
       "
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     volumes:
       - ./frontend:/app
       - frontend_yarn:/usr/local/share/.cache/yarn
     restart: unless-stopped
+    networks: [proxy]
 
 volumes:
   postgres_data:
   frontend_yarn:
+
+networks:
+  proxy:
+    external: true
