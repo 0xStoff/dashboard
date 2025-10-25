@@ -28,6 +28,7 @@ import UserModel from "./models/UserModel.js";
 dotenv.config();
 
 const app = express();
+app.set("trust proxy", 1);
 const port = 3000;
 const server = http.createServer(app);
 
@@ -35,7 +36,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.use(cors({
-    origin: ["http://stoffpi.local:8080", "http://localhost:8080"],
+    origin: ["http://stoffpi.local:8080", "http://localhost:8080", 'http://localhost:5173', 'http://stoffpi.local:5173', 'http://192.168.178.37:5173'],
     credentials: true
 }));
 

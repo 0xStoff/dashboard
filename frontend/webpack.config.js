@@ -75,6 +75,11 @@ module.exports = {
                 changeOrigin: true,
                 secure: false,
             },
+            '/api': {
+                target: 'http://stoffpi.local:3000',
+                changeOrigin: true,
+                secure: false,
+            },
         },
     },
 };
