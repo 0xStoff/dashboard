@@ -72,7 +72,7 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
 
             if (data.success) {
                 setIsAuthenticated(true);
-                // window.location.reload()
+                window.location.reload()
             } else {
                 alert(data.error || "Unauthorized wallet.");
                 setIsAuthenticated(false);
