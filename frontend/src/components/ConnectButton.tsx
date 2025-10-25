@@ -1,7 +1,4 @@
 import React, { useEffect, useState } from "react";
-const API_BASE = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL)
-  || (process.env as any)?.REACT_APP_API_BASE_URL
-  || '/api';
 import { ethers } from "ethers";
 import { IconButton, Tooltip } from "@mui/material";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
@@ -15,7 +12,7 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
 
     const checkAuthentication = async () => {
         try {
-            const response = await fetch(`${API_BASE}/auth/check`, {
+            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/check`, {
                 credentials: "include",
             });
 
@@ -52,8 +49,7 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
 
     const authenticateUser = async (address: string) => {
         try {
-            // Request the nonce first
-            const nonceResponse = await fetch(`${API_BASE}/auth/message?wallet=${address}`, {
+            const nonceResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/message?wallet=${address}`, {
                 credentials: "include",
             });
 
@@ -61,12 +57,11 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
 
             const { message } = await nonceResponse.json();
 
-            // Sign the message
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
             const signature = await signer.signMessage(message);
 
-            const loginResponse = await fetch(`${API_BASE}/auth/login`, {
+            const loginResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
@@ -77,7 +72,7 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
 
             if (data.success) {
                 setIsAuthenticated(true);
-                window.location.reload()
+                // window.location.reload()
             } else {
                 alert(data.error || "Unauthorized wallet.");
                 setIsAuthenticated(false);
@@ -88,7 +83,7 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
     };
     const logout = async () => {
         try {
-            await fetch(`${API_BASE}/auth/logout`, {
+            await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/logout`, {
                 method: "POST",
                 credentials: "include",
             });
