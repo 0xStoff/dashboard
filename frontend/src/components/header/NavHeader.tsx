@@ -29,7 +29,7 @@ const NavHeader = ({
         <Toolbar sx={{display: "flex", justifyContent: "space-between", alignItems: "center"}}>
 
             {!isMobile ? <Typography variant="h5" sx={{flexGrow: 1}}>
-                Dashboard
+                Pi Dashboard
             </Typography> : <Box sx={{flexGrow: 1}}></Box>}
             {isAuthenticated && <>
 
