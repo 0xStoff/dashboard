@@ -169,7 +169,7 @@ router.get('/gnosispay/transactions', async (req, res) => {
                 fee: null,
                 asset: null,
                 status: tx.status || "Unknown",
-                date: isValidDate ? createdAt : null,
+                date: isValidDate ? createdAt : new Date(),
                 merchant: tx.merchant?.name || "Unknown",
                 transactionAmount: tx.transactionCurrency?.code === '978' ? Math.round(tx.transactionAmount * rate) : tx.transactionAmount,
                 billingAmount: tx.billingCurrency?.code === '978' ? tx.billingAmount : null,
@@ -183,6 +183,63 @@ router.get('/gnosispay/transactions', async (req, res) => {
         res.status(500).json({error: "Failed to fetch Gnosis Pay transactions", details});
     }
 });
+
+
+router.post('/rubic/transactions', async (req, res) => {
+    try {
+        const addresses = Array.isArray(req.body?.addresses)
+            ? req.body.addresses
+            : (typeof req.body?.addresses === 'string'
+                ? req.body.addresses.split(',').map(s => s.trim()).filter(Boolean)
+                : []);
+
+        if (!addresses.length) {
+            return res.status(400).json({ error: "No addresses provided. Send { addresses: [\"0x...\"] }" });
+        }
+
+        const base = process.env.RUBIC_BACKEND_URL || "https://api.rubic.exchange";
+        const root = base.replace(/\/$/, "");
+
+        const allByAddress = {};
+        let sumChf = 0;
+        let totalCount = 0;
+
+        for (const addr of addresses) {
+            const url = `${root}/api/v2/trades/crosschain?address=${encodeURIComponent(addr)}&page=1&pageSize=100&ordering=-created_at`;
+            const { data } = await axios.get(url);
+            const results = Array.isArray(data?.results) ? data.results : [];
+            totalCount += results.length;
+
+            for (const s of results) {
+                const toSym = (s.toSymbol || s.to_symbol || s.output_symbol || s.outputSymbol || s?.to_token?.symbol || "").toString().toLowerCase();
+                if (toSym === "xmr" || toSym === "monero") {
+                    const chf =
+                        parseFloat(s.to_value_chf) ||
+                        parseFloat(s.output_value_chf) ||
+                        parseFloat(s.chf_value) ||
+                        (s.volume_in_usd ? Number(s.volume_in_usd) * (Number(process.env.USD_TO_CHF_RATE || 0) || 0) : 0) ||
+                        0;
+                    sumChf += chf;
+                    if (!allByAddress[addr]) allByAddress[addr] = { swaps: 0, chf: 0 };
+                    allByAddress[addr].swaps += 1;
+                    allByAddress[addr].chf += chf;
+                }
+            }
+        }
+
+        return res.json({
+            addresses,
+            sumChf,
+            totalCount,
+            byAddress: allByAddress
+        });
+    } catch (error) {
+        console.error("Error fetching transactions from Rubic:", error?.response?.data || error.message || error);
+        res.status(500).json({ error: "Failed to fetch transactions from Rubic", details: error?.response?.data || error.message || String(error) });
+    }
+});
+
+
 router.get('/transactions', async (req, res) => {
     try {
         const exchange = req.query.exchange;

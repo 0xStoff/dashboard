@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React from "react";
 import {Card, Tooltip, Typography} from "@mui/material";
 import {Box, Container} from "@mui/system";
 import {toFixedString} from "../../utils/number-utils";
@@ -6,20 +6,13 @@ import {useFetchNetWorth} from "../../hooks/useFetchNetWorth";
 import {useUsdToChfRate} from "../../hooks/useUsdToChfRate";
 import {useWallets} from "../../context/WalletsContext";
 
-async function defaultFetchRubicSwaps(wallet: string): Promise<any[]> {
-    const base = process.env.NEXT_PUBLIC_RUBIC_BACKEND_URL || "https://api.rubic.exchange";
-    const root = base.replace(/\/$/, "");
-    const url = `${root}/api/v2/trades/crosschain?address=${encodeURIComponent(wallet)}&page=1&pageSize=100&ordering=-created_at`;
-    const res = await fetch(url);
-    if (!res.ok) return [];
-    const data = await res.json();
-    // API returns { count, next, previous, results: [...] }
-    return Array.isArray(data?.results) ? data.results : [];
-}
-
 const TransactionCards = ({
-                              approvedSum, transactions, totalFees
-                          }) => {
+    approvedSum,
+    transactions,
+    totalFees,
+    rubicXmrSum = 0,
+    rubicLoading = false
+}) => {
 
     const {netWorth, loading} = useFetchNetWorth({latest: true, includeDetails: false});
     const {rate, loading: exchangeLoading} = useUsdToChfRate();
@@ -29,43 +22,6 @@ const TransactionCards = ({
     const totalXmrWithdrawals = transactions
         .filter((tx) => tx.type.toLowerCase() === "withdrawal")
         .reduce((sum, tx) => sum + (parseFloat(tx.chf_value) || 0), 0);
-
-    const [rubicXmrSum, setRubicXmrSum] = useState(0);
-    const [rubicLoading, setRubicLoading] = useState(false);
-
-    useEffect(() => {
-        let cancelled = false;
-
-        async function run() {
-            if (!wallets || wallets.length === 0) {
-                if (!cancelled) setRubicXmrSum(0);
-                return;
-            }
-            setRubicLoading(true);
-            try {
-                let total = 0;
-
-                for (const w of wallets.filter((w) => w.chain === 'evm')) {
-                    const swaps = (await (defaultFetchRubicSwaps)(w.wallet)) || [];
-                    for (const s of swaps) {
-                        const toSym = (s.toSymbol || s.to_symbol || s.output_symbol || s.outputSymbol || s?.to_token?.symbol || "").toString().toLowerCase();
-                        if (toSym === "xmr" || toSym === "monero") {
-                            const chf = parseFloat(s.to_value_chf) || parseFloat(s.output_value_chf) || parseFloat(s.chf_value) || (s.volume_in_usd ? Number(s.volume_in_usd) * rate : 0) || 0;
-                            total += chf;
-                        }
-                    }
-                }
-                if (!cancelled) setRubicXmrSum(total);
-            } finally {
-                if (!cancelled) setRubicLoading(false);
-            }
-        }
-
-        run();
-        return () => {
-            cancelled = true;
-        };
-    }, []);
 
     const totalWithdrawals = transactions
         .filter((tx) => tx.type.toLowerCase() === "withdrawal")

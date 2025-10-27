@@ -5,6 +5,8 @@ const useFetchTransactions = () => {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [gnosisTransactions, setGnosisTransactions] = useState([]);
+    const [rubicXmrSum, setRubicXmrSum] = useState(0);
+    const [rubicLoading, setRubicLoading] = useState(false);
     const effectRan = useRef(false);
 
     const fetchFormattedTransaction = async (exchange: string) => {
@@ -70,12 +72,27 @@ const useFetchTransactions = () => {
         }
     };
 
-    const refetch = useCallback(async () => {
+    const fetchRubicXmrSum = async (addresses = []) => {
+        try {
+            setRubicLoading(true);
+            const { data } = await apiClient.post("/rubic/transactions", { addresses });
+            setRubicXmrSum(Number(data?.sumChf) || 0);
+        } catch (error) {
+            console.error("Error fetching Rubic XMR sum:", error);
+            setRubicXmrSum(0);
+        } finally {
+            setRubicLoading(false);
+        }
+    };
+
+    const refetch = useCallback(async (addresses = []) => {
         await Promise.all([
             fetchTransactionsFromServer("kraken/ledgers?asset=CHF.HOLD,EUR.HOLD,CHF,EUR,XMR"),
             fetchTransactionsFromServer("binance/fiat-payments"),
             fetchTransactionsFromServer("binance/fiat-orders"),
-            apiClient.get(`/gnosispay/transactions`)]);
+            apiClient.get(`/gnosispay/transactions`),
+            fetchRubicXmrSum(addresses)
+        ]);
     }, []);
 
 
@@ -87,7 +104,7 @@ const useFetchTransactions = () => {
         fetchGnosisPayTransactions();
     }, []);
 
-    return { transactions, loading, gnosisTransactions, refetch };
+    return { transactions, loading, gnosisTransactions, rubicXmrSum, rubicLoading, refetch };
 };
 
 export default useFetchTransactions;

@@ -12,6 +12,7 @@ import TransactionsTable from "./TransactionsTable";
 import TransactionCards from "./TransactionCards";
 import useFetchTransactions from "../../hooks/useFechTransactions";
 import { useTheme } from "@mui/material/styles";
+import { useWallets } from "../../context/WalletsContext";
 
 const binanceTransactionColumns = [
     { label: "Date", key: "date" },
@@ -42,12 +43,16 @@ const filterByDateRange = (items, dateKey, startDate: Date, endDate: Date) => {
 
 
 const Transactions = () => {
-    const { transactions, loading, gnosisTransactions, refetch } = useFetchTransactions();
+    const { transactions, loading, gnosisTransactions, rubicXmrSum, rubicLoading, refetch } = useFetchTransactions();
     const [startDate, setStartDate] = useState(new Date('2020-01-01'));
     const [endDate, setEndDate] = useState(new Date());
 
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+    const { wallets } = useWallets ? useWallets() : { wallets: [] };
+    const evmAddresses = Array.isArray(wallets)
+        ? wallets.filter(w => w.chain === "evm").map(w => w.wallet)
+        : [];
 
     if (loading) {
         return (
@@ -85,12 +90,14 @@ const Transactions = () => {
 
     return (
         <Container sx={{ marginTop: 10 }}>
-            <Button onClick={refetch}>Refetch</Button>
+            <Button onClick={() => refetch(evmAddresses)}>Refetch</Button>
 
             <TransactionCards
                 transactions={[...deposits, ...withdrawals]}
                 approvedSum={approvedSum}
                 totalFees={totalFees}
+                rubicXmrSum={rubicXmrSum}
+                rubicLoading={rubicLoading}
             />
 
             <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
