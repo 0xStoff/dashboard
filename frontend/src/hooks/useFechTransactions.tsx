@@ -38,12 +38,13 @@ const useFetchTransactions = () => {
         try {
             setLoading(true);
 
-            const [binanceLedgers, krakenLedgers] = await Promise.all([
+            const [binanceLedgers, krakenLedgers, rubicRows] = await Promise.all([
                 fetchFormattedTransaction("binance"),
-                fetchFormattedTransaction("kraken")
+                fetchFormattedTransaction("kraken"),
+                fetchFormattedTransaction("rubic")
             ]);
 
-            setTransactions([...binanceLedgers, ...krakenLedgers].sort((a, b) => new Date(b.date) - new Date(a.date)));
+            setTransactions([...binanceLedgers, ...krakenLedgers, ...rubicRows].sort((a, b) => new Date(b.date) - new Date(a.date)));
         } catch (error) {
             console.error("Error fetching transactions:", error);
         } finally {
@@ -85,14 +86,35 @@ const useFetchTransactions = () => {
         }
     };
 
+    const fetchRubicFromDb = async () => {
+        try {
+            const res = await apiClient.get(`/transactions?exchange=Rubic`);
+            const rows = Array.isArray(res.data) ? res.data : [];
+            const total = rows.reduce((acc, row) => {
+                const sym = (row.asset || "").toString().toLowerCase();
+                const chf = Number(row.transactionAmount) || 0;
+                return (sym === "xmr" || sym === "monero") ? acc + chf : acc;
+            }, 0);
+            setRubicXmrSum(total);
+        } catch (e) {
+            console.error("Error loading Rubic rows from DB:", e);
+            setRubicXmrSum(0);
+        }
+    };
+
     const refetch = useCallback(async (addresses = []) => {
+        // 1) Pull fresh data from providers into the DB
         await Promise.all([
             fetchTransactionsFromServer("kraken/ledgers?asset=CHF.HOLD,EUR.HOLD,CHF,EUR,XMR"),
             fetchTransactionsFromServer("binance/fiat-payments"),
             fetchTransactionsFromServer("binance/fiat-orders"),
             apiClient.get(`/gnosispay/transactions`),
-            fetchRubicXmrSum(addresses)
+            apiClient.post("/rubic/transactions", { addresses })
         ]);
+        // 2) Refresh Rubic sum from DB
+        await fetchRubicFromDb();
+        // 3) Refresh combined transactions list from DB
+        await fetchTransactions();
     }, []);
 
 

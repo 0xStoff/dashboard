@@ -223,6 +223,20 @@ router.post('/rubic/transactions', async (req, res) => {
                     if (!allByAddress[addr]) allByAddress[addr] = { swaps: 0, chf: 0 };
                     allByAddress[addr].swaps += 1;
                     allByAddress[addr].chf += chf;
+
+                    await TransactionModel.upsert({
+                        exchange: "Rubic",
+                        orderNo: s.id || s.hash || s.txHash || `${s.created_at}-${addr}`,
+                        type: "swap",
+                        amount: Number(s.toAmount) || Number(s.output_amount) || 0,
+                        fee: 0,
+                        asset: (s.toSymbol || s.to_symbol || s?.to_token?.symbol || "XMR").toString(),
+                        status: "Completed",
+                        date: new Date(s.created_at || s.createdAt || s.timestamp || Date.now()),
+                        transactionAmount: chf
+                    }, {
+                        conflictFields: ["orderNo"]
+                    });
                 }
             }
         }
