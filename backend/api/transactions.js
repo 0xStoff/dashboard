@@ -136,7 +136,7 @@ router.get('/gnosispay/transactions', async (req, res) => {
             },
         });
 
-        const transactions = response.data;
+        const transactions = response.data.results;
 
         const fetchEurToChfRate = async () => {
             try {
@@ -156,7 +156,6 @@ router.get('/gnosispay/transactions', async (req, res) => {
         };
 
         const rate = await fetchEurToChfRate()
-
 
         for (const tx of transactions) {
             const createdAt = new Date(tx.createdAt);
