@@ -78,8 +78,7 @@ router.get('/binance/fiat-orders', async (req, res) => {
 });
 
 
-
-const krakenCredentials = (req, res)=> {
+const krakenCredentials = (req, res) => {
     const apiKey = process.env.KRAKEN_API_KEY;
     const apiSecret = process.env.KRAKEN_API_SECRET;
     const asset = req.query.asset;
@@ -129,9 +128,11 @@ router.get('/kraken/ledgers', async (req, res) => {
 router.get('/gnosispay/transactions', async (req, res) => {
     try {
 
-        const response = await axios.get("https://app.gnosispay.com/api/v1/transactions", {
+        const response = await axios.get("https://api.gnosispay.com/api/v1/cards/transactions", {
             headers: {
-                "Content-Type": "application/json", Accept: "application/json", Cookie: process.env.COOKIE,
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Authorization: `Bearer ${process.env.BEARER_TOKEN}`
             },
         });
 
@@ -180,7 +181,7 @@ router.get('/gnosispay/transactions', async (req, res) => {
     } catch (error) {
         const details = error.response?.data || error.message || error.toString();
         console.error("Error fetching Gnosis Pay transactions:", details);
-        res.status(500).json({ error: "Failed to fetch Gnosis Pay transactions", details });
+        res.status(500).json({error: "Failed to fetch Gnosis Pay transactions", details});
     }
 });
 router.get('/transactions', async (req, res) => {
@@ -193,14 +194,13 @@ router.get('/transactions', async (req, res) => {
         }
 
         const transactions = await TransactionModel.findAll({
-            where: whereCondition,
-            order: [['date', 'DESC']],
+            where: whereCondition, order: [['date', 'DESC']],
         });
 
         res.json(transactions);
     } catch (error) {
         console.error("Error fetching transactions from DB:", error);
-        res.status(500).json({ error: "Failed to fetch transactions from DB", details: error });
+        res.status(500).json({error: "Failed to fetch transactions from DB", details: error});
     }
 });
 export default router;

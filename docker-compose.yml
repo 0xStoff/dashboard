@@ -59,7 +59,7 @@ services:
     expose:
       - "3000"
     restart: unless-stopped
-    networks: [app, proxy]
+    networks: [app, reverse-proxy_default]
 
   frontend:
     container_name: dashboard-frontend
@@ -68,31 +68,29 @@ services:
     environment:
       HOST: "0.0.0.0"
       PORT: "8080"
-      WDS_SOCKET_HOST: "0.0.0.0"
-      WDS_SOCKET_PORT: "8080"
-      CHOKIDAR_USEPOLLING: "true"
-      PYTHON: "python3"
       VIRTUAL_HOST: "dashboard.stoeff.xyz"
       LETSENCRYPT_HOST: "dashboard.stoeff.xyz"
       LETSENCRYPT_EMAIL: "christoph.tiger@hotmail.com"
       VIRTUAL_PORT: "8080"
+      REACT_APP_API_BASE_URL: "https://api.dashboard.stoeff.xyz/api"
+      REACT_APP_LOGO_BASE_URL: "https://api.dashboard.stoeff.xyz/logos/"
     command: >
-      sh -c "
-        apk add --no-cache python3 make g++ >/dev/null 2>&1 || true &&
-        corepack enable &&
-        yarn config set network-timeout 600000 -g &&
-        yarn config set network-concurrency 1 -g &&
-        npm config set registry https://registry.npmjs.org/ &&
-        yarn install --ignore-optional &&
-        yarn start
-      "
+        sh -c "
+          apk add --no-cache python3 make g++ >/dev/null 2>&1 || true &&
+          corepack enable &&
+          yarn config set network-timeout 600000 -g &&
+          yarn config set network-concurrency 1 -g &&
+          npm config set registry https://registry.npmjs.org/ &&
+          yarn install --ignore-optional &&
+          yarn start
+        "
     expose:
       - "8080"
     volumes:
       - ./frontend:/app
       - frontend_yarn:/usr/local/share/.cache/yarn
     restart: unless-stopped
-    networks: [proxy]
+    networks: [reverse-proxy_default]
 
 
 volumes:
@@ -101,7 +99,7 @@ volumes:
 
 
 networks:
-  proxy:
+  reverse-proxy_default:
     external: true
   app:
     internal: true
