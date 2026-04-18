@@ -3,21 +3,23 @@ services:
     container_name: dashboard-postgres
     image: postgres:16
     environment:
-      DB_HOST: postgres
-      DB_USER: stoff
-      DB_PASSWORD: abc123
-      DB_NAME: crypto_dashboard
-      DB_PORT: 5432
-      DATABASE_URL: "postgres://stoff:abc123@postgres:5432/crypto_dashboard"
+      POSTGRES_USER: ${POSTGRES_USER:-stoff}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-abc123}
+      POSTGRES_DB: ${POSTGRES_DB:-crypto_dashboard}
+      TZ: ${TZ:-Europe/Zurich}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     expose:
       - "5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U stoff -d crypto_dashboard"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-stoff} -d ${POSTGRES_DB:-crypto_dashboard}",
+        ]
       interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 10
     restart: unless-stopped
     networks: [app]
 
@@ -30,18 +32,19 @@ services:
     working_dir: /app/backend
     environment:
       DB_HOST: postgres
-      DB_USER: stoff
-      DB_PASSWORD: abc123
-      DB_NAME: crypto_dashboard
+      DB_USER: ${POSTGRES_USER:-stoff}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-abc123}
+      DB_NAME: ${POSTGRES_DB:-crypto_dashboard}
       DB_PORT: 5432
-      DATABASE_URL: "postgres://stoff:abc123@postgres:5432/crypto_dashboard"
+      DATABASE_URL: postgres://${POSTGRES_USER:-stoff}:${POSTGRES_PASSWORD:-abc123}@postgres:5432/${POSTGRES_DB:-crypto_dashboard}
       HOST: "0.0.0.0"
       PORT: "3000"
-      VIRTUAL_HOST: "api.dashboard.stoeff.xyz"
+      VIRTUAL_HOST: ${BACKEND_VIRTUAL_HOST:-api.dashboard.stoeff.xyz}
       VIRTUAL_PORT: "3000"
-      LETSENCRYPT_HOST: "api.dashboard.stoeff.xyz"
-      LETSENCRYPT_EMAIL: "christoph.tiger@hotmail.com"
-      CORS_ORIGINS: https://dashboard.stoeff.xyz
+      LETSENCRYPT_HOST: ${BACKEND_LETSENCRYPT_HOST:-${BACKEND_VIRTUAL_HOST:-api.dashboard.stoeff.xyz}}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-christoph.tiger@hotmail.com}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://dashboard.stoeff.xyz}
+      TZ: ${TZ:-Europe/Zurich}
     depends_on:
       postgres:
         condition: service_healthy
@@ -59,7 +62,7 @@ services:
     expose:
       - "3000"
     restart: unless-stopped
-    networks: [app, reverse-proxy_default]
+    networks: [app, proxy]
 
   frontend:
     container_name: dashboard-frontend
@@ -68,29 +71,30 @@ services:
     environment:
       HOST: "0.0.0.0"
       PORT: "8080"
-      VIRTUAL_HOST: "dashboard.stoeff.xyz"
-      LETSENCRYPT_HOST: "dashboard.stoeff.xyz"
-      LETSENCRYPT_EMAIL: "christoph.tiger@hotmail.com"
+      VIRTUAL_HOST: ${FRONTEND_VIRTUAL_HOST:-dashboard.stoeff.xyz}
+      LETSENCRYPT_HOST: ${FRONTEND_LETSENCRYPT_HOST:-${FRONTEND_VIRTUAL_HOST:-dashboard.stoeff.xyz}}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-christoph.tiger@hotmail.com}
       VIRTUAL_PORT: "8080"
-      REACT_APP_API_BASE_URL: "https://api.dashboard.stoeff.xyz/api"
-      REACT_APP_LOGO_BASE_URL: "https://api.dashboard.stoeff.xyz/logos/"
+      REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL:-https://api.dashboard.stoeff.xyz/api}
+      REACT_APP_LOGO_BASE_URL: ${REACT_APP_LOGO_BASE_URL:-https://api.dashboard.stoeff.xyz/logos/}
+      TZ: ${TZ:-Europe/Zurich}
     command: >
-        sh -c "
-          apk add --no-cache python3 make g++ >/dev/null 2>&1 || true &&
-          corepack enable &&
-          yarn config set network-timeout 600000 -g &&
-          yarn config set network-concurrency 1 -g &&
-          npm config set registry https://registry.npmjs.org/ &&
-          yarn install --ignore-optional &&
-          yarn start
-        "
+      sh -c "
+        apk add --no-cache python3 make g++ >/dev/null 2>&1 || true &&
+        corepack enable &&
+        yarn config set network-timeout 600000 -g &&
+        yarn config set network-concurrency 1 -g &&
+        npm config set registry https://registry.npmjs.org/ &&
+        yarn install --ignore-optional &&
+        yarn start
+      "
     expose:
       - "8080"
     volumes:
       - ./frontend:/app
       - frontend_yarn:/usr/local/share/.cache/yarn
     restart: unless-stopped
-    networks: [reverse-proxy_default]
+    networks: [proxy]
 
 
 volumes:
@@ -99,7 +103,8 @@ volumes:
 
 
 networks:
-  reverse-proxy_default:
+  proxy:
     external: true
+    name: ${PROXY_NETWORK:-reverse-proxy_default}
   app:
     internal: true

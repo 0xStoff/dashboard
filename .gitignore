@@ -17,12 +17,17 @@ backend/node_modules
 
 # misc
 .DS_Store
+._*
 /frontend/.env
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.idea
+dist
+.env.*
+!.env.example
 
 npm-debug.log*
 yarn-debug.log*
@@ -31,4 +36,3 @@ yarn-error.log*
 
 /backend/db_data
 hetzner_db.dump
-._.DS_Store
