@@ -3,23 +3,22 @@ import { Box, Card, Chip, CircularProgress, Container, Typography } from "@mui/m
 import { toFixedString } from "../../utils/number-utils";
 import { useWallets } from "../../context/WalletsContext";
 import { useUsdToChfRate } from "../../hooks/useUsdToChfRate";
-import { DashboardSelection } from "../../interfaces";
+import { Wallet } from "../../interfaces";
 
 interface HeaderProps {
   currency: "CHF" | "$";
   totalUSDValue: number;
-  selectedItemState: [
-    DashboardSelection | null,
-    React.Dispatch<React.SetStateAction<DashboardSelection | null>>
-  ];
+  selectedWalletId: string;
+  setSelectedWalletId: React.Dispatch<React.SetStateAction<string>>;
 }
 
-const Header: React.FC<HeaderProps> = ({ currency, totalUSDValue, selectedItemState }) => {
-  const [selectedItem, setSelectedItem] = selectedItemState;
+const Header: React.FC<HeaderProps> = ({ currency, totalUSDValue, selectedWalletId, setSelectedWalletId }) => {
   const { wallets } = useWallets();
   const { rate, loading } = useUsdToChfRate();
   const displayedValue =
     currency === "CHF" ? totalUSDValue * rate : totalUSDValue;
+
+  const visibleWallets: Array<Pick<Wallet, "id" | "tag">> = wallets.filter((wallet) => wallet.show_chip);
 
   return (
     <Container>
@@ -39,14 +38,14 @@ const Header: React.FC<HeaderProps> = ({ currency, totalUSDValue, selectedItemSt
       <Box>
         {[
           { id: "all", tag: "all" },
-          ...wallets.filter((acc) => acc.show_chip)
+          ...visibleWallets,
         ].map((acc, i) => (
           <Chip
             key={`${acc.id}-${i}`}
             sx={{ margin: 1 }}
-            onClick={() => setSelectedItem(acc)}
+            onClick={() => setSelectedWalletId(String(acc.id))}
             label={acc.tag}
-            variant={selectedItem?.id === acc.id ? "outlined" : "filled"}
+            variant={selectedWalletId === String(acc.id) ? "outlined" : "filled"}
           />
         ))}
       </Box>

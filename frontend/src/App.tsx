@@ -22,11 +22,11 @@ import Header from "./components/header/Header";
 import { useAuthStatus } from "./hooks/useAuthStatus";
 import { useDashboardData } from "./hooks/useDashboardData";
 import useDelay from "./hooks/useDelay";
-import { DashboardSelection, Token } from "./interfaces";
+import { Token } from "./interfaces";
 import { appTheme } from "./styles/appTheme";
 
 const DashboardApp: React.FC = () => {
-    const [selectedItem, setSelectedItem] = useState<DashboardSelection | null>(null);
+    const [selectedWalletId, setSelectedWalletId] = useState<string>("all");
     const [selectedChainId, setSelectedChainId] = useState<string>("all");
     const [loading, setLoading] = useState<boolean>(true);
     const [isCryptoView, setIsCryptoView] = useState<boolean>(true);
@@ -41,21 +41,19 @@ const DashboardApp: React.FC = () => {
     const tokenChartRef = useRef<HTMLDivElement | null>(null);
 
     const authStatus = useAuthStatus();
-    const walletId = selectedItem?.id || "all";
     const {
         chains,
         loading: dashboardLoading,
         netWorth,
         protocolsTable,
         saveNetWorth,
-        selectedData,
         tokens,
         totalProtocolUSD,
         totalTokenUSD,
         totalUSDValue,
         wallets,
     } = useDashboardData({
-        walletId,
+        walletId: selectedWalletId,
         selectedChainId,
         searchQuery,
     });
@@ -74,14 +72,13 @@ const DashboardApp: React.FC = () => {
 
     useEffect(() => {
         if (!isAuthenticated) {
-            setSelectedItem(null);
+            setSelectedWalletId("all");
             setLoading(false);
             return;
         }
 
         if (!dashboardLoading) {
             setLoading(true);
-            setSelectedItem(selectedData);
             saveNetWorth(totalUSDValue, {
                 wallets,
                 chains,
@@ -97,7 +94,6 @@ const DashboardApp: React.FC = () => {
         isAuthenticated,
         protocolsTable,
         saveNetWorth,
-        selectedData,
         tokens,
         totalProtocolUSD,
         totalTokenUSD,
@@ -128,9 +124,9 @@ const DashboardApp: React.FC = () => {
                 </Typography>
             ) : (
                 <Container sx={{ marginY: 10 }}>
-                    {!selectedItem && delay && <Typography>No data available</Typography>}
+                    {!tokens.length && !protocolsTable.length && delay && <Typography>No data available</Typography>}
 
-                    {selectedItem && (
+                    {(tokens.length > 0 || protocolsTable.length > 0 || chains.length > 0) && (
                         <>
                             {isCryptoView ? (
                                 <>
@@ -151,7 +147,8 @@ const DashboardApp: React.FC = () => {
                                     <Header
                                         currency={currency}
                                         totalUSDValue={totalUSDValue}
-                                        selectedItemState={[selectedItem, setSelectedItem]}
+                                        selectedWalletId={selectedWalletId}
+                                        setSelectedWalletId={setSelectedWalletId}
                                     />
                                     {showChart && <NetWorthChart setShowChart={setShowChart} data={netWorth} />}
 

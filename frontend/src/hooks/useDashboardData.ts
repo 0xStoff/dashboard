@@ -1,5 +1,4 @@
-import { useMemo } from "react";
-import { Chain, DashboardSelection, Protocol, Token } from "../interfaces";
+import { Chain, Protocol, Token } from "../interfaces";
 import { useWallets } from "../context/WalletsContext";
 import { useFetchChains } from "./useFetchChains";
 import { useFetchNetWorth } from "./useFetchNetWorth";
@@ -29,20 +28,6 @@ export const useDashboardData = ({
 
     const totalUSDValue = tokenResource.totalTokenUSD + protocolResource.totalProtocolUSD;
 
-    const selectedData: DashboardSelection = useMemo(
-        () => ({
-            id: "all",
-            tag: "all",
-            chains: {
-                total_usd_value: totalUSDValue,
-                chain_list: chainResource.chains,
-            },
-            tokens: tokenResource.tokens,
-            protocolsTable: protocolResource.protocolsTable,
-        }),
-        [chainResource.chains, protocolResource.protocolsTable, tokenResource.tokens, totalUSDValue]
-    );
-
     return {
         chains: chainResource.chains as Chain[],
         loading:
@@ -53,7 +38,6 @@ export const useDashboardData = ({
         netWorth: netWorthResource.netWorth,
         protocolsTable: protocolResource.protocolsTable as Protocol[],
         saveNetWorth: netWorthResource.saveNetWorth,
-        selectedData,
         tokens: tokenResource.tokens as Token[],
         totalProtocolUSD: protocolResource.totalProtocolUSD,
         totalTokenUSD: tokenResource.totalTokenUSD,
