@@ -3,21 +3,21 @@ import {
     ChainList, NavHeader, ProtocolTable, Transactions, WalletTable
 } from "./components";
 import {
-    Box, CircularProgress, Container, CssBaseline, IconButton, Typography, useMediaQuery
+    Box, CircularProgress, Container, IconButton, Typography, useMediaQuery
 } from "@mui/material";
-import {ThemeProvider} from "@mui/system";
 import {useFetchWallets} from "./hooks/useFetchWallets";
 import {useFetchChains} from "./hooks/useFetchChains";
 import {useFetchTokens} from "./hooks/useFetchTokens";
 import {useFetchProtocolsTable} from "./hooks/useFetchProtocolsTable";
-import {theme} from "./utils/theme";
 import {NetWorthChart} from "./components/crypto/NetWorthChart";
 import {useFetchNetWorth} from "./hooks/useFetchNetWorth";
 import Header from "./components/header/Header";
 import {Chain, Protocol, Token} from "./interfaces";
 import {BarChart, SyncAlt} from "@mui/icons-material";
 import {TokenChart} from "./components/crypto/TokenChart";
-import {WalletsProvider} from "./context/WalletsContext";
+import useDelay from "./hooks/useDelay";
+import AppProviders from "./app/AppProviders";
+import {appTheme} from "./styles/appTheme";
 
 interface SelectedItem {
     id: string;
@@ -28,23 +28,6 @@ interface SelectedItem {
     tokens: Token[];
     protocolsTable: Protocol[];
 }
-
-export const useDelay = (delay: number) => {
-    const [shouldRender, setShouldRender] = useState(false);
-
-    useEffect(() => {
-        // if (condition) {
-        const timeout = setTimeout(() => {
-            setShouldRender(true);
-        }, delay);
-        return () => clearTimeout(timeout);
-        // } else {
-        //     setShouldRender(false);
-        // }
-    }, [delay]);
-
-    return shouldRender;
-};
 
 const App: React.FC = () => {
     const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
@@ -58,7 +41,7 @@ const App: React.FC = () => {
     const [currency, setCurrency] = useState<'CHF' | '$'>('$');
 
 
-    const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+    const isMobile = useMediaQuery(appTheme.breakpoints.down("sm"));
 
     const walletId: string = selectedItem?.id || "all";
 
@@ -151,10 +134,7 @@ const App: React.FC = () => {
     const delay = useDelay(2000);
 
 
-    return (<WalletsProvider>
-            <ThemeProvider theme={theme}>
-                <CssBaseline/>
-
+    return (<AppProviders>
                 <NavHeader
                     currency={currency}
                     setCurrency={setCurrency}
@@ -217,8 +197,7 @@ const App: React.FC = () => {
                                     </>) : (<Transactions/>)}
                             </>)}
                     </Container>)}
-            </ThemeProvider>
-        </WalletsProvider>);
+        </AppProviders>);
 };
 
 export default App;

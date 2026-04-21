@@ -36,3 +36,5 @@ yarn-error.log*
 
 /backend/db_data
 hetzner_db.dump
+*.bak-*
+scratch_*.js

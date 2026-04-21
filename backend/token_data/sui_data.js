@@ -5,6 +5,7 @@ import WalletTokenModel from "../models/WalletTokenModel.js";
 import { fetchTokenPriceCoingecko } from "../api/fetchTokenPriceCoingecko.js";
 import TokenModel from "../models/TokenModel.js";
 import { downloadLogo } from "../utils/download_logo.js";
+import { APTOS_CONFIG, STATIC_CHAINS, SUI_CONFIG } from "../static_data/index.js";
 
 const createTokenData = (id, name, symbol, decimals, logoUrl, price, amount, walletTag, walletId, walletAddress) => {
   return {
@@ -180,32 +181,59 @@ export const writeSuiDataToDB = async () => {
 export const fetchSuiData = async () => {
   const rpcUrl = getFullnodeUrl("mainnet");
   const client = new SuiClient({ url: rpcUrl });
-  const suiAddress = "0xb0ff460367eae42bc92566dc50135dc12eed99ead8938d18f6b8c0dd0f41b11b";
+  const suiAddress = SUI_CONFIG.walletAddress;
 
   const [suiBalance, stakingData, suiPrice, deepPrice] = await Promise.all([
     client.getAllCoins({ owner: suiAddress }),
     client.getStakes({ owner: suiAddress }),
-    fetchTokenPriceCoingecko("sui"),
-    fetchTokenPriceCoingecko("deep")
+    fetchTokenPriceCoingecko(SUI_CONFIG.tokens[0].priceKey),
+    fetchTokenPriceCoingecko(SUI_CONFIG.tokens[1].priceKey)
   ]);
 
 
-  const suiAmount = stakingData[0]?.stakes[0]?.principal / 10 ** 9 + suiBalance.data[0]?.balance / 10 ** 9;
+  const suiAmount =
+    stakingData[0]?.stakes[0]?.principal / 10 ** SUI_CONFIG.stakingDecimals +
+    suiBalance.data[0]?.balance / 10 ** SUI_CONFIG.liquidDecimals;
   const deepAmount = suiBalance.data.filter(coin => coin.coinType.includes("DEEP"))[0]?.balance / 10 ** 6 || 0;
 
-  const tokens = [createTokenData("sui", "Sui", "SUI", 18, "https://cryptologos.cc/logos/sui-sui-logo.png?v=035", suiPrice, suiAmount, "Sui", 30, suiAddress), createTokenData("deep", "DEEP", "DEEP", 18, "https://s2.coinmarketcap.com/static/img/coins/200x200/33391.png", deepPrice, deepAmount, "Sui", 30, suiAddress)];
+  const tokens = [
+    createTokenData(
+      SUI_CONFIG.tokens[0].id,
+      SUI_CONFIG.tokens[0].name,
+      SUI_CONFIG.tokens[0].symbol,
+      SUI_CONFIG.tokens[0].decimals,
+      SUI_CONFIG.tokens[0].logoUrl,
+      suiPrice,
+      suiAmount,
+      SUI_CONFIG.symbol,
+      SUI_CONFIG.walletId,
+      suiAddress
+    ),
+    createTokenData(
+      SUI_CONFIG.tokens[1].id,
+      SUI_CONFIG.tokens[1].name,
+      SUI_CONFIG.tokens[1].symbol,
+      SUI_CONFIG.tokens[1].decimals,
+      SUI_CONFIG.tokens[1].logoUrl,
+      deepPrice,
+      deepAmount,
+      SUI_CONFIG.symbol,
+      SUI_CONFIG.walletId,
+      suiAddress
+    )
+  ];
 
-  return createChainData(30, ["sui"], "Sui", tokens, suiAddress);
+  return createChainData(SUI_CONFIG.walletId, [SUI_CONFIG.chainId], SUI_CONFIG.symbol, tokens, suiAddress);
 };
 
 export const fetchAptosData = async () => {
   const config = new AptosConfig({ network: Network.MAINNET });
   const aptosConf = new Aptos(config);
 
-  const aptosAddress = "0x7acbb55470beae407d0c897c3d1c85ba5d17955cf48ce128a05a36c2e23e2260";
+  const aptosAddress = APTOS_CONFIG.walletAddress;
   const [stakingActivities, aptosBalance, aptosPrice] = await Promise.all([aptosConf.staking.getDelegatedStakingActivities({
-    poolAddress: "0xdb5247f859ce63dbe8940cf8773be722a60dcc594a8be9aca4b76abceb251b8e", delegatorAddress: aptosAddress
-  }), aptosConf.getAccountAPTAmount({ accountAddress: aptosAddress }), fetchTokenPriceCoingecko("aptos")]);
+    poolAddress: APTOS_CONFIG.stakingPoolAddress, delegatorAddress: aptosAddress
+  }), aptosConf.getAccountAPTAmount({ accountAddress: aptosAddress }), fetchTokenPriceCoingecko(APTOS_CONFIG.priceKey)]);
 
   let unlockedTotal = 0;
   let withdrawnTotal = 0;
@@ -233,81 +261,26 @@ export const fetchAptosData = async () => {
   const liquid = aptosBalance / 1e8;
   const aptosAmount = undelegated + liquid;
 
-  const tokens = [createTokenData("aptos", "Aptos", "APT", 8, "https://cryptologos.cc/logos/aptos-apt-logo.png?v=035", aptosPrice, aptosAmount, "Aptos", 39, aptosAddress)];
+  const tokens = [createTokenData(
+    APTOS_CONFIG.chainId,
+    "Aptos",
+    APTOS_CONFIG.symbol,
+    APTOS_CONFIG.decimals,
+    APTOS_CONFIG.logoUrl,
+    aptosPrice,
+    aptosAmount,
+    "Aptos",
+    APTOS_CONFIG.walletId,
+    aptosAddress
+  )];
 
-  return createChainData(39, ["aptos"], "Aptos", tokens, aptosAddress);
+  return createChainData(APTOS_CONFIG.walletId, [APTOS_CONFIG.chainId], "Aptos", tokens, aptosAddress);
 };
 
 export const fetchStaticData = async () => {
-  const chains = [{
-    id: "doge",
-    name: "Dogecoin",
-    symbol: "DOGE",
-    decimals: 8,
-    logo_url: "https://cryptologos.cc/logos/dogecoin-doge-logo.png?v=035",
-    priceKey: "dogecoin",
-    wallet: "DRbbCDmZKR6p8xwx2926iM6BuPnxTS7reV",
-    amount: 1500
-  }, {
-    id: "dot",
-    name: "Polkadot",
-    symbol: "DOT",
-    decimals: 10,
-    logo_url: "https://cryptologos.cc/logos/polkadot-new-dot-logo.png?v=035",
-    priceKey: "polkadot",
-    wallet: "14MVcXjexqZTnqz4zSBhEbTzMdCL6mSVnVhsVMdKgx2Jvue2",
-    amount: 50
-  }, {
-    id: "flow",
-    name: "Flow",
-    symbol: "FLOW",
-    decimals: 8,
-    logo_url: "https://cryptologos.cc/logos/flow-flow-logo.png?v=035",
-    priceKey: "flow",
-    wallet: "14MVcXjexqZTnqz4zSBhEbTzMdCL6mSVnVhsVMdKgx2Jvue2",
-    amount: 500
-  }, {
-    id: "strk",
-    name: "Starknet",
-    symbol: "STRK",
-    decimals: 16,
-    logo_url: "https://cryptologos.cc/logos/starknet-token-strk-logo.png?v=040",
-    priceKey: "starknet",
-    amount: 700,
-    wallet: "0x0266289d06695abf63A6a962F7671437086824F1C3C87b009e1eD3d89404Efef"
-  }, {
-    id: "bvm",
-    name: "BVM",
-    symbol: "BVM",
-    decimals: 16,
-    logo_url: "https://cryptologos.cc/logos/bitcoin-plus-xbc-logo.png?v=040",
-    priceKey: "bvm",
-    amount: 1000,
-    wallet: "0x41eD1e75d836C5C974030432fDB222f30A274f90"
-  }, {
-    id: "kraken",
-    name: "KRAKEN",
-    symbol: "KRAKEN",
-    decimals: 16,
-    logo_url: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=040",
-    priceKey: "usd-coin",
-    amount: 0,
-    wallet: "0x01"
-  }, {
-    id: "nft",
-    name: "NFT",
-    symbol: "NFT",
-    decimals: 16,
-    logo_url: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=040",
-    priceKey: "usd-coin",
-    amount: 0,
-    wallet: "0x02"
-  }];
-
-
-  return Promise.all(chains.map(async chain => {
+  return Promise.all(STATIC_CHAINS.map(async chain => {
     const price = (await fetchTokenPriceCoingecko(chain.priceKey)) || 0;
-    const tokens = [createTokenData(chain.id, chain.name, chain.symbol, chain.decimals, chain.logo_url, price, chain.amount, chain.name, chain.id, chain.wallet)];
+    const tokens = [createTokenData(chain.id, chain.name, chain.symbol, chain.decimals, chain.logoUrl, price, chain.amount, chain.name, chain.id, chain.wallet)];
     return createChainData(chain.id, [chain.name.toLowerCase()], chain.name, tokens, chain.wallet);
   }));
 };

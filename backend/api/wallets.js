@@ -1,8 +1,13 @@
 import express from 'express';
-import {fetchAndSaveEvmTokenData, fetchAndSaveEvmTokenDataForAllWallets} from "../token_data/evm_token_data.js";
-import { fetchCosmosTokens } from "../token_data/cosmos_token_data.js";
-import { writeAptosDataToDB, writeStaticDataToDB, writeSuiDataToDB } from "../token_data/sui_data.js";
-import { fetchAndSaveSolTokenDataForAllWallets } from "../token_data/sol_token_data.js";
+import {
+    fetchAndSaveEvmTokenData,
+    fetchAndSaveEvmTokenDataForAllWallets,
+    fetchAndSaveSolTokenDataForAllWallets,
+    fetchCosmosTokens,
+    writeAptosDataToDB,
+    writeStaticDataToDB,
+    writeSuiDataToDB,
+} from "../token_data/index.js";
 import WalletModel from "../models/WalletModel.js";
 
 const router = express.Router();

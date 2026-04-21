@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import TransactionsTable from "./TransactionsTable";
 import TransactionCards from "./TransactionCards";
-import useFetchTransactions from "../../hooks/useFechTransactions";
+import useFetchTransactions from "../../hooks/useFetchTransactions";
 import { useTheme } from "@mui/material/styles";
 import { useWallets } from "../../context/WalletsContext";
 
