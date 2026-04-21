@@ -28,7 +28,7 @@ import { appTheme } from "./styles/appTheme";
 const DashboardApp: React.FC = () => {
     const [selectedWalletId, setSelectedWalletId] = useState<string>("all");
     const [selectedChainId, setSelectedChainId] = useState<string>("all");
-    const [loading, setLoading] = useState<boolean>(true);
+    const [isBootstrapping, setIsBootstrapping] = useState<boolean>(true);
     const [isCryptoView, setIsCryptoView] = useState<boolean>(true);
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [showChart, setShowChart] = useState<boolean>(false);
@@ -73,27 +73,45 @@ const DashboardApp: React.FC = () => {
     useEffect(() => {
         if (!isAuthenticated) {
             setSelectedWalletId("all");
-            setLoading(false);
+            setIsBootstrapping(false);
             return;
         }
 
         if (!dashboardLoading) {
-            setLoading(true);
-            saveNetWorth(totalUSDValue, {
-                wallets,
-                chains,
-                tokens,
-                protocolsTable,
-                totalProtocolUSD,
-                totalTokenUSD,
-            }).finally(() => setLoading(false));
+            setIsBootstrapping(false);
         }
+    }, [dashboardLoading, isAuthenticated]);
+
+    useEffect(() => {
+        setSelectedToken(null);
+    }, [searchQuery, selectedChainId, selectedWalletId]);
+
+    useEffect(() => {
+        if (!isAuthenticated || dashboardLoading) {
+            return;
+        }
+
+        if (selectedWalletId !== "all" || selectedChainId !== "all" || searchQuery.trim()) {
+            return;
+        }
+
+        void saveNetWorth(totalUSDValue, {
+            wallets,
+            chains,
+            tokens,
+            protocolsTable,
+            totalProtocolUSD,
+            totalTokenUSD,
+        });
     }, [
         chains,
         dashboardLoading,
         isAuthenticated,
         protocolsTable,
         saveNetWorth,
+        searchQuery,
+        selectedChainId,
+        selectedWalletId,
         tokens,
         totalProtocolUSD,
         totalTokenUSD,
@@ -114,7 +132,7 @@ const DashboardApp: React.FC = () => {
                 setIsAuthenticated={setIsAuthenticated}
             />
 
-            {loading || authStatus.loading ? (
+            {isBootstrapping || authStatus.loading ? (
                 <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
                     <CircularProgress />
                 </Box>
