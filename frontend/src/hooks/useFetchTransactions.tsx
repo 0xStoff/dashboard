@@ -2,6 +2,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import apiClient from "../utils/api-client";
 import { GnosisTransactionRecord, TransactionRecord } from "../interfaces";
 
+const COMPLETED_RUBIC_STATUSES = new Set([
+    "completed",
+    "success",
+    "successful",
+    "done",
+    "executed",
+    "finished",
+]);
+
 const mapTransactionRecord = (transaction: Record<string, unknown>): TransactionRecord => ({
     orderNo: typeof transaction.orderNo === "string" ? transaction.orderNo : null,
     exchange: typeof transaction.exchange === "string" ? transaction.exchange : "Unknown",
@@ -99,7 +108,10 @@ const useFetchTransactions = () => {
             const total = rows.reduce((sum, row) => {
                 const symbol = (row.asset || "").toString().toLowerCase();
                 const chf = Number(row.transactionAmount) || 0;
-                return symbol === "xmr" || symbol === "monero" ? sum + chf : sum;
+                const status = (row.status || "").toString().toLowerCase();
+                return (symbol === "xmr" || symbol === "monero") && COMPLETED_RUBIC_STATUSES.has(status)
+                    ? sum + chf
+                    : sum;
             }, 0);
             setRubicXmrSum(total);
         } catch (error) {

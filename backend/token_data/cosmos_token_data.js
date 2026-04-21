@@ -1,177 +1,210 @@
-import WalletModel from "../models/WalletModel.js";
-import fetchTokenPrice from "../utils/coingecko_api.js";
-import {nonEvmChains} from "../utils/chainlist.js";
 import axios from "axios";
-import {fromBech32, toBech32} from "@cosmjs/encoding";
+import { fromBech32, toBech32 } from "@cosmjs/encoding";
+import WalletModel from "../models/WalletModel.js";
 import WalletTokenModel from "../models/WalletTokenModel.js";
 import TokenModel from "../models/TokenModel.js";
-import {downloadLogo} from "../utils/download_logo.js";
+import fetchTokenPrice from "../utils/coingecko_api.js";
+import { nonEvmChains } from "../utils/chainlist.js";
+import { downloadLogo } from "../utils/download_logo.js";
 
-// Helper function to calculate total value
-const calculateTotalValue = (items, price) => items.reduce((sum, item) => sum + (item.amount * (price.usd || 0)), 0);
+const COSMOS_CHAIN_ID = "cosmos";
 
-// Aggregate chain data to compute total value and amounts
-const aggregateChainData = (chainName, result, price) => {
-    const chainData = result.filter(r => r.chain === chainName).flatMap(r => r.data);
-    return {
-        totalValue: calculateTotalValue(chainData, price), amount: chainData.reduce((sum, item) => sum + item.amount, 0)
-    };
+const symbolPrefixMap = {
+    AKT: "akash",
+    SAGA: "saga",
+    ATOM: "cosmos",
+    OSMO: "osmo",
+    SEI: "sei",
+    KUJI: "kujira",
+    TIA: "celestia",
 };
 
-// Fetch balances for a given chain
-const fetchBalances = async (chain) => {
-    return await Promise.all(chain.wallets.map(async wallet => {
-        try {
-            const {data: {balances}} = await axios.get(`${chain.endpoint}/cosmos/bank/v1beta1/balances/${wallet}`);
-            return {
-                chain: chain.name, type: 'Balance', data: balances.map(b => ({
-                    denom: b.denom, amount: parseInt(b.amount, 10) / Math.pow(10, chain.decimals)
-                })).filter(b => !b.denom.startsWith('ibc/') && !b.denom.startsWith('factory/'))
-            };
-        } catch (error) {
-            return {chain: chain.name, type: 'Balance', data: [], error: error.message};
-        }
-    }));
+const manualDeriveMap = {
+    DYM: () => "dym1qla0rgq3wv69z7uzv32z7l4p3advhw8wh8rzlp",
+    INJ: () => "inj1tlr42l84gs4tmgq4kwytaz7n08hd08c7ncc6p5",
 };
 
-// Fetch staking data for a given chain
-const fetchStakings = async (chain) => {
-    return await Promise.all(chain.wallets.map(async wallet => {
-        try {
-            const [delegationsRes, unbondingsRes] = await Promise.all([
-                axios.get(`${chain.endpoint}/cosmos/staking/v1beta1/delegations/${wallet}`),
-                axios.get(`${chain.endpoint}/cosmos/staking/v1beta1/delegators/${wallet}/unbonding_delegations`)
-            ]);
+const getCosmosChains = () => nonEvmChains.filter((chain) => chain.id !== "sol");
 
-            const activeDelegations = delegationsRes.data.delegation_responses.map(d => ({
-                validator: d.delegation.validator_address,
-                amount: parseInt(d.balance.amount, 10) / Math.pow(10, chain.decimals),
-                status: 'bonded'
-            }));
+const deriveAddressForChain = (baseAddress, symbol) => {
+    if (manualDeriveMap[symbol]) {
+        return manualDeriveMap[symbol](baseAddress);
+    }
 
-            const unbondingDelegations = unbondingsRes.data.unbonding_responses.flatMap(u =>
-                u.entries.map(entry => ({
-                    validator: u.validator_address,
-                    amount: parseInt(entry.balance, 10) / Math.pow(10, chain.decimals),
-                    status: 'unbonding',
-                    completion_time: entry.completion_time
-                }))
+    const prefix = symbolPrefixMap[symbol];
+    if (!prefix) {
+        return null;
+    }
+
+    const { data } = fromBech32(baseAddress);
+    return toBech32(prefix, data);
+};
+
+const fetchBalanceForChainWallet = async (chain, walletAddress) => {
+    try {
+        const response = await axios.get(`${chain.endpoint}/cosmos/bank/v1beta1/balances/${walletAddress}`);
+        const balances = Array.isArray(response.data?.balances) ? response.data.balances : [];
+
+        return balances
+            .filter((balance) => !balance.denom.startsWith("ibc/") && !balance.denom.startsWith("factory/"))
+            .reduce(
+                (sum, balance) => sum + (Number.parseInt(balance.amount, 10) || 0) / Math.pow(10, chain.decimals),
+                0
             );
-
-            return {
-                chain: chain.name,
-                type: 'Staking',
-                data: [...activeDelegations, ...unbondingDelegations]
-            };
-        } catch (error) {
-            return { chain: chain.name, type: 'Staking', data: [], error: error.message };
-        }
-    }));
+    } catch (error) {
+        console.error(`Failed to fetch ${chain.name} balances for ${walletAddress}:`, error.message);
+        return 0;
+    }
 };
 
-// Derive corresponding addresses
-const deriveCorrespondingAddresses = (cosmosAddresses) => {
-    const symbolPrefixMap = {
-        AKT: "akash", SAGA: "saga", ATOM: "cosmos", OSMO: "osmo", SEI: "sei", KUJI: "kujira", TIA: "celestia"
-    };
+const fetchStakingForChainWallet = async (chain, walletAddress) => {
+    try {
+        const [delegationsResponse, unbondingsResponse] = await Promise.all([
+            axios.get(`${chain.endpoint}/cosmos/staking/v1beta1/delegations/${walletAddress}`),
+            axios.get(`${chain.endpoint}/cosmos/staking/v1beta1/delegators/${walletAddress}/unbonding_delegations`),
+        ]);
 
-    const manualDeriveMap = {
-        DYM: () => 'dym1qla0rgq3wv69z7uzv32z7l4p3advhw8wh8rzlp',
-        INJ: () => 'inj1tlr42l84gs4tmgq4kwytaz7n08hd08c7ncc6p5'
-    };
+        const activeDelegations = (delegationsResponse.data?.delegation_responses || []).reduce(
+            (sum, delegation) => sum + (Number.parseInt(delegation?.balance?.amount, 10) || 0),
+            0
+        );
 
-    const derivedAddresses = cosmosAddresses.reduce((acc, baseAddress) => {
-        const { data } = fromBech32(baseAddress);
+        const unbondingDelegations = (unbondingsResponse.data?.unbonding_responses || []).reduce(
+            (sum, unbonding) =>
+                sum +
+                (unbonding.entries || []).reduce(
+                    (entrySum, entry) => entrySum + (Number.parseInt(entry.balance, 10) || 0),
+                    0
+                ),
+            0
+        );
 
-        Object.entries(symbolPrefixMap).forEach(([symbol, prefix]) => {
-            acc[symbol] = acc[symbol] || [];
-            acc[symbol].push(toBech32(prefix, data));
-        });
+        return (activeDelegations + unbondingDelegations) / Math.pow(10, chain.decimals);
+    } catch (error) {
+        console.error(`Failed to fetch ${chain.name} staking for ${walletAddress}:`, error.message);
+        return 0;
+    }
+};
 
-        return acc;
-    }, {});
+const removeMissingCosmosRows = async (walletId, retainedTokenIds) => {
+    const cosmosTokenIds = (
+        await TokenModel.findAll({
+            where: { chain_id: COSMOS_CHAIN_ID },
+            attributes: ["id"],
+        })
+    ).map((token) => token.id);
 
-    Object.entries(manualDeriveMap).forEach(([symbol, deriveFn]) => {
-        derivedAddresses[symbol] = [deriveFn()];
+    if (!cosmosTokenIds.length) {
+        return;
+    }
+
+    const staleTokenIds = cosmosTokenIds.filter((tokenId) => !retainedTokenIds.includes(tokenId));
+    if (!staleTokenIds.length) {
+        return;
+    }
+
+    await WalletTokenModel.destroy({
+        where: {
+            wallet_id: walletId,
+            token_id: staleTokenIds,
+        },
     });
-
-    return derivedAddresses;
 };
 
-// Function to fetch and return the chains with derived addresses
-const chains = (wallets) => {
-    if (!wallets || wallets.length === 0) return [];
-
-    const cosmosAddresses = wallets.map(({wallet}) => wallet);
-    const derivedAddresses = deriveCorrespondingAddresses(cosmosAddresses);
-
-    return nonEvmChains
-        .filter(chain => chain.id !== 'sol')
-        .map(chain => ({
-            id: chain.id,
-            name: chain.name,
-            endpoint: chain.endpoint,
-            decimals: chain.decimals,
-            wallets: derivedAddresses[chain.symbol] || [],
-            logo_url: chain.logo_url,
-            symbol: chain.symbol
-        }));
-};
-
-const fetchNode = async (wallets) => {
-    const cosmosChains = chains(wallets);
-    const promises = cosmosChains.flatMap(chain => [fetchBalances(chain), fetchStakings(chain)]);
-    const results = await Promise.allSettled(promises);
-    return results.flatMap(result => result.status === 'fulfilled' ? result.value : []);
-};
-
-// Main function to fetch Cosmos tokens
 export const fetchCosmosTokens = async () => {
     try {
-        const cosmosWallets = await WalletModel.findAll({
-            order: [['id', 'ASC']], where: {chain: 'cosmos'}
+        const wallets = await WalletModel.findAll({
+            order: [["id", "ASC"]],
+            where: { chain: "cosmos" },
         });
 
-        const cosmosChains = chains(cosmosWallets);
-        const cosmosBalances = await fetchNode(cosmosWallets);
+        if (!wallets.length) {
+            return [];
+        }
 
+        const cosmosChains = getCosmosChains();
 
+        const tokenDefinitions = await Promise.all(
+            cosmosChains.map(async (chain) => {
+                const price = await fetchTokenPrice(chain.id);
+                const logoPath = chain.logo_url ? await downloadLogo(chain.logo_url, chain.symbol) : null;
+                const [dbToken] = await TokenModel.upsert(
+                    {
+                        chain_id: COSMOS_CHAIN_ID,
+                        name: chain.name,
+                        symbol: chain.symbol,
+                        decimals: chain.decimals,
+                        logo_path: logoPath,
+                        price: price.usd,
+                        price_24h_change: price.usd_24h_change,
+                    },
+                    { conflictFields: ["chain_id", "symbol"], returning: true }
+                );
 
-        let total = 0;
-        return await Promise.all(cosmosChains.map(async (chain, i) => {
+                return {
+                    ...chain,
+                    dbToken,
+                    price: Number(price.usd || 0),
+                };
+            })
+        );
 
-            const {id, name, symbol, decimals, logo_url} = chain;
-            const price = await fetchTokenPrice(id);
-
-            const logoPath = logo_url ? await downloadLogo(logo_url, symbol) : null;
-
-            const [dbToken] = await TokenModel.upsert({
-                chain_id: 'cosmos', name, symbol, decimals, logo_path: logoPath, price: price.usd, price_24h_change: price.usd_24h_change
-            }, {conflictFields: ['chain_id', 'symbol'], returning: true});
-
-            const {totalValue, amount} = aggregateChainData(chain.name, cosmosBalances, price);
-
-
-            await Promise.all(chain.wallets.map(async (wallet, index) => {
-                    await WalletTokenModel.upsert({
-                        wallet_id: 16,
-                        token_id: dbToken.id,
-                        amount,
-                        usd_value: totalValue
-                    }, {
-                        conflictFields: ['wallet_id', 'token_id'],
-                        returning: true
-                    });
-            }));
-
-
-            total += totalValue;
-            return {...chain, usd_value: totalValue, price: price.usd, amount};
+        const chainSummaries = tokenDefinitions.map((chain) => ({
+            ...chain,
+            amount: 0,
+            usd_value: 0,
         }));
 
+        for (const wallet of wallets) {
+            const retainedTokenIds = [];
+
+            for (const chain of tokenDefinitions) {
+                const derivedAddress = deriveAddressForChain(wallet.wallet, chain.symbol);
+                if (!derivedAddress) {
+                    continue;
+                }
+
+                const [liquidAmount, stakingAmount] = await Promise.all([
+                    fetchBalanceForChainWallet(chain, derivedAddress),
+                    fetchStakingForChainWallet(chain, derivedAddress),
+                ]);
+
+                const amount = liquidAmount + stakingAmount;
+                if (amount <= 0) {
+                    continue;
+                }
+
+                retainedTokenIds.push(chain.dbToken.id);
+
+                await WalletTokenModel.upsert(
+                    {
+                        wallet_id: wallet.id,
+                        token_id: chain.dbToken.id,
+                        amount,
+                        raw_amount: amount * Math.pow(10, chain.decimals),
+                        usd_value: amount * chain.price,
+                    },
+                    {
+                        conflictFields: ["wallet_id", "token_id"],
+                        returning: true,
+                    }
+                );
+
+                const summary = chainSummaries.find((item) => item.symbol === chain.symbol);
+                if (summary) {
+                    summary.amount += amount;
+                    summary.usd_value += amount * chain.price;
+                }
+            }
+
+            await removeMissingCosmosRows(wallet.id, retainedTokenIds);
+        }
+
+        return chainSummaries
+            .filter((chain) => chain.amount > 0)
+            .map(({ dbToken, ...chain }) => chain);
     } catch (error) {
         console.error("Failed to fetch Cosmos data:", error);
         return null;
     }
 };
-

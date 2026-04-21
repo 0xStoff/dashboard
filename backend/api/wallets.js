@@ -1,4 +1,5 @@
-import express from 'express';
+import express from "express";
+import { Op } from "sequelize";
 import {
     fetchAndSaveEvmTokenData,
     fetchAndSaveEvmTokenDataForAllWallets,
@@ -9,34 +10,50 @@ import {
     writeSuiDataToDB,
 } from "../token_data/index.js";
 import WalletModel from "../models/WalletModel.js";
+import { SUPPORTED_TRACKED_WALLET_CHAINS } from "../config/supportedChains.js";
 
 const router = express.Router();
 
+const getUserId = (req) => req.user?.user?.id;
+
+const getOwnedWallet = async (walletId, userId) =>
+    WalletModel.findOne({
+        where: {
+            id: walletId,
+            user_id: userId,
+        },
+    });
 
 router.get("/wallets", async (req, res) => {
     try {
-
-
-        const userId = req.user?.user?.id;
+        const userId = getUserId(req);
         if (!userId) {
             return res.status(401).json({ error: "Unauthorized: Missing user ID" });
         }
 
         const wallets = await WalletModel.findAll({
-            where: { user_id: userId },
+            where: {
+                user_id: userId,
+                chain: { [Op.in]: SUPPORTED_TRACKED_WALLET_CHAINS },
+            },
             order: [["id", "ASC"]],
         });
 
-        res.json(wallets);
-    } catch (err) {
-        console.error("Error fetching wallets:", err);
-        res.status(500).json({ error: "Failed to fetch wallets" });
+        return res.json(wallets);
+    } catch (error) {
+        console.error("Error fetching wallets:", error);
+        return res.status(500).json({ error: "Failed to fetch wallets" });
     }
 });
 
 router.post("/wallets", async (req, res) => {
     try {
+        const userId = getUserId(req);
         const { tag, wallet, chain, show_chip } = req.body;
+
+        if (!userId) {
+            return res.status(401).json({ error: "Unauthorized: Missing user ID" });
+        }
 
         if (!tag || !wallet || !chain) {
             return res.status(400).json({ error: "Tag, wallet, and chain are required" });
@@ -47,138 +64,166 @@ router.post("/wallets", async (req, res) => {
             wallet,
             chain,
             show_chip,
-            user_id: req.user.user.id,
+            user_id: userId,
         });
 
-        res.status(201).json(newWallet);
-    } catch (err) {
-        console.error("Error adding wallet:", err);
-        res.status(500).json({ error: "Failed to add wallet" });
+        return res.status(201).json(newWallet);
+    } catch (error) {
+        console.error("Error adding wallet:", error);
+        return res.status(500).json({ error: "Failed to add wallet" });
     }
 });
-router.put('/wallets/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { tag, show_chip } = req.body;
 
-        const wallet = await WalletModel.findByPk(id);
-        if (!wallet) {
+router.put("/wallets/:id", async (req, res) => {
+    try {
+        const userId = getUserId(req);
+        const { id } = req.params;
+        const { tag, wallet, chain, show_chip } = req.body;
+
+        if (!userId) {
+            return res.status(401).json({ error: "Unauthorized: Missing user ID" });
+        }
+
+        const existingWallet = await getOwnedWallet(id, userId);
+        if (!existingWallet) {
             return res.status(404).json({ error: "Wallet not found" });
         }
 
-        if (tag !== undefined) wallet.tag = tag;
-        if (show_chip !== undefined) wallet.show_chip = show_chip;
+        if (tag !== undefined) {
+            existingWallet.tag = tag;
+        }
+        if (wallet !== undefined) {
+            existingWallet.wallet = wallet;
+        }
+        if (chain !== undefined) {
+            existingWallet.chain = chain;
+        }
+        if (show_chip !== undefined) {
+            existingWallet.show_chip = show_chip;
+        }
 
-        await wallet.save();
-        res.status(200).json(wallet);
-    } catch (err) {
-        console.error('Error updating wallet:', err);
-        res.status(500).json({ error: 'Failed to update wallet' });
+        await existingWallet.save();
+        return res.status(200).json(existingWallet);
+    } catch (error) {
+        console.error("Error updating wallet:", error);
+        return res.status(500).json({ error: "Failed to update wallet" });
     }
 });
 
-router.delete('/wallets/:id', async (req, res) => {
+router.delete("/wallets/:id", async (req, res) => {
     try {
+        const userId = getUserId(req);
         const { id } = req.params;
-        const wallet = await WalletModel.findByPk(id);
 
+        if (!userId) {
+            return res.status(401).json({ error: "Unauthorized: Missing user ID" });
+        }
+
+        const wallet = await getOwnedWallet(id, userId);
         if (!wallet) {
             return res.status(404).json({ error: "Wallet not found" });
         }
 
         await wallet.destroy();
-        res.status(200).json({ message: "Wallet deleted successfully" });
-    } catch (err) {
-        console.error('Error deleting wallet:', err);
-        res.status(500).json({ error: 'Failed to delete wallet' });
+        return res.status(200).json({ message: "Wallet deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting wallet:", error);
+        return res.status(500).json({ error: "Failed to delete wallet" });
     }
 });
 
-
-router.post('/wallets/refetch', async (req, res) => {
+router.post("/wallets/refetch", async (req, res) => {
     try {
-        console.log("🔄 Refetching wallet data...");
+        console.log("Refetching wallet data...");
 
         await Promise.all([
             (async () => {
-                console.log("Fetching other token data...");
+                console.log("Fetching non-EVM and static token data...");
                 await writeStaticDataToDB();
                 await writeAptosDataToDB();
                 await writeSuiDataToDB();
                 await fetchAndSaveSolTokenDataForAllWallets();
                 await fetchCosmosTokens();
-                console.log("✅ Other token data fetched");
+                console.log("Non-EVM and static token data fetched");
             })(),
             (async () => {
                 console.log("Fetching EVM token data...");
                 await fetchAndSaveEvmTokenDataForAllWallets(req);
-                console.log("✅ EVM token data fetched");
-            })()
+                console.log("EVM token data fetched");
+            })(),
         ]);
 
-        console.log("🎉 All Token Data Fetched Successfully!");
-
-        res.status(200).json({
-            message: "✅ Wallet data refetched successfully!"
+        return res.status(200).json({
+            message: "Wallet data refetched successfully",
         });
-    } catch (err) {
-        console.error("❌ Error executing token data functions:", err);
-        res.status(500).json({ error: "Failed to refetch wallet data", details: err.message });
+    } catch (error) {
+        console.error("Error executing token data functions:", error);
+        return res.status(500).json({
+            error: "Failed to refetch wallet data",
+            details: error.message,
+        });
     }
 });
 
-router.post('/wallets/refetch/other', async (req, res) => {
+router.post("/wallets/refetch/other", async (_req, res) => {
     try {
-        console.log("🔄 Refetching other token data...");
+        console.log("Refetching non-EVM and static token data...");
 
         await Promise.all([
             writeStaticDataToDB(),
             writeAptosDataToDB(),
             writeSuiDataToDB(),
             fetchAndSaveSolTokenDataForAllWallets(),
-            fetchCosmosTokens()
+            fetchCosmosTokens(),
         ]);
 
-        console.log("✅ Other token data fetched successfully!");
-        res.status(200).json({ message: "✅ Other token data refetched successfully!" });
-    } catch (err) {
-        console.error("❌ Error refetching other token data:", err);
-        res.status(500).json({ error: "Failed to refetch other token data", details: err.message });
+        return res.status(200).json({ message: "Other token data refetched successfully" });
+    } catch (error) {
+        console.error("Error refetching other token data:", error);
+        return res.status(500).json({
+            error: "Failed to refetch other token data",
+            details: error.message,
+        });
     }
 });
 
-router.post('/wallets/refetch/evm', async (req, res) => {
+router.post("/wallets/refetch/evm", async (req, res) => {
     try {
-        console.log("🔄 Refetching EVM token data for all wallets...");
-
+        console.log("Refetching EVM token data for all wallets...");
         await fetchAndSaveEvmTokenDataForAllWallets(req);
-
-        console.log("✅ EVM token data for all wallets fetched successfully!");
-        res.status(200).json({ message: "✅ EVM token data for all wallets refetched successfully!" });
-    } catch (err) {
-        console.error("❌ Error refetching EVM token data for all wallets:", err);
-        res.status(500).json({ error: "Failed to refetch EVM token data", details: err.message });
+        return res.status(200).json({ message: "EVM token data for all wallets refetched successfully" });
+    } catch (error) {
+        console.error("Error refetching EVM token data for all wallets:", error);
+        return res.status(500).json({
+            error: "Failed to refetch EVM token data",
+            details: error.message,
+        });
     }
 });
 
-router.post('/wallets/refetch/evm/:walletId', async (req, res) => {
+router.post("/wallets/refetch/evm/:walletId", async (req, res) => {
     try {
+        const userId = getUserId(req);
         const { walletId } = req.params;
-        const wallet = await WalletModel.findByPk(walletId);
 
-        if (!wallet || wallet.chain !== 'evm') {
+        if (!userId) {
+            return res.status(401).json({ error: "Unauthorized: Missing user ID" });
+        }
+
+        const wallet = await getOwnedWallet(walletId, userId);
+        if (!wallet || wallet.chain !== "evm") {
             return res.status(404).json({ error: "Wallet not found or not an EVM wallet" });
         }
 
-        console.log('Refetching EVM token data for an EVM wallet');
-
         await fetchAndSaveEvmTokenData(wallet.id, wallet.wallet, req);
-
-        console.log('EVM token data fetched successfully for an EVM wallet');
-        res.status(200).json({ message: '✅ EVM token data refetched successfully' });
-    } catch (err) {
-        console.error("❌ Error refetching EVM token data for wallet:", err);
-        res.status(500).json({ error: "Failed to refetch EVM token data", details: err.message });
+        return res.status(200).json({ message: "EVM token data refetched successfully" });
+    } catch (error) {
+        console.error("Error refetching EVM token data for wallet:", error);
+        return res.status(500).json({
+            error: "Failed to refetch EVM token data",
+            details: error.message,
+        });
     }
 });
+
 export default router;

@@ -5,6 +5,7 @@ import WalletModel from "../models/WalletModel.js";
 import ProtocolModel from "../models/ProtocolModel.js";
 import WalletProtocolModel from "../models/WalletProtocolModel.js";
 import { getHideSmallBalances } from "./settingsService.js";
+import { SUPPORTED_TRACKED_WALLET_CHAINS } from "../config/supportedChains.js";
 
 const TOKEN_ATTRIBUTES = [
     "name",
@@ -17,7 +18,10 @@ const TOKEN_ATTRIBUTES = [
 ];
 
 export const fetchWalletTokenData = async ({ chain, minimumUsdValue, walletId, userId }) => {
-    const walletWhereClause = { user_id: userId };
+    const walletWhereClause = {
+        user_id: userId,
+        chain: { [Op.in]: SUPPORTED_TRACKED_WALLET_CHAINS },
+    };
     if (walletId && walletId !== "all") {
         walletWhereClause.id = walletId;
     }

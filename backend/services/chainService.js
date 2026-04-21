@@ -1,3 +1,4 @@
+import { Op } from "sequelize";
 import EvmChains from "../models/EvmChainsModel.js";
 import NonEvmChains from "../models/NonEvmChainsModel.js";
 import WalletModel from "../models/WalletModel.js";
@@ -6,6 +7,7 @@ import WalletTokenModel from "../models/WalletTokenModel.js";
 import ProtocolModel from "../models/ProtocolModel.js";
 import WalletProtocolModel from "../models/WalletProtocolModel.js";
 import { getHideSmallBalances } from "./settingsService.js";
+import { SUPPORTED_TRACKED_WALLET_CHAINS } from "../config/supportedChains.js";
 
 const createChainSummary = (chainId) => ({
     chain_id: chainId,
@@ -46,7 +48,9 @@ export const getAvailableChains = async () => {
 
 export const getWalletChainSummary = async ({ walletId, searchQuery, userId }) => {
     const walletWhereClause =
-        walletId !== "all" ? { id: walletId, user_id: userId } : { user_id: userId };
+        walletId !== "all"
+            ? { id: walletId, user_id: userId, chain: { [Op.in]: SUPPORTED_TRACKED_WALLET_CHAINS } }
+            : { user_id: userId, chain: { [Op.in]: SUPPORTED_TRACKED_WALLET_CHAINS } };
     const normalizedQuery = searchQuery?.toLowerCase() || "";
 
     const wallets = await WalletModel.findAll({

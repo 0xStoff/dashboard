@@ -3,6 +3,14 @@ import TransactionModel from "../models/TransactionsModel.js";
 import { fetchBinanceData, fetchKrakenLedgers } from "../utils/utils.js";
 
 const FIAT_START_TIMESTAMP = new Date("2020-01-01").getTime();
+const COMPLETED_RUBIC_STATUSES = new Set([
+    "completed",
+    "success",
+    "successful",
+    "done",
+    "executed",
+    "finished",
+]);
 
 export const getBinanceRequestConfig = () => {
     const apiKey = process.env.BINANCE_API_KEY;
@@ -209,6 +217,16 @@ export const syncRubicTransactions = async (addresses) => {
         totalCount += results.length;
 
         for (const swap of results) {
+            const rawStatus = (
+                swap.status ||
+                swap.trade_status ||
+                swap.tradeStatus ||
+                swap.cross_chain_status ||
+                swap.crossChainStatus ||
+                "unknown"
+            )
+                .toString()
+                .toLowerCase();
             const symbol = (
                 swap.toSymbol ||
                 swap.to_symbol ||
@@ -220,10 +238,6 @@ export const syncRubicTransactions = async (addresses) => {
                 .toString()
                 .toLowerCase();
 
-            if (symbol !== "xmr" && symbol !== "monero") {
-                continue;
-            }
-
             const chf =
                 parseFloat(swap.to_value_chf) ||
                 parseFloat(swap.output_value_chf) ||
@@ -233,14 +247,6 @@ export const syncRubicTransactions = async (addresses) => {
                     : 0) ||
                 0;
 
-            sumChf += chf;
-            if (!byAddress[address]) {
-                byAddress[address] = { swaps: 0, chf: 0 };
-            }
-
-            byAddress[address].swaps += 1;
-            byAddress[address].chf += chf;
-
             transactionRecords.push({
                 exchange: "Rubic",
                 orderNo: swap.id || swap.hash || swap.txHash || `${swap.created_at}-${address}`,
@@ -248,10 +254,20 @@ export const syncRubicTransactions = async (addresses) => {
                 amount: Number(swap.toAmount) || Number(swap.output_amount) || 0,
                 fee: 0,
                 asset: (swap.toSymbol || swap.to_symbol || swap?.to_token?.symbol || "XMR").toString(),
-                status: "Completed",
+                status: rawStatus,
                 date: new Date(swap.created_at || swap.createdAt || swap.timestamp || Date.now()),
                 transactionAmount: chf,
             });
+
+            if ((symbol === "xmr" || symbol === "monero") && COMPLETED_RUBIC_STATUSES.has(rawStatus)) {
+                sumChf += chf;
+                if (!byAddress[address]) {
+                    byAddress[address] = { swaps: 0, chf: 0 };
+                }
+
+                byAddress[address].swaps += 1;
+                byAddress[address].chf += chf;
+            }
         }
     }
 
