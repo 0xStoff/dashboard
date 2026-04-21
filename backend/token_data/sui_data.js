@@ -70,7 +70,7 @@ const removeMissingWalletRows = async (walletId, chainId, retainedTokenIds) => {
     });
 };
 
-const persistWalletTokens = async ({ chainId, walletId, tokens }) => {
+const persistWalletTokens = async ({ chainId, walletId, userId, tokens }) => {
     const retainedTokenIds = [];
 
     for (const token of tokens) {
@@ -92,6 +92,7 @@ const persistWalletTokens = async ({ chainId, walletId, tokens }) => {
 
         await WalletTokenModel.upsert({
             wallet_id: walletId,
+            user_id: userId,
             token_id: dbToken.id,
             amount: token.amount,
             raw_amount: token.amount * 10 ** token.decimals,
@@ -113,6 +114,7 @@ export const writeAptosDataToDB = async () => {
         await persistWalletTokens({
             chainId: "aptos",
             walletId: aptosData.walletId,
+            userId: aptosData.userId,
             tokens: aptosData.tokens,
         });
 
@@ -139,6 +141,7 @@ export const writeStaticDataToDB = async () => {
             await persistWalletTokens({
                 chainId: chainData.chainId,
                 walletId: chainData.walletId,
+                userId: chainData.userId,
                 tokens: chainData.tokens,
             });
 
@@ -207,6 +210,7 @@ export const writeSuiDataToDB = async () => {
             await persistWalletTokens({
                 chainId: SUI_CHAIN_ID,
                 walletId: wallet.id,
+                userId: wallet.user_id,
                 tokens,
             });
         }
@@ -255,8 +259,14 @@ export const fetchAptosData = async () => {
     const liquid = aptosBalance / 1e8;
     const amount = undelegated + liquid;
 
+    const wallet = await WalletModel.findByPk(aptosConfigData.walletId);
+    if (!wallet) {
+        return null;
+    }
+
     return {
         walletId: aptosConfigData.walletId,
+        userId: wallet.user_id,
         tokens: [
             {
                 name: "Aptos",
@@ -279,6 +289,7 @@ export const fetchStaticData = async () => {
             return {
                 chainId: chain.chainId || chain.id,
                 walletId: chain.walletId || chain.id,
+                userId: chain.userId || null,
                 tokens: [
                     {
                         name: chain.name,

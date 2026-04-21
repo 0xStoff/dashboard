@@ -179,6 +179,7 @@ export const fetchCosmosTokens = async () => {
                 await WalletTokenModel.upsert(
                     {
                         wallet_id: wallet.id,
+                        user_id: wallet.user_id,
                         token_id: chain.dbToken.id,
                         amount,
                         raw_amount: amount * Math.pow(10, chain.decimals),

@@ -69,7 +69,7 @@ export const nonEvmChains = [{
 }, {
     id: "sol",
     name: "Solana",
-    endpoint: "https://solana-rpc.publicnode.com/",
+    endpoint: "https://api.mainnet-beta.solana.com",
     decimals: 9,
     logo_url: "https://cryptologos.cc/logos/solana-sol-logo.png?v=035",
     symbol: "SOL",

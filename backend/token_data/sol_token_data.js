@@ -55,6 +55,11 @@ async function fetchSolTokenList() {
 }
 
 export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
+    const wallet = await WalletModel.findByPk(walletId);
+    if (!wallet) {
+        return;
+    }
+
     const solMetaData = nonEvmChains.find(chain => chain.id === 'sol');
 
     const connection = new Connection(solMetaData.endpoint);
@@ -162,7 +167,7 @@ export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
         const usd_value = amount * usd;
 
         await WalletTokenModel.upsert({
-            wallet_id: walletId, token_id: dbToken.id, amount, raw_amount, usd_value
+            wallet_id: walletId, user_id: wallet.user_id, token_id: dbToken.id, amount, raw_amount, usd_value
         });
     }
 
