@@ -1,115 +1,89 @@
-# Dashboard  
-*Still in progress*  
+# Dashboard
 
-A dashboard to **fetch and track token balances across different chains** (**EVM, Cosmos, Solana, Sui**).  
-This makes it **more convenient to track different tokens** across multiple wallets.  
+Multi-chain portfolio dashboard for tracking wallets, token balances, protocol positions, and transaction history across EVM, Solana, Cosmos, Sui, and Aptos.
 
-## **Features**
-- ✅ **EVM chains** data from **Rabby**  
-- ✅ **Solana & Cosmos** data from **PublicNode**  
-- ✅ **Track multiple wallets**  
-- ✅ **Add tags** to categorize wallets  
-- ✅ **Filter by wallet and/or chain**  
-- ✅ **Search functionality**  
-- ✅ **Database storage** for wallet & token data  
+## What It Does
 
+- Aggregates token balances and protocol positions across supported chains
+- Groups balances by wallet and chain with historical net worth tracking
+- Supports wallet tagging, filtering, search, and hide-small-balance controls
+- Syncs optional CEX and payment-provider transaction history
+- Keeps private/manual static data outside of committed source
 
+## Project Structure
 
-<br><br><br>
+- `frontend/`: React + TypeScript UI
+- `backend/`: Express API, sync jobs, and persistence
+- `backend/config/static-data.example.json`: template for private optional static data
+- `docs/deployment.md`: deployment and Pi workflow notes
 
+## Setup
 
-
-# **Instructions**
-
-### **Clone the Repository**
 ```sh
 git clone https://github.com/0xStoff/dashboard.git
 cd dashboard
-````
+```
 
-Install Dependencies
+Install dependencies with your preferred workspace flow. If you already use the repo-level scripts, keep using those.
 
-    yarn setup
+## Environment
 
-This will install dependencies for both backend and frontend.
+Create:
 
-<br>
+- `backend/.env`
+- `frontend/.env`
 
-### Environment Variables
+Backend example:
 
-You need two .env files:
+```env
+RABBY_ACCESS_KEY=your_rabby_api_key
+COINGECKO_API_KEY=your_coingecko_api_key
+JWT_SECRET=replace_me
+```
 
-	•	backend/.env
-	•	frontend/.env
+Optional transaction integrations:
 
-Backend .env Example
+```env
+BINANCE_API_KEY=your_binance_api_key
+BINANCE_API_SECRET=your_binance_api_secret
+KRAKEN_API_KEY=your_kraken_api_key
+KRAKEN_API_SECRET=your_kraken_api_secret
+BEARER_TOKEN=your_gnosis_pay_token
+RUBIC_BACKEND_URL=https://api.rubic.exchange
+```
 
-You will need an API Key from DeBank (Rabby): https://cloud.debank.com/en <br>
-Coingecko API (demo works too): https://www.coingecko.com/en/api
+Frontend example:
 
-    RABBY_ACCESS_KEY=your_rabby_api_key
-    COINGECKO_API_KEY=your_coingecko_api_key
+```env
+REACT_APP_API_BASE_URL=http://localhost:3000/api
+REACT_APP_LOGO_BASE_URL=http://localhost:3000/logos/
+```
 
-Optional: CEX Integration
+## Private Static Data
 
-If you want to use the Transaction Page (CEX integration), you’ll need:
+Optional manual/static balances are loaded from a private file instead of source control.
 
-    BINANCE_API_KEY=your_binance_api_key
-    BINANCE_API_SECRET=your_binance_api_secret
-    KRAKEN_API_KEY=your_kraken_api_key
-    KRAKEN_API_SECRET=your_kraken_api_secret
-    COOKIE="your_cookie_token"
+1. Copy `backend/config/static-data.example.json` to `backend/config/static-data.private.json`
+2. Add the real wallet addresses and manual values there
+3. Keep that private file out of git
 
-🚨 Note: CEX integration is limited at the moment.
+If the file is missing, the app still runs and simply skips the optional static bootstrap syncs.
 
-Frontend .env Example
+## Database
 
-    REACT_APP_API_BASE_URL="http://localhost:3000/api"
-    REACT_APP_LOGO_BASE_URL="http://localhost:3000/logos/"
+Before initializing the database, update any local bootstrap SQL or seed data to match the wallets you want to track.
 
-Private Static Data
+Example database creation:
 
-Optional manual/static balances are now loaded from a private file instead of being committed in source.
+```sh
+psql -U stoff -d template1 -c "CREATE DATABASE crypto_dashboard;"
+```
 
-1. Copy:
+## Running Locally
 
-    backend/config/static-data.example.json
+Use your existing repo scripts or run the frontend and backend separately from their package directories.
 
-to:
+Default local URLs:
 
-    backend/config/static-data.private.json
-
-2. Fill in the real wallet addresses and amounts there.
-
-If that file is missing, the app still runs, but the optional static bootstrap syncs are skipped.
-
-3. Database Setup
-
-Step 1: Edit the db_init.sql File
-
-Before running the database initialization, open backend/db_init.sql and add the necessary wallets.
-
-Example:
-
-    INSERT INTO wallets (wallet, tag, chain) VALUES
-    ('ENTER_ADDRESS', 'TAG', 'CHAIN'),
-
-supported chains are: evm, sol, cosmos, aptos, sui
-
-
-Step 2: Run Database Initialization
-
-	psql -U stoff -d template1 -c "CREATE DATABASE crypto_dashboard;"
-
-    yarn db:init
-
-
-4. Running the Project
-
-Now you can run both the backend and frontend from the root using:
-
-    yarn start
-
-
-•	🖥️ Backend → http://localhost:3000 <br>
-•	🌐 Frontend → http://localhost:8080
+- Backend: `http://localhost:3000`
+- Frontend: `http://localhost:8080`

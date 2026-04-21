@@ -1,49 +1,61 @@
+import cookieParser from "cookie-parser";
 import express from "express";
 import { ethers } from "ethers";
-import dotenv from "dotenv";
-import cookieParser from "cookie-parser";
+import jwt from "jsonwebtoken";
 import UserModel from "../models/UserModel.js";
-import jwt from "jsonwebtoken"; // Import your user model
 
-dotenv.config();
 const router = express.Router();
+const SESSION_COOKIE_NAME = "sessionToken";
 
 router.use(cookieParser());
 
+const createSessionPayload = (user) => ({
+    user: {
+        id: user.id,
+        main_wallet: user.main_wallet,
+    },
+});
+
+const getSessionAddress = (sessionToken) => {
+    const decoded = jwt.verify(sessionToken, process.env.JWT_SECRET);
+    return decoded?.user?.main_wallet || null;
+};
 
 router.get("/check", (req, res) => {
-    const sessionToken = req.cookies?.sessionToken;
+    const sessionToken = req.cookies?.[SESSION_COOKIE_NAME];
 
     if (!sessionToken) {
         return res.json({ success: false, error: "Not authenticated" });
     }
 
     try {
-        const decoded = jwt.verify(sessionToken, process.env.JWT_SECRET);
-        return res.json({ success: true, address: decoded.user.main_wallet });
+        const address = getSessionAddress(sessionToken);
+        return res.json({ success: true, address });
     } catch (error) {
-        res.clearCookie("sessionToken");
+        res.clearCookie(SESSION_COOKIE_NAME);
         return res.json({ success: false, error: "Session expired or invalid" });
     }
 });
 
 router.get("/message", async (req, res) => {
-    const { wallet } = req.query;
+    const wallet = typeof req.query.wallet === "string" ? req.query.wallet : "";
 
     if (!wallet) {
         return res.status(400).json({ error: "Wallet address is required" });
     }
 
-    let user = await UserModel.findOne({ where: { main_wallet: wallet } });
+    const nonce = ethers.id(Date.now().toString());
+    const [user] = await UserModel.findOrCreate({
+        where: { main_wallet: wallet },
+        defaults: { main_wallet: wallet, nonce },
+    });
 
-    if (!user) {
-        user = await UserModel.create({ main_wallet: wallet, nonce: ethers.id(Date.now().toString()) });
-    } else {
-        user.nonce = ethers.id(Date.now().toString());
+    if (user.nonce !== nonce) {
+        user.nonce = nonce;
         await user.save();
     }
 
-    res.json({ message: `Authenticate: ${user.nonce}` });
+    return res.json({ message: `Authenticate: ${user.nonce}` });
 });
 
 router.post("/login", async (req, res) => {
@@ -59,39 +71,36 @@ router.post("/login", async (req, res) => {
         return res.status(401).json({ error: "User not found" });
     }
 
-    const expectedMessage = `Authenticate: ${user.nonce}`;
-
     try {
+        const expectedMessage = `Authenticate: ${user.nonce}`;
         const recoveredAddress = ethers.verifyMessage(expectedMessage, signature);
 
         if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
             return res.status(401).json({ error: "Signature verification failed" });
         }
 
-        const token = jwt.sign(
-            { user: user },
-            process.env.JWT_SECRET,
-            { expiresIn: "24h" }
-        );
+        const token = jwt.sign(createSessionPayload(user), process.env.JWT_SECRET, {
+            expiresIn: "24h",
+        });
 
-        const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
-        res.cookie('sessionToken', token, {
+        const isHttps = req.secure || req.headers["x-forwarded-proto"] === "https";
+        res.cookie(SESSION_COOKIE_NAME, token, {
             httpOnly: true,
             secure: isHttps,
-            sameSite: isHttps ? 'None' : 'Lax',
-            path: '/',
-            maxAge: 24 * 60 * 60 * 1000
+            sameSite: isHttps ? "None" : "Lax",
+            path: "/",
+            maxAge: 24 * 60 * 60 * 1000,
         });
 
         return res.json({ success: true, address });
     } catch (error) {
-        console.error("🚨 Signature verification error:", error);
+        console.error("Signature verification error:", error);
         return res.status(500).json({ error: "Signature verification failed" });
     }
 });
 
-router.post("/logout", (req, res) => {
-    res.clearCookie("sessionToken");
+router.post("/logout", (_req, res) => {
+    res.clearCookie(SESSION_COOKIE_NAME);
     return res.json({ success: true, message: "Logged out" });
 });
 

@@ -131,23 +131,3 @@ export async function fetchKrakenLedgers(apiKey, apiSecret, asset, type) {
 
   return allLedgers;
 }
-
-export const binanceCredentials = (req, res)=> {
-  const apiKey = process.env.BINANCE_API_KEY;
-  const apiSecret = process.env.BINANCE_API_SECRET;
-  const transactionType = req.query.transactionType || 0;
-
-  if(!apiKey || !apiSecret) {
-    console.error("Missing API key or secret");
-    return res.status(400).json({error: 'Missing API key or secret'});
-  }
-
-  const params = {
-    transactionType,
-    beginTime: new Date('2020-01-01').getTime(),
-    endTime: Date.now(),
-    timestamp: Date.now(),
-  };
-
-  return {apiKey, apiSecret, params}
-}

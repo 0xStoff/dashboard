@@ -1,101 +1,157 @@
-import React, {useEffect, useState} from "react";
+import React, { useMemo, useState } from "react";
 import {
     Box,
     Button,
+    Checkbox,
+    CircularProgress,
+    FormControl,
+    FormControlLabel,
     IconButton,
+    InputLabel,
     List,
     ListItem,
+    MenuItem,
+    Select,
+    SelectChangeEvent,
+    Switch,
     TextField,
-    CircularProgress,
     Tooltip,
     Typography,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel,
-    Checkbox,
-    FormControlLabel,
-    Switch,
 } from "@mui/material";
-import {Add, Delete, Edit, ContentCopy} from "@mui/icons-material";
+import { Add, ContentCopy, Delete, Edit } from "@mui/icons-material";
+import { Wallet, WalletFormValues } from "../../interfaces";
 import apiClient from "../../utils/api-client";
-import {useWallets} from "../../context/WalletsContext";
+import { useWallets } from "../../context/WalletsContext";
 
-const CHAIN_OPTIONS = ["evm", "cosmos", "sol", "sui", "aptos"];
+const CHAIN_OPTIONS = ["evm", "cosmos", "sol", "sui", "aptos"] as const;
+
+const createEmptyWalletForm = (): WalletFormValues => ({
+    tag: "",
+    wallet: "",
+    chain: "",
+    show_chip: true,
+});
+
+const toEditableWallet = (wallet: Wallet): Wallet & { show_chip: boolean } => ({
+    ...wallet,
+    show_chip: wallet.show_chip ?? true,
+});
 
 function shortenAddress(address: string) {
     return `${address.slice(0, 6)}...${address.slice(-6)}`;
 }
 
 function ManageWallets() {
-    const { wallets,  loading: walletsLoading, fetchWallets, setWallets } = useWallets();
-    const [newWallet, setNewWallet] = useState({tag: "", wallet: "", chain: "", show_chip: true});
-    const [editingWallet, setEditingWallet] = useState<{
-        id: string;
-        tag: string;
-        wallet: string;
-        chain: string;
-        show_chip: boolean
-    } | null>(null);
+    const { wallets, loading: walletsLoading, fetchWallets, setWallets } = useWallets();
+    const [newWallet, setNewWallet] = useState<WalletFormValues>(createEmptyWalletForm());
+    const [editingWallet, setEditingWallet] = useState<(Wallet & { show_chip: boolean }) | null>(null);
 
+    const sortedWallets = useMemo(
+        () => [...wallets].sort((left, right) => left.tag.localeCompare(right.tag)),
+        [wallets]
+    );
+
+    const updateNewWalletField = <K extends keyof WalletFormValues>(field: K, value: WalletFormValues[K]) => {
+        setNewWallet((current) => ({ ...current, [field]: value }));
+    };
+
+    const updateEditingWalletField = <K extends keyof (Wallet & { show_chip: boolean })>(
+        field: K,
+        value: (Wallet & { show_chip: boolean })[K]
+    ) => {
+        setEditingWallet((current) => (current ? { ...current, [field]: value } : current));
+    };
+
+    const handleChainChange =
+        (onChange: (value: string) => void) => (event: SelectChangeEvent<string>) => {
+            onChange(event.target.value);
+        };
 
     const handleAddWallet = async () => {
-        if (!newWallet.tag.trim() || !newWallet.wallet.trim() || !newWallet.chain) return;
+        if (!newWallet.tag.trim() || !newWallet.wallet.trim() || !newWallet.chain) {
+            return;
+        }
+
         try {
-            delete newWallet.show_chip;
-            await apiClient.post(`/wallets`, newWallet);
-            setNewWallet({tag: "", wallet: "", chain: "", show_chip: false});
-            fetchWallets();
+            await apiClient.post("/wallets", {
+                tag: newWallet.tag.trim(),
+                wallet: newWallet.wallet.trim(),
+                chain: newWallet.chain,
+                show_chip: newWallet.show_chip,
+            });
+            setNewWallet(createEmptyWalletForm());
+            await fetchWallets();
         } catch (error) {
             console.error("Error adding wallet:", error);
         }
     };
 
     const handleEditWallet = async () => {
-        if (!editingWallet || !editingWallet.tag.trim() || !editingWallet.wallet.trim() || !editingWallet.chain) return;
+        if (!editingWallet || !editingWallet.tag.trim() || !editingWallet.wallet.trim() || !editingWallet.chain) {
+            return;
+        }
+
         try {
-            await apiClient.put(`/wallets/${editingWallet.id}`, editingWallet);
+            await apiClient.put(`/wallets/${editingWallet.id}`, {
+                tag: editingWallet.tag.trim(),
+                wallet: editingWallet.wallet.trim(),
+                chain: editingWallet.chain,
+                show_chip: editingWallet.show_chip,
+            });
             setEditingWallet(null);
-            fetchWallets();
+            await fetchWallets();
         } catch (error) {
             console.error("Error updating wallet:", error);
         }
     };
 
-    const handleDeleteWallet = async (id: string) => {
+    const handleDeleteWallet = async (id: number) => {
         try {
             await apiClient.delete(`/wallets/${id}`);
-            fetchWallets();
+            await fetchWallets();
         } catch (error) {
             console.error("Error deleting wallet:", error);
         }
     };
 
-    const handleCopyAddress = (address: string) => {
-        navigator.clipboard.writeText(address);
+    const handleCopyAddress = async (address: string) => {
+        try {
+            await navigator.clipboard.writeText(address);
+        } catch (error) {
+            console.error("Error copying wallet address:", error);
+        }
     };
-    const handleToggleShowChip = async (id: string, currentValue: boolean) => {
+
+    const handleToggleShowChip = async (id: number, currentValue: boolean) => {
+        const nextValue = !currentValue;
+
         try {
             setWallets((prevWallets) =>
                 prevWallets.map((wallet) =>
-                    wallet.id === id ? { ...wallet, show_chip: !currentValue } : wallet
+                    wallet.id === id ? { ...wallet, show_chip: nextValue } : wallet
                 )
             );
 
-            await apiClient.put(`/wallets/${id}`, { show_chip: !currentValue });
-
-            fetchWallets();
+            await apiClient.put(`/wallets/${id}`, { show_chip: nextValue });
+            await fetchWallets();
         } catch (error) {
             console.error("Error updating show_chip:", error);
+            await fetchWallets();
         }
     };
-    return (<Box>
-            <Typography variant="h6" sx={{mb: 2}}>
+
+    return (
+        <Box>
+            <Typography variant="h6" sx={{ mb: 2 }}>
                 Manage Wallets
             </Typography>
 
-            {walletsLoading ? (<CircularProgress/>) : (<List sx={{maxHeight: 500, overflowY: "auto"}}>
-                    {wallets.map((wallet) => (<ListItem
+            {walletsLoading ? (
+                <CircularProgress />
+            ) : (
+                <List sx={{ maxHeight: 500, overflowY: "auto" }}>
+                    {sortedWallets.map((wallet) => (
+                        <ListItem
                             key={wallet.id}
                             sx={{
                                 display: "flex",
@@ -105,8 +161,8 @@ function ManageWallets() {
                                 paddingY: 1,
                             }}
                         >
-                            <Box sx={{display: "flex", alignItems: "center", gap: 2, flexGrow: 1}}>
-                                <Typography sx={{minWidth: 80, fontWeight: 600}}>{wallet.tag}</Typography>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexGrow: 1 }}>
+                                <Typography sx={{ minWidth: 80, fontWeight: 600 }}>{wallet.tag}</Typography>
                                 <Tooltip title={wallet.wallet} arrow>
                                     <Typography
                                         sx={{
@@ -119,101 +175,118 @@ function ManageWallets() {
                                         {shortenAddress(wallet.wallet)}
                                     </Typography>
                                 </Tooltip>
-                                <Tooltip title="Copy Address">
+                                <Tooltip title="Copy address">
                                     <IconButton size="small" onClick={() => handleCopyAddress(wallet.wallet)}>
-                                        <ContentCopy fontSize="small"/>
+                                        <ContentCopy fontSize="small" />
                                     </IconButton>
                                 </Tooltip>
-                                <Typography sx={{color: "gray", fontSize: 14}}>{wallet.chain}</Typography>
+                                <Typography sx={{ color: "gray", fontSize: 14 }}>{wallet.chain}</Typography>
 
                                 <Switch
-                                    checked={wallet.show_chip}
-                                    onChange={() => handleToggleShowChip(wallet.id, wallet.show_chip)}
-                                    inputProps={{"aria-label": "Toggle show chip"}}
+                                    checked={wallet.show_chip ?? true}
+                                    onChange={() => handleToggleShowChip(wallet.id, wallet.show_chip ?? true)}
+                                    inputProps={{ "aria-label": "Toggle show chip" }}
                                 />
                             </Box>
 
                             <Box>
                                 <Tooltip title="Edit">
-                                    <IconButton size="small" onClick={() => setEditingWallet(wallet)}>
-                                        <Edit fontSize="small"/>
+                                    <IconButton size="small" onClick={() => setEditingWallet(toEditableWallet(wallet))}>
+                                        <Edit fontSize="small" />
                                     </IconButton>
                                 </Tooltip>
                                 <Tooltip title="Delete">
                                     <IconButton size="small" onClick={() => handleDeleteWallet(wallet.id)}>
-                                        <Delete fontSize="small"/>
+                                        <Delete fontSize="small" />
                                     </IconButton>
                                 </Tooltip>
                             </Box>
-                        </ListItem>))}
-                </List>)}
+                        </ListItem>
+                    ))}
+                </List>
+            )}
 
-            {editingWallet ? (<Box display="flex" flexDirection="column" gap={2} mt={2}>
+            {editingWallet ? (
+                <Box display="flex" flexDirection="column" gap={2} mt={2}>
                     <TextField
                         label="Wallet Tag"
                         value={editingWallet.tag}
-                        onChange={(e) => setEditingWallet({...editingWallet, tag: e.target.value})}
+                        onChange={(event) => updateEditingWalletField("tag", event.target.value)}
                     />
                     <TextField
                         label="Wallet Address"
                         value={editingWallet.wallet}
-                        onChange={(e) => setEditingWallet({...editingWallet, wallet: e.target.value})}
+                        onChange={(event) => updateEditingWalletField("wallet", event.target.value)}
                     />
                     <FormControl fullWidth>
                         <InputLabel>Chain</InputLabel>
                         <Select
                             value={editingWallet.chain}
-                            onChange={(e) => setEditingWallet({...editingWallet, chain: e.target.value})}
+                            label="Chain"
+                            onChange={handleChainChange((value) => updateEditingWalletField("chain", value))}
                         >
-                            {CHAIN_OPTIONS.map((chain) => (<MenuItem key={chain} value={chain}>
+                            {CHAIN_OPTIONS.map((chain) => (
+                                <MenuItem key={chain} value={chain}>
                                     {chain}
-                                </MenuItem>))}
+                                </MenuItem>
+                            ))}
                         </Select>
                     </FormControl>
                     <FormControlLabel
-                        control={<Checkbox
-                            checked={editingWallet.show_chip}
-                            onChange={(e) => setEditingWallet({...editingWallet, show_chip: e.target.checked})}
-                        />}
+                        control={
+                            <Checkbox
+                                checked={editingWallet.show_chip}
+                                onChange={(event) => updateEditingWalletField("show_chip", event.target.checked)}
+                            />
+                        }
                         label="Show as Chip"
                     />
                     <Button onClick={handleEditWallet} variant="contained">
                         Save
                     </Button>
-                </Box>) : (<Box display="flex" flexDirection="column" gap={2} mt={2}>
+                </Box>
+            ) : (
+                <Box display="flex" flexDirection="column" gap={2} mt={2}>
                     <TextField
                         label="Wallet Tag"
                         value={newWallet.tag}
-                        onChange={(e) => setNewWallet({...newWallet, tag: e.target.value})}
+                        onChange={(event) => updateNewWalletField("tag", event.target.value)}
                     />
                     <TextField
                         label="Wallet Address"
                         value={newWallet.wallet}
-                        onChange={(e) => setNewWallet({...newWallet, wallet: e.target.value})}
+                        onChange={(event) => updateNewWalletField("wallet", event.target.value)}
                     />
                     <FormControl fullWidth>
                         <InputLabel>Chain</InputLabel>
                         <Select
                             value={newWallet.chain}
-                            onChange={(e) => setNewWallet({...newWallet, chain: e.target.value})}
+                            label="Chain"
+                            onChange={handleChainChange((value) => updateNewWalletField("chain", value))}
                         >
-                            {CHAIN_OPTIONS.map((chain) => (<MenuItem key={chain} value={chain}>
+                            {CHAIN_OPTIONS.map((chain) => (
+                                <MenuItem key={chain} value={chain}>
                                     {chain}
-                                </MenuItem>))}
+                                </MenuItem>
+                            ))}
                         </Select>
                     </FormControl>
                     <FormControlLabel
-                        control={<Checkbox
-                            checked={newWallet.show_chip}
-                            onChange={(e) => setNewWallet({...newWallet, show_chip: e.target.checked})}
-                        />}
+                        control={
+                            <Checkbox
+                                checked={newWallet.show_chip}
+                                onChange={(event) => updateNewWalletField("show_chip", event.target.checked)}
+                            />
+                        }
                         label="Show as Chip"
                     />
-                    <Button onClick={handleAddWallet} startIcon={<Add/>} variant="contained">
+                    <Button onClick={handleAddWallet} startIcon={<Add />} variant="contained">
                         Add Wallet
                     </Button>
-                </Box>)}
-        </Box>);
+                </Box>
+            )}
+        </Box>
+    );
 }
 
 export default ManageWallets;

@@ -1,9 +1,4 @@
-import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
-
-dotenv.config();
-
-const JWT_SECRET = process.env.JWT_SECRET
 
 const authenticateToken = (req, res, next) => {
     if (req.path === "/message") {
@@ -17,14 +12,11 @@ const authenticateToken = (req, res, next) => {
     }
 
     try {
-        const decoded = jwt.verify(sessionToken, JWT_SECRET);
-        req.user = decoded;
-        next();
+        req.user = jwt.verify(sessionToken, process.env.JWT_SECRET);
+        return next();
     } catch (error) {
         return res.status(403).json({ error: "Invalid or expired session" });
     }
 };
-
-
 
 export default authenticateToken;

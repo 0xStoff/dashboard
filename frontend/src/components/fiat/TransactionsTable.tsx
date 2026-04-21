@@ -1,6 +1,7 @@
-import React, {useState} from "react";
+import React, { useMemo, useState } from "react";
 import {
-    Button,
+    Box,
+    Chip,
     Paper,
     Table,
     TableBody,
@@ -10,114 +11,139 @@ import {
     TablePagination,
     TableRow,
     Typography,
-    Box,
-    Chip
 } from "@mui/material";
+import { TableColumn } from "../../interfaces";
 
-const TransactionsTable = ({title, transactions, columns}) => {
+interface TransactionsTableProps<T extends Record<string, unknown>> {
+    title: string;
+    transactions: T[];
+    columns: TableColumn<T>[];
+}
+
+const AMOUNT_COLUMNS = new Set(["amount", "transactionAmountFormatted", "billingAmountFormatted"]);
+const COMPLETED_STATUSES = new Set(["Approved", "Completed"]);
+
+const formatDateTime = (value: unknown) =>
+    new Date(String(value)).toLocaleString("de-CH", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+
+function TransactionsTable<T extends Record<string, unknown>>({
+    title,
+    transactions,
+    columns,
+}: TransactionsTableProps<T>) {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
 
-    const handlePageChange = (event, newPage) => {
-        setPage(newPage);
+    const paginatedTransactions = useMemo(
+        () => transactions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+        [page, rowsPerPage, transactions]
+    );
+
+    const handlePageChange = (_event: unknown, nextPage: number) => {
+        setPage(nextPage);
     };
 
-    const handleRowsPerPageChange = (event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
+    const handleRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setRowsPerPage(Number.parseInt(event.target.value, 10));
         setPage(0);
     };
 
-    const paginatedTransactions = transactions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+    return (
+        <>
+            <Typography variant="h5" gutterBottom>
+                {title}
+            </Typography>
+            <TableContainer component={Paper}>
+                <Table stickyHeader>
+                    <TableHead>
+                        <TableRow>
+                            {columns.map((column) => (
+                                <TableCell key={String(column.key)}>{column.label}</TableCell>
+                            ))}
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {paginatedTransactions.map((transaction, rowIndex) => (
+                            <TableRow key={rowIndex}>
+                                {columns.map((column) => {
+                                    const value = transaction[column.key];
+                                    const status = String(transaction.status || "");
+                                    const isCompleted = COMPLETED_STATUSES.has(status);
+                                    const key = String(column.key);
 
+                                    if (key === "date" || key === "createdAt") {
+                                        return <TableCell key={key}>{formatDateTime(value)}</TableCell>;
+                                    }
 
-    return (<>
-        <Typography variant="h5" gutterBottom>
-            {title}
-        </Typography>
-        <TableContainer component={Paper}>
-            <Table stickyHeader>
-                <TableHead>
-                    <TableRow>
-                        {columns.map((column, index) => (<TableCell key={index}>{column.label}</TableCell>))}
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    {paginatedTransactions.map((tx, index) => (<TableRow key={index}>
-                        {columns.map((column, colIndex) => {
-                            const value = tx[column.key];
+                                    if (key === "status") {
+                                        return (
+                                            <TableCell key={key}>
+                                                <Chip
+                                                    label={String(value || "Unknown")}
+                                                    size="small"
+                                                    sx={{
+                                                        color: isCompleted ? "success.main" : "error.main",
+                                                    }}
+                                                />
+                                            </TableCell>
+                                        );
+                                    }
 
+                                    if (key === "merchantFormatted") {
+                                        return (
+                                            <TableCell key={key}>
+                                                <Box display="flex" alignItems="center" gap={1}>
+                                                    <Typography
+                                                        variant="body2"
+                                                        sx={{
+                                                            textDecoration: isCompleted ? "none" : "line-through",
+                                                        }}
+                                                    >
+                                                        {String(value || "")}
+                                                    </Typography>
+                                                </Box>
+                                            </TableCell>
+                                        );
+                                    }
 
-                            if (column.key === "date") {
+                                    if (AMOUNT_COLUMNS.has(key)) {
+                                        return (
+                                            <TableCell key={key}>
+                                                <Typography
+                                                    sx={{
+                                                        textDecoration: isCompleted ? "none" : "line-through",
+                                                    }}
+                                                >
+                                                    {String(value ?? "")}
+                                                </Typography>
+                                            </TableCell>
+                                        );
+                                    }
 
-                                return (<TableCell key={colIndex}>
-                                    <Typography
-                                    >
-
-                                        {new Date(value).toLocaleString("de-CH", {
-                                            year: "numeric",
-                                            month: "2-digit",
-                                            day: "2-digit",
-                                            hour: "2-digit",
-                                            minute: "2-digit"
-                                        })}
-                                    </Typography>
-                                </TableCell>);
-                            }
-
-
-                            if (column.key === "status") {
-                                return (<TableCell key={colIndex}>
-                                    <Chip
-                                        label={value}
-                                        size="small"
-                                        sx={{
-                                            color: ["Approved", "Completed"].includes(value) ? "success.main" : "error.main",
-                                        }}
-                                    />
-                                </TableCell>);
-                            }
-
-                            if (column.key === "merchantFormatted") {
-                                return (<TableCell key={colIndex}>
-                                    <Box display="flex" alignItems="center" gap={1}>
-                                        {/*<Typography component="span" fontSize="1rem">🛒</Typography>*/}
-                                        <Typography variant="body2" sx={{
-                                            textDecoration: ["Approved", "Completed"].includes(tx.status) ? "none" : "line-through",
-                                        }}>
-                                            {value}
-                                        </Typography>
-                                    </Box>
-                                </TableCell>);
-                            }
-
-                            if (column.key === "amount" || "transactionAmountFormatted" || "billingAmountFormatted") {
-                                return (<TableCell key={colIndex}>
-                                    <Typography
-                                        sx={{
-                                            textDecoration: ["Approved", "Completed"].includes(tx.status) ? "none" : "line-through",
-                                        }}
-                                    >
-                                        {value}
-                                    </Typography>
-                                </TableCell>);
-                            }
-
-                            return <TableCell key={colIndex}>{value}</TableCell>;
-                        })}
-                    </TableRow>))}
-                </TableBody>
-            </Table>
-        </TableContainer>
-        <TablePagination
-            component="div"
-            count={transactions.length}
-            page={page}
-            onPageChange={handlePageChange}
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={handleRowsPerPageChange}
-            rowsPerPageOptions={[10, 25, 50]}
-        />
-    </>);
-};
+                                    return <TableCell key={key}>{String(value ?? "")}</TableCell>;
+                                })}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+            <TablePagination
+                component="div"
+                count={transactions.length}
+                page={page}
+                onPageChange={handlePageChange}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleRowsPerPageChange}
+                rowsPerPageOptions={[10, 25, 50]}
+            />
+        </>
+    );
+}
 
 export default TransactionsTable;

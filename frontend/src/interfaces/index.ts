@@ -15,6 +15,13 @@ export interface Wallet {
   show_chip?: boolean;
 }
 
+export interface WalletFormValues {
+  tag: string;
+  wallet: string;
+  chain: string;
+  show_chip: boolean;
+}
+
 export interface Token {
   chain_id: string;
   name: string;
@@ -95,4 +102,44 @@ export interface WalletContextValue {
   loading: boolean;
   fetchWallets: () => Promise<void>;
   setWallets: React.Dispatch<React.SetStateAction<Wallet[]>>;
+}
+
+export interface TransactionRecord {
+  orderNo: string | null;
+  exchange: string;
+  type: string;
+  amount: number;
+  fee: number;
+  asset: string;
+  status: string;
+  date: string;
+  timestamp: string | number;
+  chf_value: number;
+}
+
+export interface GnosisTransactionRecord {
+  orderNo: string | null;
+  exchange: string;
+  type: string;
+  amount: number | string | null;
+  fee: number | string | null;
+  asset: string | null;
+  status: string;
+  date: string;
+  merchant: string | null;
+  transactionAmount: number | string | null;
+  billingAmount: number | string | null;
+}
+
+export interface FormattedGnosisTransaction {
+  createdAt: string;
+  transactionAmountFormatted: string;
+  billingAmountFormatted: string;
+  merchantFormatted: string;
+  status: string;
+}
+
+export interface TableColumn<T> {
+  label: string;
+  key: keyof T;
 }
