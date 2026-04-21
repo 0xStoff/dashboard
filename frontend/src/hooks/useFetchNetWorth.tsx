@@ -1,41 +1,37 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
+import { useCallback } from "react";
 import { HistoryData, NetWorthData } from "../interfaces";
 import apiClient from "../utils/api-client";
-
+import { useApiResource } from "./useApiResource";
 
 interface UseFetchNetWorthReturn {
   netWorth: NetWorthData[];
   loading: boolean;
   saveNetWorth: (totalNetWorth: number, historyData: HistoryData) => Promise<void>;
 }
-export const useFetchNetWorth = ({latest, includeDetails}): UseFetchNetWorthReturn => {
-  const [netWorth, setNetWorth] = useState<NetWorthData[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
 
-  useEffect(() => {
-    const loadNetWorth = async () => {
-      try {
-        const response = await apiClient.get<NetWorthData[]>(`/net-worth?latest=${latest}&includeDetails=${includeDetails}`);
-        setNetWorth(response.data);
-      } catch (error) {
-        console.error("Failed to load net worth:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+export const useFetchNetWorth = ({ latest, includeDetails }): UseFetchNetWorthReturn => {
+  const loadNetWorth = useCallback(async () => {
+    const response = await apiClient.get<NetWorthData[] | NetWorthData>(
+      `/net-worth?latest=${latest}&includeDetails=${includeDetails}`
+    );
 
-    loadNetWorth();
-  }, []);
+    return Array.isArray(response.data) ? response.data : [response.data];
+  }, [includeDetails, latest]);
 
-  const saveNetWorth = async (totalNetWorth: number, historyData: HistoryData): Promise<void> => {
+  const resource = useApiResource<NetWorthData[]>({
+    initialData: [],
+    load: loadNetWorth,
+    deps: [latest, includeDetails],
+  });
+
+  const saveNetWorth = useCallback(async (totalNetWorth: number, historyData: HistoryData): Promise<void> => {
     try {
       const payload = { date: new Date().toISOString(), totalNetWorth, historyData };
       await apiClient.post(`/net-worth`, payload);
     } catch (error) {
       console.error("Error saving net worth to DB:", error);
     }
-  };
+  }, []);
 
-  return { netWorth, loading, saveNetWorth };
+  return { netWorth: resource.data, loading: resource.loading, saveNetWorth };
 };

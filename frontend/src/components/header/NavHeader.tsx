@@ -10,7 +10,18 @@ import {Settings} from "@mui/icons-material";
 import {SettingsDialog} from "../index";
 import ConnectButton from "../ConnectButton";
 
-const NavHeader = ({
+interface NavHeaderProps {
+    isCryptoView: boolean;
+    setIsCryptoView: React.Dispatch<React.SetStateAction<boolean>>;
+    searchQuery: string;
+    setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
+    setIsAuthenticated: React.Dispatch<React.SetStateAction<boolean | null>>;
+    isAuthenticated: boolean;
+    currency: "CHF" | "$";
+    setCurrency: React.Dispatch<React.SetStateAction<"CHF" | "$">>;
+}
+
+const NavHeader: React.FC<NavHeaderProps> = ({
                        isCryptoView,
                        setIsCryptoView,
                        searchQuery,
@@ -58,7 +69,7 @@ const NavHeader = ({
                 <TokenDataUpdater/>
             </>}
 
-            <ConnectButton setIsAuthenticated={setIsAuthenticated}/>
+            <ConnectButton setIsAuthenticated={(auth) => setIsAuthenticated(auth)}/>
 
         </Toolbar>
     </AppBar>);

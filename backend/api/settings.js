@@ -1,12 +1,12 @@
 import express from "express";
-import SettingsModel from "../models/SettingsModel.js";
+import { getHideSmallBalances, setHideSmallBalances } from "../services/settingsService.js";
 
 const router = express.Router();
 
-router.get("/hidesmallbalances", async (req, res) => {
+router.get("/hidesmallbalances", async (_req, res) => {
   try {
-    const setting = await SettingsModel.findOne({ where: { key: "HIDESMALLBALANCES" } });
-    res.json({ value: setting ? setting.value : 10 });
+    const value = await getHideSmallBalances();
+    res.json({ value });
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch setting" });
   }
@@ -18,7 +18,8 @@ router.post("/hidesmallbalances", async (req, res) => {
     if (typeof value !== "number" || value < 0) {
       return res.status(400).json({ error: "Invalid value" });
     }
-    await SettingsModel.upsert({ key: "HIDESMALLBALANCES", value });
+
+    await setHideSmallBalances(value);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: "Failed to update setting" });

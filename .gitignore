@@ -38,3 +38,4 @@ yarn-error.log*
 hetzner_db.dump
 *.bak-*
 scratch_*.js
+backend/config/static-data.private.json

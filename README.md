@@ -65,6 +65,23 @@ If you want to use the Transaction Page (CEX integration), you’ll need:
 Frontend .env Example
 
     REACT_APP_API_BASE_URL="http://localhost:3000/api"
+    REACT_APP_LOGO_BASE_URL="http://localhost:3000/logos/"
+
+Private Static Data
+
+Optional manual/static balances are now loaded from a private file instead of being committed in source.
+
+1. Copy:
+
+    backend/config/static-data.example.json
+
+to:
+
+    backend/config/static-data.private.json
+
+2. Fill in the real wallet addresses and amounts there.
+
+If that file is missing, the app still runs, but the optional static bootstrap syncs are skipped.
 
 3. Database Setup
 

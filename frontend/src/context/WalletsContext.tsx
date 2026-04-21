@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext } from "react";
 import { useFetchWallets } from "../hooks/useFetchWallets";
+import { WalletContextValue } from "../interfaces";
 
-const WalletsContext = createContext(null);
+const WalletsContext = createContext<WalletContextValue | null>(null);
 
-export const WalletsProvider = ({ children }) => {
+export const WalletsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { wallets, setWallets, fetchWallets, loading } = useFetchWallets();
 
     return (
@@ -13,4 +14,11 @@ export const WalletsProvider = ({ children }) => {
     );
 };
 
-export const useWallets = () => useContext(WalletsContext);
+export const useWallets = () => {
+    const context = useContext(WalletsContext);
+    if (!context) {
+        throw new Error("useWallets must be used inside WalletsProvider");
+    }
+
+    return context;
+};

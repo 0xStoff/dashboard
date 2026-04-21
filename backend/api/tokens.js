@@ -1,11 +1,11 @@
 import express from "express";
-import { fetchWalletData, transformData } from "../utils/utils.js";
+import { getTokensForUser } from "../services/tokenService.js";
 
 const router = express.Router();
 
-router.get('/tokens', async (req, res) => {
+router.get("/tokens", async (req, res) => {
     try {
-        const usd_value = req.query.usd_value || 0;
+        const usdValue = Number(req.query.usd_value || 0);
         const chain = req.query.chain || "all";
         const walletId = req.query.wallet_id || "all";
         const searchQuery = req.query.query ? req.query.query.toLowerCase() : "";
@@ -15,19 +15,18 @@ router.get('/tokens', async (req, res) => {
             return res.status(401).json({ error: "Unauthorized: Missing user ID" });
         }
 
-        const wallets = await fetchWalletData(chain, usd_value, walletId, userId);
-        const result = await transformData(wallets);
+        const tokens = await getTokensForUser({
+            chain,
+            walletId,
+            searchQuery,
+            minimumUsdValue: usdValue,
+            userId,
+        });
 
-        const filteredTokens = searchQuery
-            ? result.filter(token =>
-                token.symbol.toLowerCase().includes(searchQuery)
-            )
-            : result;
-
-        res.json(filteredTokens);
+        res.json(tokens);
     } catch (err) {
-        console.error('Error fetching wallets:', err);
-        res.status(500).json({ error: 'Failed to fetch wallets' });
+        console.error("Error fetching tokens:", err);
+        res.status(500).json({ error: "Failed to fetch tokens" });
     }
 });
 

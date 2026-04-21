@@ -1,36 +1,32 @@
-import React, {useEffect, useState, useCallback, useRef} from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { BarChart, SyncAlt } from "@mui/icons-material";
 import {
-    ChainList, NavHeader, ProtocolTable, Transactions, WalletTable
-} from "./components";
-import {
-    Box, CircularProgress, Container, IconButton, Typography, useMediaQuery
+    Box,
+    CircularProgress,
+    Container,
+    IconButton,
+    Typography,
+    useMediaQuery,
 } from "@mui/material";
-import {useFetchWallets} from "./hooks/useFetchWallets";
-import {useFetchChains} from "./hooks/useFetchChains";
-import {useFetchTokens} from "./hooks/useFetchTokens";
-import {useFetchProtocolsTable} from "./hooks/useFetchProtocolsTable";
-import {NetWorthChart} from "./components/crypto/NetWorthChart";
-import {useFetchNetWorth} from "./hooks/useFetchNetWorth";
-import Header from "./components/header/Header";
-import {Chain, Protocol, Token} from "./interfaces";
-import {BarChart, SyncAlt} from "@mui/icons-material";
-import {TokenChart} from "./components/crypto/TokenChart";
-import useDelay from "./hooks/useDelay";
+import {
+    ChainList,
+    NavHeader,
+    ProtocolTable,
+    Transactions,
+    WalletTable,
+} from "./components";
 import AppProviders from "./app/AppProviders";
-import {appTheme} from "./styles/appTheme";
+import { NetWorthChart } from "./components/crypto/NetWorthChart";
+import { TokenChart } from "./components/crypto/TokenChart";
+import Header from "./components/header/Header";
+import { useAuthStatus } from "./hooks/useAuthStatus";
+import { useDashboardData } from "./hooks/useDashboardData";
+import useDelay from "./hooks/useDelay";
+import { DashboardSelection, Token } from "./interfaces";
+import { appTheme } from "./styles/appTheme";
 
-interface SelectedItem {
-    id: string;
-    tag: string;
-    chains: {
-        total_usd_value: number; chain_list: Chain[];
-    };
-    tokens: Token[];
-    protocolsTable: Protocol[];
-}
-
-const App: React.FC = () => {
-    const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
+const DashboardApp: React.FC = () => {
+    const [selectedItem, setSelectedItem] = useState<DashboardSelection | null>(null);
     const [selectedChainId, setSelectedChainId] = useState<string>("all");
     const [loading, setLoading] = useState<boolean>(true);
     const [isCryptoView, setIsCryptoView] = useState<boolean>(true);
@@ -38,53 +34,43 @@ const App: React.FC = () => {
     const [showChart, setShowChart] = useState<boolean>(false);
     const [selectedToken, setSelectedToken] = useState<Token | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-    const [currency, setCurrency] = useState<'CHF' | '$'>('$');
-
+    const [currency, setCurrency] = useState<"CHF" | "$">("$");
 
     const isMobile = useMediaQuery(appTheme.breakpoints.down("sm"));
+    const delay = useDelay(2000);
+    const tokenChartRef = useRef<HTMLDivElement | null>(null);
 
-    const walletId: string = selectedItem?.id || "all";
-
-    const {netWorth, loading: netWorthLoading, saveNetWorth} = useFetchNetWorth({latest: false, includeDetails: true});
-    const {wallets, loading: walletsLoading, fetchWallets, setWallets} = useFetchWallets();
-    const {chains, loading: chainsLoading} = useFetchChains(walletId, searchQuery);
-    const {tokens, totalTokenUSD, loading: tokensLoading} = useFetchTokens({
-        chain: selectedChainId, walletId, searchQuery,
-    });
+    const authStatus = useAuthStatus();
+    const walletId = selectedItem?.id || "all";
     const {
+        chains,
+        loading: dashboardLoading,
+        netWorth,
         protocolsTable,
+        saveNetWorth,
+        selectedData,
+        tokens,
         totalProtocolUSD,
-        loading: protocolsTableLoading
-    } = useFetchProtocolsTable(selectedChainId, walletId, searchQuery);
+        totalTokenUSD,
+        totalUSDValue,
+        wallets,
+    } = useDashboardData({
+        walletId,
+        selectedChainId,
+        searchQuery,
+    });
 
-    const totalUSDValue: number = totalTokenUSD + totalProtocolUSD;
-
-    const fetchAccountsData = useCallback(async () => {
-        if (walletsLoading || chainsLoading || tokensLoading || protocolsTableLoading) return;
-
-        setLoading(true);
-        try {
-            const selectedData = {
-                id: "all",
-                tag: "all",
-                chains: {total_usd_value: totalUSDValue, chain_list: chains},
-                tokens,
-                protocolsTable,
-            };
-
-            setSelectedItem(selectedData);
-
-            await saveNetWorth(totalUSDValue, {
-                wallets, chains, tokens, protocolsTable, totalProtocolUSD, totalTokenUSD,
-            });
-
-        } catch (error) {
-            console.error("Error fetching account data:", error);
-        } finally {
-            setLoading(false);
+    useEffect(() => {
+        if (!authStatus.loading) {
+            setIsAuthenticated(authStatus.isAuthenticated);
         }
-    }, [totalUSDValue, chains, tokens, protocolsTable]);
+    }, [authStatus.isAuthenticated, authStatus.loading]);
 
+    useEffect(() => {
+        if (selectedToken && tokenChartRef.current && "scrollIntoView" in tokenChartRef.current) {
+            tokenChartRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    }, [selectedToken]);
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -93,111 +79,132 @@ const App: React.FC = () => {
             return;
         }
 
-        if (!walletsLoading && !chainsLoading && !tokensLoading && !protocolsTableLoading) {
-            fetchAccountsData();
+        if (!dashboardLoading) {
+            setLoading(true);
+            setSelectedItem(selectedData);
+            saveNetWorth(totalUSDValue, {
+                wallets,
+                chains,
+                tokens,
+                protocolsTable,
+                totalProtocolUSD,
+                totalTokenUSD,
+            }).finally(() => setLoading(false));
         }
-    }, [walletsLoading, chainsLoading, tokensLoading, protocolsTableLoading, isAuthenticated]);
+    }, [
+        chains,
+        dashboardLoading,
+        isAuthenticated,
+        protocolsTable,
+        saveNetWorth,
+        selectedData,
+        tokens,
+        totalProtocolUSD,
+        totalTokenUSD,
+        totalUSDValue,
+        wallets,
+    ]);
 
-    useEffect(() => {
-        const checkAuthentication = async () => {
-            try {
-                const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/check`, {
-                    credentials: "include",
-                });
+    return (
+        <>
+            <NavHeader
+                currency={currency}
+                setCurrency={setCurrency}
+                isAuthenticated={Boolean(isAuthenticated)}
+                isCryptoView={isCryptoView}
+                setIsCryptoView={setIsCryptoView}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                setIsAuthenticated={setIsAuthenticated}
+            />
 
-                const data = await response.json();
-                if (data.success) {
-                    setIsAuthenticated(true);
-                } else {
-                    setIsAuthenticated(false);
-                }
-            } catch (error) {
-                console.error("Error checking authentication:", error);
-                setIsAuthenticated(false);
-            }
-        };
+            {loading || authStatus.loading ? (
+                <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+                    <CircularProgress />
+                </Box>
+            ) : !isAuthenticated && delay ? (
+                <Typography margin={20} variant="h4">
+                    Connect your Wallet to see the dashboard
+                </Typography>
+            ) : (
+                <Container sx={{ marginY: 10 }}>
+                    {!selectedItem && delay && <Typography>No data available</Typography>}
 
-        checkAuthentication();
-    }, []);
+                    {selectedItem && (
+                        <>
+                            {isCryptoView ? (
+                                <>
+                                    {!isMobile && (
+                                        <Box display="flex" justifyContent="flex-end" mb={2}>
+                                            <IconButton
+                                                color="primary"
+                                                onClick={() => setShowChart((prev) => !prev)}
+                                            >
+                                                {showChart ? (
+                                                    <SyncAlt fontSize="medium" />
+                                                ) : (
+                                                    <BarChart fontSize="medium" />
+                                                )}
+                                            </IconButton>
+                                        </Box>
+                                    )}
+                                    <Header
+                                        currency={currency}
+                                        totalUSDValue={totalUSDValue}
+                                        selectedItemState={[selectedItem, setSelectedItem]}
+                                    />
+                                    {showChart && <NetWorthChart setShowChart={setShowChart} data={netWorth} />}
 
+                                    {selectedToken && (
+                                        <div ref={tokenChartRef}>
+                                            <TokenChart
+                                                netWorthHistory={netWorth}
+                                                selectedToken={selectedToken}
+                                                setSelectedToken={setSelectedToken}
+                                            />
+                                        </div>
+                                    )}
 
-    const tokenChartRef = useRef<HTMLDivElement | null>(null);
-
-    useEffect(() => {
-        if (selectedToken && tokenChartRef.current) {
-            if ("scrollIntoView" in tokenChartRef.current) {
-                tokenChartRef.current.scrollIntoView({behavior: "smooth", block: "start"});
-            }
-        }
-    }, [selectedToken]);
-
-    const delay = useDelay(2000);
-
-
-    return (<AppProviders>
-                <NavHeader
-                    currency={currency}
-                    setCurrency={setCurrency}
-                    isAuthenticated={isAuthenticated}
-                    isCryptoView={isCryptoView}
-                    setIsCryptoView={setIsCryptoView}
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                    setIsAuthenticated={setIsAuthenticated}
-                />
-
-                {loading ? (<Box display="flex" justifyContent="center" alignItems="center" height="100vh">
-                        <CircularProgress/>
-                    </Box>) : !isAuthenticated && delay ? (<Typography margin={20} variant="h4">
-                        Connect your Wallet to see the dashboard
-                    </Typography>) : (<Container sx={{marginY: 10}}>
-                        {!selectedItem && delay && <Typography>No data available</Typography>}
-
-                        {selectedItem && (<>
-                                {isCryptoView ? (<>
-                                        {!isMobile && (<Box display="flex" justifyContent="flex-end" mb={2}>
-                                                <IconButton
-                                                    color="primary"
-                                                    onClick={() => setShowChart((prev) => !prev)}
-                                                >
-                                                    {showChart ? <SyncAlt fontSize="medium"/> :
-                                                        <BarChart fontSize="medium"/>}
-                                                </IconButton>
-                                            </Box>)}
-                                        <Header
-                                            currency={currency}
-                                            wallets={wallets}
-                                            totalUSDValue={totalUSDValue}
-                                            selectedItemState={[selectedItem, setSelectedItem]}
-                                        />
-                                        {showChart && <NetWorthChart setShowChart={setShowChart} data={netWorth}/>}
-
-                                        {selectedToken && (<div ref={tokenChartRef}>
-                                                <TokenChart
-                                                    netWorthHistory={netWorth}
-                                                    selectedToken={selectedToken}
-                                                    setSelectedToken={setSelectedToken}
-                                                />
-                                            </div>)}
-
-                                        <Container sx={{
+                                    <Container
+                                        sx={{
                                             display: "flex",
                                             gap: 3,
                                             marginY: 3,
-                                            flexDirection: {xs: "column", md: "row"},
-                                        }}>
-                                            <ChainList chains={chains}
-                                                       chainIdState={[selectedChainId, setSelectedChainId]}/>
-                                            <WalletTable tokens={tokens} chainList={chains}
-                                                         selectedToken={selectedToken}
-                                                         setSelectedToken={setSelectedToken}/>
-                                        </Container>
-                                        <ProtocolTable selectedToken={selectedToken} protocols={protocolsTable}
-                                                       setSelectedToken={setSelectedToken}/>
-                                    </>) : (<Transactions/>)}
-                            </>)}
-                    </Container>)}
-        </AppProviders>);
+                                            flexDirection: { xs: "column", md: "row" },
+                                        }}
+                                    >
+                                        <ChainList
+                                            chains={chains}
+                                            chainIdState={[selectedChainId, setSelectedChainId]}
+                                        />
+                                        <WalletTable
+                                            tokens={tokens}
+                                            chainList={chains}
+                                            selectedToken={selectedToken}
+                                            setSelectedToken={setSelectedToken}
+                                        />
+                                    </Container>
+                                    <ProtocolTable
+                                        selectedToken={selectedToken}
+                                        protocols={protocolsTable}
+                                        setSelectedToken={setSelectedToken}
+                                    />
+                                </>
+                            ) : (
+                                <Transactions />
+                            )}
+                        </>
+                    )}
+                </Container>
+            )}
+        </>
+    );
 };
+
+const App: React.FC = () => (
+    <AppProviders>
+        <DashboardApp />
+    </AppProviders>
+);
 
 export default App;

@@ -7,6 +7,22 @@ import TokenModel from "../models/TokenModel.js";
 import WalletTokenModel from "../models/WalletTokenModel.js";
 import WalletModel from "../models/WalletModel.js";
 
+const deleteMissingSolTokenRows = async ({ walletId, retainedTokenIds }) => {
+    const rows = await WalletTokenModel.findAll({ where: { wallet_id: walletId } });
+    const staleRows = rows.filter((row) => !retainedTokenIds.includes(row.token_id));
+
+    if (!staleRows.length) {
+        return;
+    }
+
+    await WalletTokenModel.destroy({
+        where: {
+            wallet_id: walletId,
+            token_id: staleRows.map((row) => row.token_id),
+        },
+    });
+};
+
 async function fetchSolTokenList() {
     try {
         // Verified tokens are a good baseline
@@ -130,6 +146,8 @@ export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
 
     tokenData = tokenData.filter(token => token.amount > 0);
 
+    const retainedTokenIds = [];
+
     for (const token of tokenData) {
         const { name, symbol, decimals, logoURI, amount, usd, price_24h_change } = token;
 
@@ -138,6 +156,7 @@ export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
         const [dbToken] = await TokenModel.upsert({
             chain_id: 'sol', name, symbol, decimals, logo_path: logoPath, price: usd, price_24h_change
         }, { conflictFields: ['chain_id', 'symbol'], returning: true });
+        retainedTokenIds.push(dbToken.id);
 
         const raw_amount = amount * 10 ** decimals;
         const usd_value = amount * usd;
@@ -146,6 +165,11 @@ export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
             wallet_id: walletId, token_id: dbToken.id, amount, raw_amount, usd_value
         });
     }
+
+    await deleteMissingSolTokenRows({
+        walletId,
+        retainedTokenIds,
+    });
 
     console.log('Token data successfully saved/updated for a Solana wallet');
 };

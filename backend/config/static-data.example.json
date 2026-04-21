@@ -1,0 +1,37 @@
+{
+  "aptos": {
+    "walletAddress": "YOUR_APTOS_WALLET",
+    "walletId": 39,
+    "stakingPoolAddress": "YOUR_APTOS_STAKING_POOL",
+    "symbol": "APT",
+    "decimals": 8,
+    "logoUrl": "https://cryptologos.cc/logos/aptos-apt-logo.png?v=035",
+    "priceKey": "aptos"
+  },
+  "sui": {
+    "walletAddress": "YOUR_SUI_WALLET",
+    "walletId": 30,
+    "symbol": "SUI",
+    "stakingDecimals": 9,
+    "liquidDecimals": 9,
+    "tokens": [
+      {
+        "id": "sui",
+        "name": "Sui",
+        "symbol": "SUI",
+        "decimals": 18,
+        "logoUrl": "https://cryptologos.cc/logos/sui-sui-logo.png?v=035",
+        "priceKey": "sui"
+      },
+      {
+        "id": "deep",
+        "name": "DEEP",
+        "symbol": "DEEP",
+        "decimals": 18,
+        "logoUrl": "https://s2.coinmarketcap.com/static/img/coins/200x200/33391.png",
+        "priceKey": "deep"
+      }
+    ]
+  },
+  "staticChains": []
+}

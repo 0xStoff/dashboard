@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { IconButton, Tooltip } from "@mui/material";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import { env } from "../config/env";
 
 const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: boolean) => void }) => {
     const [account, setAccount] = useState<string | null>(null);
@@ -12,7 +13,7 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
 
     const checkAuthentication = async () => {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/check`, {
+            const response = await fetch(`${env.apiBaseUrl}/auth/check`, {
                 credentials: "include",
             });
 
@@ -49,7 +50,7 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
 
     const authenticateUser = async (address: string) => {
         try {
-            const nonceResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/message?wallet=${address}`, {
+            const nonceResponse = await fetch(`${env.apiBaseUrl}/auth/message?wallet=${address}`, {
                 credentials: "include",
             });
 
@@ -61,7 +62,7 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
             const signer = await provider.getSigner();
             const signature = await signer.signMessage(message);
 
-            const loginResponse = await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/login`, {
+            const loginResponse = await fetch(`${env.apiBaseUrl}/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
@@ -83,7 +84,7 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
     };
     const logout = async () => {
         try {
-            await fetch(`${process.env.REACT_APP_API_BASE_URL}/auth/logout`, {
+            await fetch(`${env.apiBaseUrl}/auth/logout`, {
                 method: "POST",
                 credentials: "include",
             });

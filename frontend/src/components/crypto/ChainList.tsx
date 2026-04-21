@@ -1,6 +1,7 @@
 import React from "react";
 import { Avatar, Box, Card, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import { Chain } from "../../interfaces";
+import { buildLogoUrl } from "../../config/env";
 
 
 const styles = {
@@ -18,14 +19,15 @@ const styles = {
 
 
 const ChainList: React.FC<{
-  chains: Chain[]; chainIdState;
+  chains: Chain[];
+  chainIdState: [string, React.Dispatch<React.SetStateAction<string>>];
 }> = ({ chains, chainIdState }) => {
   const [selectedChainId, setSelectedChainId] = chainIdState;
 
   if (!chains.length) return null;
 
 
-  const handleRowClick = (chain) => {
+  const handleRowClick = (chain: Chain) => {
     setSelectedChainId(selectedChainId === chain.chain_id ? "all" : chain.chain_id);
   };
 
@@ -55,7 +57,7 @@ const ChainList: React.FC<{
 
                     <Avatar
                       alt={chain.name}
-                      src={process.env.REACT_APP_LOGO_BASE_URL + chain.logo_path || ""}
+                      src={buildLogoUrl(chain.logo_path)}
                       sx={{ width: 35, height: 35 }}
                     />
                   </TableCell>

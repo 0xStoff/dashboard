@@ -1,14 +1,7 @@
-import {useState, useEffect} from 'react';
-import axios from "axios";
-import {Token} from "../interfaces";
+import { useCallback, useMemo } from "react";
+import { Token } from "../interfaces";
 import apiClient from "../utils/api-client";
-
-
-interface UseFetchTokensReturn {
-    tokens: Token[];
-    totalTokenUSD: string | number;
-    loading: boolean;
-}
+import { useApiResource } from "./useApiResource";
 
 interface UseFetchTokensParams {
     searchQuery: string;
@@ -16,28 +9,37 @@ interface UseFetchTokensParams {
     walletId?: string | null;
 }
 
-export const useFetchTokens = ({chain = 'all', walletId = 'all', searchQuery}: UseFetchTokensParams): UseFetchTokensReturn => {
-    const [tokens, setTokens] = useState<Token[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
+interface UseFetchTokensReturn {
+    tokens: Token[];
+    totalTokenUSD: number;
+    loading: boolean;
+}
 
-    useEffect(() => {
-        const loadTokens = async () => {
-            try {
-                const url = `/tokens?chain=${chain}&wallet_id=${walletId}&query=${searchQuery}`;
-
-                const response = await apiClient.get(url);
-                setTokens(response.data);
-            } catch (error) {
-                console.error('Failed to load tokens:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadTokens();
+export const useFetchTokens = ({
+    chain = "all",
+    walletId = "all",
+    searchQuery,
+}: UseFetchTokensParams): UseFetchTokensReturn => {
+    const loadTokens = useCallback(async () => {
+        const url = `/tokens?chain=${chain}&wallet_id=${walletId}&query=${searchQuery}`;
+        const response = await apiClient.get<Token[]>(url);
+        return response.data;
     }, [searchQuery, chain, walletId]);
 
-    const totalTokenUSD = (tokens).reduce((sum, item) => sum + item.total_usd_value, 0) || 0;
+    const resource = useApiResource<Token[]>({
+        initialData: [],
+        load: loadTokens,
+        deps: [searchQuery, chain, walletId],
+    });
 
-    return {tokens, totalTokenUSD, loading};
+    const totalTokenUSD = useMemo(
+        () => resource.data.reduce((sum, item) => sum + item.total_usd_value, 0),
+        [resource.data]
+    );
+
+    return {
+        tokens: resource.data,
+        totalTokenUSD,
+        loading: resource.loading,
+    };
 };

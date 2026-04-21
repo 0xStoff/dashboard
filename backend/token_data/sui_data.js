@@ -5,7 +5,7 @@ import WalletTokenModel from "../models/WalletTokenModel.js";
 import { fetchTokenPriceCoingecko } from "../api/fetchTokenPriceCoingecko.js";
 import TokenModel from "../models/TokenModel.js";
 import { downloadLogo } from "../utils/download_logo.js";
-import { APTOS_CONFIG, STATIC_CHAINS, SUI_CONFIG } from "../static_data/index.js";
+import { staticDataConfig } from "../config/staticData.js";
 
 const createTokenData = (id, name, symbol, decimals, logoUrl, price, amount, walletTag, walletId, walletAddress) => {
   return {
@@ -40,6 +40,10 @@ export const writeAptosDataToDB = async () => {
   try {
     // Fetch Aptos token data
     const aptosData = await fetchAptosData();
+    if (!aptosData) {
+      console.log("Skipping Aptos static sync because no private config is present");
+      return;
+    }
     const { tokens, wallet: walletAddress } = aptosData;
 
 
@@ -89,6 +93,10 @@ export const writeStaticDataToDB = async () => {
   try {
     // Fetch Static token data
     const staticData = await fetchStaticData();
+    if (!staticData.length) {
+      console.log("Skipping static token sync because no private config is present");
+      return;
+    }
 
     for (const chainData of staticData) {
       const { tokens, wallet: walletAddress, id: chainId } = chainData;
@@ -142,6 +150,10 @@ export const writeSuiDataToDB = async () => {
   try {
     // Fetch Sui token data
     const suiData = await fetchSuiData();
+    if (!suiData) {
+      console.log("Skipping Sui static sync because no private config is present");
+      return;
+    }
     const { tokens, wallet: walletAddress } = suiData;
 
 
@@ -179,61 +191,71 @@ export const writeSuiDataToDB = async () => {
 
 
 export const fetchSuiData = async () => {
+  const suiConfig = staticDataConfig.sui;
+  if (!suiConfig?.walletAddress || !Array.isArray(suiConfig.tokens) || suiConfig.tokens.length < 2) {
+    return null;
+  }
+
   const rpcUrl = getFullnodeUrl("mainnet");
   const client = new SuiClient({ url: rpcUrl });
-  const suiAddress = SUI_CONFIG.walletAddress;
+  const suiAddress = suiConfig.walletAddress;
 
   const [suiBalance, stakingData, suiPrice, deepPrice] = await Promise.all([
     client.getAllCoins({ owner: suiAddress }),
     client.getStakes({ owner: suiAddress }),
-    fetchTokenPriceCoingecko(SUI_CONFIG.tokens[0].priceKey),
-    fetchTokenPriceCoingecko(SUI_CONFIG.tokens[1].priceKey)
+    fetchTokenPriceCoingecko(suiConfig.tokens[0].priceKey),
+    fetchTokenPriceCoingecko(suiConfig.tokens[1].priceKey)
   ]);
 
 
   const suiAmount =
-    stakingData[0]?.stakes[0]?.principal / 10 ** SUI_CONFIG.stakingDecimals +
-    suiBalance.data[0]?.balance / 10 ** SUI_CONFIG.liquidDecimals;
+    stakingData[0]?.stakes[0]?.principal / 10 ** suiConfig.stakingDecimals +
+    suiBalance.data[0]?.balance / 10 ** suiConfig.liquidDecimals;
   const deepAmount = suiBalance.data.filter(coin => coin.coinType.includes("DEEP"))[0]?.balance / 10 ** 6 || 0;
 
   const tokens = [
     createTokenData(
-      SUI_CONFIG.tokens[0].id,
-      SUI_CONFIG.tokens[0].name,
-      SUI_CONFIG.tokens[0].symbol,
-      SUI_CONFIG.tokens[0].decimals,
-      SUI_CONFIG.tokens[0].logoUrl,
+      suiConfig.tokens[0].id,
+      suiConfig.tokens[0].name,
+      suiConfig.tokens[0].symbol,
+      suiConfig.tokens[0].decimals,
+      suiConfig.tokens[0].logoUrl,
       suiPrice,
       suiAmount,
-      SUI_CONFIG.symbol,
-      SUI_CONFIG.walletId,
+      suiConfig.symbol,
+      suiConfig.walletId,
       suiAddress
     ),
     createTokenData(
-      SUI_CONFIG.tokens[1].id,
-      SUI_CONFIG.tokens[1].name,
-      SUI_CONFIG.tokens[1].symbol,
-      SUI_CONFIG.tokens[1].decimals,
-      SUI_CONFIG.tokens[1].logoUrl,
+      suiConfig.tokens[1].id,
+      suiConfig.tokens[1].name,
+      suiConfig.tokens[1].symbol,
+      suiConfig.tokens[1].decimals,
+      suiConfig.tokens[1].logoUrl,
       deepPrice,
       deepAmount,
-      SUI_CONFIG.symbol,
-      SUI_CONFIG.walletId,
+      suiConfig.symbol,
+      suiConfig.walletId,
       suiAddress
     )
   ];
 
-  return createChainData(SUI_CONFIG.walletId, [SUI_CONFIG.chainId], SUI_CONFIG.symbol, tokens, suiAddress);
+  return createChainData(suiConfig.walletId, ["sui"], suiConfig.symbol, tokens, suiAddress);
 };
 
 export const fetchAptosData = async () => {
+  const aptosConfigData = staticDataConfig.aptos;
+  if (!aptosConfigData?.walletAddress || !aptosConfigData?.stakingPoolAddress) {
+    return null;
+  }
+
   const config = new AptosConfig({ network: Network.MAINNET });
   const aptosConf = new Aptos(config);
 
-  const aptosAddress = APTOS_CONFIG.walletAddress;
+  const aptosAddress = aptosConfigData.walletAddress;
   const [stakingActivities, aptosBalance, aptosPrice] = await Promise.all([aptosConf.staking.getDelegatedStakingActivities({
-    poolAddress: APTOS_CONFIG.stakingPoolAddress, delegatorAddress: aptosAddress
-  }), aptosConf.getAccountAPTAmount({ accountAddress: aptosAddress }), fetchTokenPriceCoingecko(APTOS_CONFIG.priceKey)]);
+    poolAddress: aptosConfigData.stakingPoolAddress, delegatorAddress: aptosAddress
+  }), aptosConf.getAccountAPTAmount({ accountAddress: aptosAddress }), fetchTokenPriceCoingecko(aptosConfigData.priceKey)]);
 
   let unlockedTotal = 0;
   let withdrawnTotal = 0;
@@ -262,23 +284,23 @@ export const fetchAptosData = async () => {
   const aptosAmount = undelegated + liquid;
 
   const tokens = [createTokenData(
-    APTOS_CONFIG.chainId,
+    "aptos",
     "Aptos",
-    APTOS_CONFIG.symbol,
-    APTOS_CONFIG.decimals,
-    APTOS_CONFIG.logoUrl,
+    aptosConfigData.symbol,
+    aptosConfigData.decimals,
+    aptosConfigData.logoUrl,
     aptosPrice,
     aptosAmount,
     "Aptos",
-    APTOS_CONFIG.walletId,
+    aptosConfigData.walletId,
     aptosAddress
   )];
 
-  return createChainData(APTOS_CONFIG.walletId, [APTOS_CONFIG.chainId], "Aptos", tokens, aptosAddress);
+  return createChainData(aptosConfigData.walletId, ["aptos"], "Aptos", tokens, aptosAddress);
 };
 
 export const fetchStaticData = async () => {
-  return Promise.all(STATIC_CHAINS.map(async chain => {
+  return Promise.all(staticDataConfig.staticChains.map(async chain => {
     const price = (await fetchTokenPriceCoingecko(chain.priceKey)) || 0;
     const tokens = [createTokenData(chain.id, chain.name, chain.symbol, chain.decimals, chain.logoUrl, price, chain.amount, chain.name, chain.id, chain.wallet)];
     return createChainData(chain.id, [chain.name.toLowerCase()], chain.name, tokens, chain.wallet);

@@ -3,8 +3,18 @@ import { Box, Card, Chip, CircularProgress, Container, Typography } from "@mui/m
 import { toFixedString } from "../../utils/number-utils";
 import { useWallets } from "../../context/WalletsContext";
 import { useUsdToChfRate } from "../../hooks/useUsdToChfRate";
+import { DashboardSelection } from "../../interfaces";
 
-const Header = ({ currency, totalUSDValue, selectedItemState }) => {
+interface HeaderProps {
+  currency: "CHF" | "$";
+  totalUSDValue: number;
+  selectedItemState: [
+    DashboardSelection | null,
+    React.Dispatch<React.SetStateAction<DashboardSelection | null>>
+  ];
+}
+
+const Header: React.FC<HeaderProps> = ({ currency, totalUSDValue, selectedItemState }) => {
   const [selectedItem, setSelectedItem] = selectedItemState;
   const { wallets } = useWallets();
   const { rate, loading } = useUsdToChfRate();

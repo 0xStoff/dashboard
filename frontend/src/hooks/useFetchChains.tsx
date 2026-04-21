@@ -1,35 +1,28 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
+import { useCallback, useMemo } from "react";
 import { Chain } from "../interfaces";
 import apiClient from "../utils/api-client";
+import { useApiResource } from "./useApiResource";
 
-
-
-interface UseFetchChainsReturn {
-  chains: Chain[];
-  loading: boolean;
-}
-
-export const useFetchChains = (walletId: string | null = "all", searchQuery: string): UseFetchChainsReturn => {
-  const [chains, setChains] = useState<Chain[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    const loadChains = async () => {
-      try {
-        const url = `/chains?wallet_id=${walletId}&query=${searchQuery}`;
-        const response = await apiClient.get(url);
-        setChains(response.data);
-      } catch (error) {
-        console.error("Failed to load chains:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadChains();
+export const useFetchChains = (walletId: string | null = "all", searchQuery: string) => {
+  const loadChains = useCallback(async () => {
+    const url = `/chains?wallet_id=${walletId}&query=${searchQuery}`;
+    const response = await apiClient.get<Chain[]>(url);
+    return response.data;
   }, [walletId, searchQuery]);
 
+  const resource = useApiResource<Chain[]>({
+    initialData: [],
+    load: loadChains,
+    deps: [walletId, searchQuery],
+  });
 
-  return { chains, loading };
+  return useMemo(
+    () => ({
+      chains: resource.data,
+      loading: resource.loading,
+      error: resource.error,
+      reload: resource.reload,
+    }),
+    [resource.data, resource.error, resource.loading, resource.reload]
+  );
 };

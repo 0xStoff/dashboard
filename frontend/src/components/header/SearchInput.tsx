@@ -2,7 +2,12 @@ import React, { useCallback, useEffect, useRef } from "react";
 import { TextField, InputAdornment } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 
-const SearchInput = ({ searchQuery, setSearchQuery }) => {
+interface SearchInputProps {
+  searchQuery: string;
+  setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
+}
+
+const SearchInput: React.FC<SearchInputProps> = ({ searchQuery, setSearchQuery }) => {
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {

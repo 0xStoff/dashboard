@@ -15,10 +15,11 @@ import {
     IconButton
 } from "@mui/material";
 import {ArrowDropUp, ArrowDropDown} from "@mui/icons-material";
-import {Token} from "../../interfaces";
+import {Chain, Token} from "../../interfaces";
 import {useTheme} from "@mui/material/styles";
 import {formatNumber, toFixedString} from "../../utils/number-utils";
 import {ChipWithTooltip} from "../utils/ChipWithTooltip";
+import { buildLogoUrl } from "../../config/env";
 
 const styles = {
     container: {flex: 1}, card: {borderRadius: 10, overflowX: "auto", position: "relative"},
@@ -61,9 +62,9 @@ const styles = {
 
 const WalletTable: React.FC<{
     tokens: Token[],
-    chainList: any[],
-    selectedToken: string | null ,
-    setSelectedToken: (value: (prevSelected) => null | string) => void
+    chainList: Chain[],
+    selectedToken: Token | null,
+    setSelectedToken: React.Dispatch<React.SetStateAction<Token | null>>
 }> = ({tokens, chainList, selectedToken, setSelectedToken}) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -92,8 +93,8 @@ const WalletTable: React.FC<{
         setMenuAnchor(null);
     };
 
-    const handleTokenClick = (symbol: string) => {
-        setSelectedToken((prevSelected) => (prevSelected === symbol ? null : symbol));
+    const handleTokenClick = (token: Token) => {
+        setSelectedToken((prevSelected) => (prevSelected?.symbol === token.symbol ? null : token));
     };
 
     if (!tokens.length) return <Typography>no tokens</Typography>;
@@ -126,14 +127,14 @@ const WalletTable: React.FC<{
                     <Table>
                         <TableBody>
                             {sortedTokens.map((item, index) => (
-                                <TableRow onClick={() => handleTokenClick(item.symbol)} key={index}
+                                <TableRow onClick={() => handleTokenClick(item)} key={index}
                                           hover
-                                          sx={styles.tableRow( selectedToken === item.symbol || selectedToken === null)}>
+                                          sx={styles.tableRow( selectedToken?.symbol === item.symbol || selectedToken === null)}>
                                     <TableCell sx={styles.tableCell}>
                                         <Box sx={styles.avatarWrapper}>
                                             <Avatar
                                                 alt={item.name}
-                                                src={process.env.REACT_APP_LOGO_BASE_URL + item.logo_path || ""}
+                                                src={buildLogoUrl(item.logo_path)}
                                                 sx={{
                                                     width: isMobile ? 30 : 35,
                                                     height: isMobile ? 30 : 35,
@@ -142,7 +143,7 @@ const WalletTable: React.FC<{
                                             />
                                             {getChainLogo(item.chain_id) && (<Avatar
                                                     alt={item.chain_id}
-                                                    src={process.env.REACT_APP_LOGO_BASE_URL + getChainLogo(item.chain_id)}
+                                                    src={buildLogoUrl(getChainLogo(item.chain_id))}
                                                     sx={{
                                                         ...styles.chainLogo,
                                                         width: isMobile ? 15 : 20,

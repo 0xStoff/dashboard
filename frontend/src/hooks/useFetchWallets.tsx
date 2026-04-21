@@ -1,37 +1,27 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
+import { useCallback } from "react";
 import { Wallet } from "../interfaces";
 import apiClient from "../utils/api-client";
+import { useApiResource } from "./useApiResource";
 
-interface UseFetchWalletsReturn {
-  wallets: Wallet[];
-  loading: boolean;
-}
-
-export const useFetchWallets = (): {
-  fetchWallets: () => Promise<void>;
-  setWallets: (value: (((prevState: Wallet[]) => Wallet[]) | Wallet[])) => void;
-  wallets: Wallet[];
-  loading: boolean;
-} => {
-  const [wallets, setWallets] = useState<Wallet[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  const fetchWallets = async () => {
-    try {
-      const response = await apiClient.get<Wallet[]>("/wallets");
-
-      setWallets(response.data);
-    } catch (error) {
-      console.error("Failed to load wallets:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchWallets();
+export const useFetchWallets = () => {
+  const loadWallets = useCallback(async () => {
+    const response = await apiClient.get<Wallet[]>("/wallets");
+    return response.data;
   }, []);
 
-  return { wallets, loading, fetchWallets, setWallets };
+  const resource = useApiResource<Wallet[]>({
+    initialData: [],
+    load: loadWallets,
+  });
+
+  const fetchWallets = useCallback(async () => {
+    await resource.reload();
+  }, [resource.reload]);
+
+  return {
+    wallets: resource.data,
+    loading: resource.loading,
+    fetchWallets,
+    setWallets: resource.setData,
+  };
 };
