@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename);
 const DEFAULT_STATIC_DATA = {
     aptos: null,
     sui: null,
+    cosmosAddressOverrides: {},
     staticChains: [],
 };
 
@@ -34,6 +35,10 @@ const loadStaticData = () => {
         return {
             aptos: parsed.aptos || null,
             sui: parsed.sui || null,
+            cosmosAddressOverrides:
+                parsed.cosmosAddressOverrides && typeof parsed.cosmosAddressOverrides === "object"
+                    ? parsed.cosmosAddressOverrides
+                    : {},
             staticChains: Array.isArray(parsed.staticChains) ? parsed.staticChains : [],
         };
     } catch (error) {

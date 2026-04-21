@@ -33,5 +33,13 @@
       }
     ]
   },
+  "cosmosAddressOverrides": {
+    "inj1examplewalletaddress": {
+      "INJ": "inj1actualinjectiveaddress"
+    },
+    "cosmos1examplewalletaddress": {
+      "DYM": "dym1actualdymensionaddress"
+    }
+  },
   "staticChains": []
 }

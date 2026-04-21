@@ -3,6 +3,7 @@ import { fromBech32, toBech32 } from "@cosmjs/encoding";
 import WalletModel from "../models/WalletModel.js";
 import WalletTokenModel from "../models/WalletTokenModel.js";
 import TokenModel from "../models/TokenModel.js";
+import { staticDataConfig } from "../config/staticData.js";
 import fetchTokenPrice from "../utils/coingecko_api.js";
 import { nonEvmChains } from "../utils/chainlist.js";
 import { downloadLogo } from "../utils/download_logo.js";
@@ -19,16 +20,18 @@ const symbolPrefixMap = {
     TIA: "celestia",
 };
 
-const manualDeriveMap = {
-    DYM: () => "dym1qla0rgq3wv69z7uzv32z7l4p3advhw8wh8rzlp",
-    INJ: () => "inj1tlr42l84gs4tmgq4kwytaz7n08hd08c7ncc6p5",
-};
+const deriveOverrideOnlySymbols = new Set(["DYM", "INJ"]);
 
 const getCosmosChains = () => nonEvmChains.filter((chain) => chain.id !== "sol");
 
 const deriveAddressForChain = (baseAddress, symbol) => {
-    if (manualDeriveMap[symbol]) {
-        return manualDeriveMap[symbol](baseAddress);
+    const manualOverride = staticDataConfig.cosmosAddressOverrides?.[baseAddress]?.[symbol];
+    if (manualOverride) {
+        return manualOverride;
+    }
+
+    if (deriveOverrideOnlySymbols.has(symbol)) {
+        return null;
     }
 
     const prefix = symbolPrefixMap[symbol];
