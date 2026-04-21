@@ -79,9 +79,9 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress, req) => 
             });
         }
 
-        console.log(`Token and protocol data successfully saved/updated for wallet ID ${walletId}`);
+        console.log('Token and protocol data successfully saved/updated for an EVM wallet');
     } catch (error) {
-        console.error(`Error fetching or saving data for wallet ID ${walletId}:`, error.message);
+        console.error('Error fetching or saving EVM wallet data:', error.message);
     }
 };
 
@@ -96,7 +96,7 @@ export const fetchAndSaveEvmTokenDataForAllWallets = async (req) => {
             await fetchAndSaveEvmTokenData(wallet.id, wallet.wallet, req);
         }
 
-        console.log("Token and protocol data for all wallets successfully updated");
+        console.log('Token and protocol data for all EVM wallets successfully updated');
     } catch (error) {
         console.error("Error fetching data for all wallets:", error.message);
     }

@@ -78,7 +78,7 @@ export const writeAptosDataToDB = async () => {
       });
     }
 
-    console.log(`Aptos token data successfully saved/updated for wallet ${walletAddress}`);
+    console.log('Aptos token data successfully saved/updated');
   } catch (error) {
     console.error("Error saving Aptos token data:", error.message);
   }
@@ -129,7 +129,7 @@ export const writeStaticDataToDB = async () => {
         });
       }
 
-      console.log(`Static token data successfully saved/updated for chain ${chainId} and wallet ${walletAddress}`);
+      console.log(`Static token data successfully saved/updated for chain ${chainId}`);
     }
   } catch (error) {
     console.error("Error saving Static token data:", error.message);
@@ -170,7 +170,7 @@ export const writeSuiDataToDB = async () => {
       });
     }
 
-    console.log(`Sui token data successfully saved/updated for wallet ${walletAddress}`);
+    console.log('Sui token data successfully saved/updated');
   } catch (error) {
     console.error("Error saving Sui token data:", error.message);
   }

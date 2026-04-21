@@ -147,7 +147,7 @@ export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
         });
     }
 
-    console.log(`Token data successfully saved/updated for Solana wallet ID ${walletId}`);
+    console.log('Token data successfully saved/updated for a Solana wallet');
 };
 
 export const fetchAndSaveSolTokenDataForAllWallets = async () => {
