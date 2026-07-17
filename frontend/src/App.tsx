@@ -87,13 +87,8 @@ const DashboardApp: React.FC = () => {
     }, [searchQuery, selectedChainId, selectedWalletId]);
 
     useEffect(() => {
-        if (!isAuthenticated || dashboardLoading) {
-            return;
-        }
-
-        if (selectedWalletId !== "all" || selectedChainId !== "all" || searchQuery.trim()) {
-            return;
-        }
+        if (!isAuthenticated || dashboardLoading) return;
+        if (selectedWalletId !== "all" || selectedChainId !== "all" || searchQuery.trim()) return;
 
         void saveNetWorth(totalUSDValue, {
             wallets,
@@ -137,37 +132,53 @@ const DashboardApp: React.FC = () => {
                     <CircularProgress />
                 </Box>
             ) : !isAuthenticated && delay ? (
-                <Typography margin={20} variant="h4">
-                    Connect your Wallet to see the dashboard
-                </Typography>
+                <Box sx={{ minHeight: "75vh", display: "grid", placeItems: "center", px: 3 }}>
+                    <Box sx={{ textAlign: "center", maxWidth: 560 }}>
+                        <Typography variant="overline" color="secondary.main" fontWeight={800} letterSpacing={2}>
+                            YOUR FINANCIAL OVERVIEW
+                        </Typography>
+                        <Typography mt={1} variant="h3" fontWeight={750} letterSpacing="-.045em">
+                            Everything you own, in one calm view.
+                        </Typography>
+                        <Typography mt={2} color="text.secondary">
+                            Connect your wallet to see balances, positions, protocols and performance.
+                        </Typography>
+                    </Box>
+                </Box>
             ) : (
-                <Container sx={{ marginY: 10 }}>
+                <Container maxWidth="xl" sx={{ marginY: { xs: 4, md: 7 }, px: { xs: 2, md: 4 } }}>
                     {!tokens.length && !protocolsTable.length && delay && <Typography>No data available</Typography>}
 
                     {(tokens.length > 0 || protocolsTable.length > 0 || chains.length > 0) && (
                         <>
                             {isCryptoView ? (
                                 <>
-                                    {!isMobile && (
-                                        <Box display="flex" justifyContent="flex-end" mb={2}>
+                                    <Box position="relative">
+                                        <Header
+                                            currency={currency}
+                                            totalUSDValue={totalUSDValue}
+                                            selectedWalletId={selectedWalletId}
+                                            setSelectedWalletId={setSelectedWalletId}
+                                        />
+                                        {!isMobile && (
                                             <IconButton
+                                                aria-label={showChart ? "Hide net worth history" : "Show net worth history"}
                                                 color="primary"
-                                                onClick={() => setShowChart((prev) => !prev)}
+                                                onClick={() => setShowChart((previous) => !previous)}
+                                                sx={{
+                                                    position: "absolute",
+                                                    top: 20,
+                                                    right: 20,
+                                                    bgcolor: "rgba(9,11,18,.5)",
+                                                    border: "1px solid",
+                                                    borderColor: "divider",
+                                                }}
                                             >
-                                                {showChart ? (
-                                                    <SyncAlt fontSize="medium" />
-                                                ) : (
-                                                    <BarChart fontSize="medium" />
-                                                )}
+                                                {showChart ? <SyncAlt fontSize="medium" /> : <BarChart fontSize="medium" />}
                                             </IconButton>
-                                        </Box>
-                                    )}
-                                    <Header
-                                        currency={currency}
-                                        totalUSDValue={totalUSDValue}
-                                        selectedWalletId={selectedWalletId}
-                                        setSelectedWalletId={setSelectedWalletId}
-                                    />
+                                        )}
+                                    </Box>
+
                                     {showChart && <NetWorthChart setShowChart={setShowChart} data={netWorth} />}
 
                                     {selectedToken && (
@@ -181,9 +192,11 @@ const DashboardApp: React.FC = () => {
                                     )}
 
                                     <Container
+                                        maxWidth={false}
+                                        disableGutters
                                         sx={{
                                             display: "flex",
-                                            gap: 3,
+                                            gap: 2.5,
                                             marginY: 3,
                                             flexDirection: { xs: "column", md: "row" },
                                         }}

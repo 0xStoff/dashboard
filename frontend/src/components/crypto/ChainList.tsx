@@ -8,10 +8,11 @@ const styles = {
   container: {
     flex: "0 0 auto", width: { md: 200 }, maxWidth: { md: 200 }
   }, card: {
-    borderRadius: 10
+    borderRadius: 4
   }, tableRow: (isActive: boolean) => ({
     cursor: "pointer",
-    opacity: isActive ? 1 : 0.5,
+    opacity: isActive ? 1 : 0.38,
+    transition: "opacity .2s, background-color .2s",
     // "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.08)" },
     "&:last-child td, &:last-child th": { border: 0 }
   }), tableCell: { border: 0 }
@@ -37,7 +38,7 @@ const ChainList: React.FC<{
           <TableHead>
             <TableRow>
               <TableCell sx={{ border: 0, padding: 3 }} colSpan={6}>
-                <Typography variant="h5" fontWeight="bold">Chains</Typography>
+                <Typography variant="h5">Networks</Typography>
               </TableCell>
             </TableRow>
           </TableHead>

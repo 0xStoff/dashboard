@@ -1,27 +1,23 @@
 import React from "react";
 import CloseIcon from "@mui/icons-material/Close";
-import { Button } from "@mui/material";
+import { Box, Card, IconButton, Typography } from "@mui/material";
 import { formatNumber } from "../../utils/number-utils";
+import { NetWorthData, Token } from "../../interfaces";
 import Chart from "../utils/Chart";
 import { ColoredChip } from "../utils/ChipWithTooltip";
-import { NetWorthData, Token } from "../../interfaces";
 
-const processProtocolHistory = (netWorthHistory: NetWorthData[], selectedItem: string) => {
-    return netWorthHistory
+const processProtocolHistory = (netWorthHistory: NetWorthData[], selectedItem: string) =>
+    netWorthHistory
         .map((entry) => {
             const item = entry.protocolHistory?.find((historyItem) => historyItem.name === selectedItem);
             return item
-                ? {
-                      date: new Date(entry.date).toISOString().split("T")[0],
-                      usdValue: item.totalUSD,
-                  }
+                ? { date: new Date(entry.date).toISOString().split("T")[0], usdValue: item.totalUSD }
                 : null;
         })
         .filter(Boolean);
-};
 
-const processTokenHistory = (netWorthHistory: NetWorthData[], selectedItem: string) => {
-    return netWorthHistory
+const processTokenHistory = (netWorthHistory: NetWorthData[], selectedItem: string) =>
+    netWorthHistory
         .map((entry) => {
             const item = entry.tokenHistory?.find((historyItem) => historyItem.symbol === selectedItem);
             return item
@@ -33,19 +29,15 @@ const processTokenHistory = (netWorthHistory: NetWorthData[], selectedItem: stri
                 : null;
         })
         .filter(Boolean);
-};
 
 export const TokenChart: React.FC<{
     netWorthHistory: NetWorthData[];
     selectedToken: Token;
     setSelectedToken: React.Dispatch<React.SetStateAction<Token | null>>;
 }> = ({ netWorthHistory, selectedToken, setSelectedToken }) => {
-    if (!netWorthHistory?.length) {
-        return null;
-    }
+    if (!netWorthHistory?.length) return null;
 
     let processedData = processTokenHistory(netWorthHistory, selectedToken.symbol);
-
     if (!processedData.length) {
         processedData = processProtocolHistory(netWorthHistory, selectedToken.name).map((entry) => ({
             ...entry,
@@ -54,25 +46,21 @@ export const TokenChart: React.FC<{
     }
 
     return (
-        <>
-            <div style={{ display: "flex", alignItems: "center", marginTop: 20, gap: 8 }}>
-                <ColoredChip label={selectedToken.symbol} fillPercentage={0} variant="outlined" />
-                <Button
+        <Card sx={{ borderRadius: 4, p: { xs: 2, sm: 3 }, mt: 2.5 }}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography variant="h5">Asset history</Typography>
+                    <ColoredChip label={selectedToken.symbol} fillPercentage={0} variant="outlined" />
+                </Box>
+                <IconButton
+                    aria-label="Close asset history"
                     onClick={() => setSelectedToken(null)}
-                    variant="text"
                     size="small"
-                    sx={{
-                        color: "#f44336",
-                        minWidth: "auto",
-                        padding: "4px",
-                        fontWeight: "bold",
-                        borderRadius: "50%",
-                    }}
+                    sx={{ color: "text.secondary" }}
                 >
                     <CloseIcon fontSize="small" />
-                </Button>
-            </div>
-
+                </IconButton>
+            </Box>
             <Chart
                 data={processedData}
                 lines={[
@@ -85,6 +73,6 @@ export const TokenChart: React.FC<{
                 leftYAxisFormatter={(value) => (value !== null ? `${formatNumber(value, "axis")}` : "")}
                 rightYAxisFormatter={(value) => `$ ${formatNumber(value, "axis")}`}
             />
-        </>
+        </Card>
     );
 };

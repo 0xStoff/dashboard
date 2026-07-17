@@ -40,7 +40,8 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress, req) => 
                 where: { chain_id: chain, symbol },
             });
 
-            const logoPath = existingToken?.logo_path || (logo_url ? await downloadLogo(logo_url, id) : null);
+            const downloadedLogoPath = logo_url ? await downloadLogo(logo_url, id) : null;
+            const logoPath = downloadedLogoPath || existingToken?.logo_path || null;
 
             const [dbToken] = await TokenModel.upsert(
                 {

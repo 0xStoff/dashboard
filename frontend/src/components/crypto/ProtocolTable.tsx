@@ -8,8 +8,8 @@ import ProtocolPositionRow from "./ProtocolPositionRow";
 const styles = {
     card: (isActive: boolean) => ({
         opacity: isActive ? 1 : 0.5,
-        marginY: 5,
-        borderRadius: 10,
+        marginY: 2.5,
+        borderRadius: 4,
         overflowX: "auto",
         cursor: "pointer",
     }),

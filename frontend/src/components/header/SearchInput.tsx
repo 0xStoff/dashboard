@@ -29,19 +29,20 @@ const SearchInput: React.FC<SearchInputProps> = ({ searchQuery, setSearchQuery }
   return (
     <TextField
       variant="outlined"
-      placeholder="Search..."
+      placeholder="Search assets"
       size="small"
       value={searchQuery}
       inputRef={searchInputRef}
       onChange={(e) => setSearchQuery(e.target.value)}
       sx={{
-        background: "rgba(255, 255, 255, 0.1)",
-        borderRadius: "8px",
-        width: "180px",
+        background: "rgba(255, 255, 255, 0.045)",
+        borderRadius: "12px",
+        width: {xs: "140px", sm: "220px"},
         marginRight: "10px",
         input: { color: "white" },
         "& .MuiOutlinedInput-root": {
-          "& fieldset": { border: "none" },
+          "& fieldset": { borderColor: "rgba(255,255,255,.08)" },
+          "&:hover fieldset": { borderColor: "rgba(139,124,255,.35)" },
         },
       }}
       InputProps={{

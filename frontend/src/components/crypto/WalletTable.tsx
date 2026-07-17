@@ -22,11 +22,12 @@ import {ChipWithTooltip} from "../utils/ChipWithTooltip";
 import { buildLogoUrl } from "../../config/env";
 
 const styles = {
-    container: {flex: 1}, card: {borderRadius: 10, overflowX: "auto", position: "relative"},
+    container: {flex: 1}, card: {borderRadius: 4, overflowX: "auto", position: "relative"},
 
     tableRow: (isActive: boolean) => ({
         cursor: "pointer",
-        opacity: isActive ? 1 : 0.5,
+        opacity: isActive ? 1 : 0.38,
+        transition: "opacity .2s, background-color .2s",
         "&:last-child td, &:last-child th": {border: 0}
     }), tableCell: {border: 0}, avatarWrapper: {
         display: "flex", alignItems: "center", position: "relative", width: "fit-content"
@@ -116,8 +117,8 @@ const WalletTable: React.FC<{
                     <TableHead>
                         <TableRow>
                             <TableCell sx={{border: 0, padding: 3}} colSpan={isMobile ? 3 : 6}>
-                                <Typography variant="h5" fontWeight="bold">Wallet</Typography>
-                                <Typography variant="body2" fontWeight="bold">$ {toFixedString(totalUSD)}</Typography>
+                                <Typography variant="h5">Assets</Typography>
+                                <Typography variant="body2" color="text.secondary">$ {toFixedString(totalUSD)} total balance</Typography>
                             </TableCell>
                         </TableRow>
                     </TableHead>

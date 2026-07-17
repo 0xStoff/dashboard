@@ -3,11 +3,16 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const Dotenv = require('dotenv-webpack');
 const webpack = require('webpack'); // Import Webpack
 
-module.exports = {
+module.exports = (_, argv = {}) => {
+    const isProduction = argv.mode === 'production';
+
+    return {
     entry: './src/index.tsx',
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: 'bundle.js',
+        filename: isProduction ? '[name].[contenthash:8].js' : '[name].js',
+        chunkFilename: isProduction ? '[name].[contenthash:8].chunk.js' : '[name].chunk.js',
+        clean: true,
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js', '.jsx'], // Add '.tsx' and '.ts' as resolvable extensions.
@@ -53,10 +58,46 @@ module.exports = {
             Buffer: ['buffer', 'Buffer'], // Provide Buffer globally
         }),
     ],
+    optimization: {
+        splitChunks: {
+            chunks: 'all',
+            cacheGroups: {
+                react: {
+                    test: /[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom)[\\/]/,
+                    name: 'react-vendor',
+                    priority: 30,
+                },
+                mui: {
+                    test: /[\\/]node_modules[\\/](@mui|@emotion)[\\/]/,
+                    name: 'mui-vendor',
+                    priority: 20,
+                },
+                charts: {
+                    test: /[\\/]node_modules[\\/](@mui[\\/]x-charts|recharts|d3-.*)[\\/]/,
+                    name: 'charts-vendor',
+                    priority: 20,
+                },
+                vendors: {
+                    test: /[\\/]node_modules[\\/]/,
+                    name: 'vendors',
+                    priority: 10,
+                },
+            },
+        },
+        runtimeChunk: 'single',
+    },
+    performance: isProduction ? {
+        hints: 'warning',
+        maxAssetSize: 1500000,
+        maxEntrypointSize: 2000000,
+    } : false,
     devServer: {
         allowedHosts: "all",
         host: "0.0.0.0",
         port: 8080,
+        client: {
+            overlay: {errors: true, warnings: false},
+        },
         proxy: {
             "/binance": {
                 target: "https://api.binance.com",
@@ -76,10 +117,11 @@ module.exports = {
                 secure: false,
             },
             '/api': {
-                target: 'http://stoffpi.local:3000',
+                target: 'http://backend:3000',
                 changeOrigin: true,
                 secure: false,
             },
         },
     },
+    };
 };
