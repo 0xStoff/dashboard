@@ -48,7 +48,7 @@ const TransactionCards: React.FC<TransactionCardsProps> = ({
         };
     }, [transactions]);
 
-    const lastNetWorth = (netWorth?.totalNetWorth || 0) * rate;
+    const lastNetWorth = (netWorth[0]?.totalNetWorth || 0) * rate;
     const netWithdrawals =
         totals.totalWithdrawals - approvedSum - totals.totalXmrWithdrawals - rubicXmrSum;
     const netProfit =

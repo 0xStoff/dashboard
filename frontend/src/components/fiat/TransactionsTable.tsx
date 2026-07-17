@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import { TableColumn } from "../../interfaces";
 
-interface TransactionsTableProps<T extends Record<string, unknown>> {
+interface TransactionsTableProps<T extends object> {
     title: string;
     transactions: T[];
     columns: TableColumn<T>[];
@@ -32,7 +32,7 @@ const formatDateTime = (value: unknown) =>
         minute: "2-digit",
     });
 
-function TransactionsTable<T extends Record<string, unknown>>({
+function TransactionsTable<T extends object>({
     title,
     transactions,
     columns,
@@ -73,7 +73,9 @@ function TransactionsTable<T extends Record<string, unknown>>({
                             <TableRow key={rowIndex}>
                                 {columns.map((column) => {
                                     const value = transaction[column.key];
-                                    const status = String(transaction.status || "");
+                                    const status = String(
+                                        (transaction as T & {status?: unknown}).status || ""
+                                    );
                                     const isCompleted = COMPLETED_STATUSES.has(status);
                                     const key = String(column.key);
 

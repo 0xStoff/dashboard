@@ -121,12 +121,14 @@ const useFetchTransactions = () => {
     }, []);
 
     const refetch = useCallback(
-        async (addresses: string[] = []) => {
+        async (addresses: string[] = [], gnosisPayToken: string) => {
             await Promise.all([
                 fetchTransactionsFromServer("kraken/ledgers?asset=CHF.HOLD,EUR.HOLD,CHF,EUR,XMR"),
                 fetchTransactionsFromServer("binance/fiat-payments"),
                 fetchTransactionsFromServer("binance/fiat-orders"),
-                apiClient.get("/gnosispay/transactions"),
+                apiClient.get("/gnosispay/transactions", {
+                    headers: {"X-Gnosis-Pay-Token": gnosisPayToken},
+                }),
                 apiClient.post("/rubic/transactions", { addresses }),
             ]);
 

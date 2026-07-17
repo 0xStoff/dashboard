@@ -3,7 +3,9 @@ export const toFixedString = (item: number | string, digits = 2) => {
   return Math.abs(num).toLocaleString("de-CH", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 };
 
-export const formatNumber = (value, type) => {
+type NumberFormat = "amount" | "price" | "axis" | "percentage";
+
+export const formatNumber = (value: number, type: NumberFormat) => {
   switch (type) {
     case "amount":
     case "price":

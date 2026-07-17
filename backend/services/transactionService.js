@@ -143,12 +143,12 @@ const fetchEurToChfRate = async () => {
     }
 };
 
-export const syncGnosisPayTransactions = async () => {
+export const syncGnosisPayTransactions = async (bearerToken) => {
     const response = await axios.get("https://api.gnosispay.com/api/v1/cards/transactions", {
         headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
-            Authorization: `Bearer ${process.env.BEARER_TOKEN}`,
+            Authorization: `Bearer ${bearerToken}`,
         },
     });
 

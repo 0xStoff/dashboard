@@ -13,6 +13,7 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  type AlertColor,
   Tooltip,
   Typography,
 } from "@mui/material";
@@ -25,6 +26,7 @@ const TokenDataUpdater: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [message, setMessage] = useState("");
+  const [messageSeverity, setMessageSeverity] = useState<AlertColor>("success");
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedWallet, setSelectedWallet] = useState("");
   const [lastUpdated, setLastUpdated] = useState<string | null>(() => localStorage.getItem("lastUpdated"));
@@ -44,33 +46,37 @@ const TokenDataUpdater: React.FC = () => {
   const handleUpdate = useCallback(
     async (type: "all" | "other" | "evm" | "evm_wallet") => {
       setIsLoading(true);
-      localStorage.clear();
-
       let endpoint = "/wallets/refetch";
 
       switch (type) {
         case "all":
+          setMessageSeverity("info");
           setMessage("Refreshing all wallet data...");
           break;
         case "other":
+          setMessageSeverity("info");
           endpoint = "/wallets/refetch/other";
           setMessage("Refreshing static and non-EVM data...");
           break;
         case "evm":
+          setMessageSeverity("info");
           endpoint = "/wallets/refetch/evm";
           setMessage("Refreshing all EVM wallet data...");
           break;
         case "evm_wallet":
           if (!selectedWallet) {
+            setMessageSeverity("warning");
             setMessage("Please select a wallet first.");
             setSnackbarOpen(true);
             setIsLoading(false);
             return;
           }
           endpoint = `/wallets/refetch/evm/${selectedWallet}`;
+          setMessageSeverity("info");
           setMessage(`Refreshing EVM data for wallet ${selectedWallet}...`);
           break;
         default:
+          setMessageSeverity("error");
           setMessage("Invalid refresh option.");
           setSnackbarOpen(true);
           setIsLoading(false);
@@ -82,12 +88,14 @@ const TokenDataUpdater: React.FC = () => {
 
       try {
         const response = await apiClient.post(endpoint);
+        setMessageSeverity("success");
         setMessage(response.data?.message || "Token data refreshed successfully.");
         const now = new Date().toISOString();
         setLastUpdated(now);
         localStorage.setItem("lastUpdated", now);
       } catch (error) {
         console.error(error);
+        setMessageSeverity("error");
         setMessage("Failed to refresh token data.");
       } finally {
         setIsLoading(false);
@@ -130,14 +138,15 @@ const TokenDataUpdater: React.FC = () => {
               </Typography>
             ) : wallets.length > 0 ? (
               <FormControl fullWidth>
-                <InputLabel>Select Wallet</InputLabel>
+                <InputLabel id="wallet-refetch-label">Wallet</InputLabel>
                 <Select
+                  labelId="wallet-refetch-label"
+                  label="Wallet"
                   value={selectedWallet}
                   onChange={(event) => setSelectedWallet(String(event.target.value))}
-                  displayEmpty
                 >
                   <MenuItem value="" disabled>
-                    Select a wallet
+                    Select wallet
                   </MenuItem>
                   {wallets.map((wallet) => (
                     <MenuItem key={wallet.id} value={wallet.id}>
@@ -168,7 +177,12 @@ const TokenDataUpdater: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      <Snackbar open={snackbarOpen} message={message} handleClose={() => setSnackbarOpen(false)} />
+      <Snackbar
+        open={snackbarOpen}
+        message={message}
+        severity={messageSeverity}
+        handleClose={() => setSnackbarOpen(false)}
+      />
     </>
   );
 };

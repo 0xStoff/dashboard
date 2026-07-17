@@ -50,9 +50,14 @@ router.get("/kraken/ledgers", async (req, res) => {
     }
 });
 
-router.get("/gnosispay/transactions", async (_req, res) => {
+router.get("/gnosispay/transactions", async (req, res) => {
     try {
-        const transactions = await syncGnosisPayTransactions();
+        const bearerToken = req.get("X-Gnosis-Pay-Token")?.trim();
+        if (!bearerToken) {
+            return res.status(400).json({error: "Gnosis Pay bearer token is required"});
+        }
+
+        const transactions = await syncGnosisPayTransactions(bearerToken);
         return res.json(transactions);
     } catch (error) {
         const details = error.response?.data || error.message || String(error);

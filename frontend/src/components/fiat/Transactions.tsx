@@ -1,9 +1,16 @@
 import React, { useMemo, useState } from "react";
+import axios from "axios";
 import {
+    Alert,
     Box,
     Button,
     CircularProgress,
     Container,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
     TextField,
     useMediaQuery,
 } from "@mui/material";
@@ -37,7 +44,7 @@ const gnosisColumns: TableColumn<FormattedGnosisTransaction>[] = [
     { label: "Status", key: "status" },
 ];
 
-const filterByDateRange = <T extends Record<string, unknown>>(
+const filterByDateRange = <T extends object>(
     items: T[],
     dateKey: keyof T,
     startDate: Date,
@@ -56,10 +63,47 @@ const Transactions = () => {
         useFetchTransactions();
     const [startDate, setStartDate] = useState(new Date("2020-01-01"));
     const [endDate, setEndDate] = useState(new Date());
+    const [refetchDialogOpen, setRefetchDialogOpen] = useState(false);
+    const [gnosisPayToken, setGnosisPayToken] = useState("");
+    const [refetching, setRefetching] = useState(false);
+    const [refetchError, setRefetchError] = useState("");
 
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
     const { wallets } = useWallets();
+
+    const closeRefetchDialog = () => {
+        if (refetching) return;
+        setGnosisPayToken("");
+        setRefetchError("");
+        setRefetchDialogOpen(false);
+    };
+
+    const handleRefetch = async () => {
+        const token = gnosisPayToken.trim().replace(/^Bearer\s+/i, "");
+        if (!token) {
+            setRefetchError("Enter your Gnosis Pay bearer token.");
+            return;
+        }
+
+        setRefetching(true);
+        setRefetchError("");
+        try {
+            await refetch(evmAddresses, token);
+            setGnosisPayToken("");
+            setRefetchDialogOpen(false);
+        } catch (error) {
+            const responseData = axios.isAxiosError(error) ? error.response?.data : null;
+            const message =
+                responseData?.details ||
+                responseData?.error ||
+                (error instanceof Error ? error.message : null) ||
+                "Transaction refetch failed";
+            setRefetchError(typeof message === "string" ? message : JSON.stringify(message));
+        } finally {
+            setRefetching(false);
+        }
+    };
 
     const evmAddresses = useMemo(
         () => wallets.filter((wallet) => wallet.chain === "evm").map((wallet) => wallet.wallet),
@@ -124,7 +168,40 @@ const Transactions = () => {
 
     return (
         <Container sx={{ marginTop: 10 }}>
-            <Button onClick={() => refetch(evmAddresses)}>Refetch</Button>
+            <Button onClick={() => setRefetchDialogOpen(true)}>Refetch</Button>
+
+            <Dialog open={refetchDialogOpen} onClose={closeRefetchDialog} fullWidth maxWidth="xs">
+                <DialogTitle>Refetch transactions</DialogTitle>
+                <DialogContent>
+                    <DialogContentText sx={{mb: 2}}>
+                        Enter your Gnosis Pay bearer token. It is used for this refetch only and is not stored.
+                    </DialogContentText>
+                    {refetchError && <Alert severity="error" sx={{mb: 2}}>{refetchError}</Alert>}
+                    <TextField
+                        autoFocus
+                        fullWidth
+                        label="Gnosis Pay bearer token"
+                        type="password"
+                        value={gnosisPayToken}
+                        disabled={refetching}
+                        onChange={(event) => setGnosisPayToken(event.target.value)}
+                        onKeyDown={(event) => {
+                            if (event.key === "Enter") handleRefetch();
+                        }}
+                        autoComplete="off"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={closeRefetchDialog} disabled={refetching}>Cancel</Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleRefetch}
+                        disabled={refetching || !gnosisPayToken.trim()}
+                    >
+                        {refetching ? "Refetching…" : "Refetch"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             <TransactionCards
                 transactions={[...deposits, ...withdrawals]}

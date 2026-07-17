@@ -6,6 +6,14 @@ import { NetWorthData, Token } from "../../interfaces";
 import Chart from "../utils/Chart";
 import { ColoredChip } from "../utils/ChipWithTooltip";
 
+interface ChartHistoryPoint {
+    date: string;
+    balance: number | null;
+    usdValue: number;
+}
+
+const isHistoryPoint = <T,>(item: T | null): item is T => item !== null;
+
 const processProtocolHistory = (netWorthHistory: NetWorthData[], selectedItem: string) =>
     netWorthHistory
         .map((entry) => {
@@ -14,7 +22,7 @@ const processProtocolHistory = (netWorthHistory: NetWorthData[], selectedItem: s
                 ? { date: new Date(entry.date).toISOString().split("T")[0], usdValue: item.totalUSD }
                 : null;
         })
-        .filter(Boolean);
+        .filter(isHistoryPoint);
 
 const processTokenHistory = (netWorthHistory: NetWorthData[], selectedItem: string) =>
     netWorthHistory
@@ -28,7 +36,7 @@ const processTokenHistory = (netWorthHistory: NetWorthData[], selectedItem: stri
                   }
                 : null;
         })
-        .filter(Boolean);
+        .filter(isHistoryPoint);
 
 export const TokenChart: React.FC<{
     netWorthHistory: NetWorthData[];
@@ -37,7 +45,7 @@ export const TokenChart: React.FC<{
 }> = ({ netWorthHistory, selectedToken, setSelectedToken }) => {
     if (!netWorthHistory?.length) return null;
 
-    let processedData = processTokenHistory(netWorthHistory, selectedToken.symbol);
+    let processedData: ChartHistoryPoint[] = processTokenHistory(netWorthHistory, selectedToken.symbol);
     if (!processedData.length) {
         processedData = processProtocolHistory(netWorthHistory, selectedToken.name).map((entry) => ({
             ...entry,
@@ -67,11 +75,11 @@ export const TokenChart: React.FC<{
                     { dataKey: "balance", stroke: "#8884d8", yAxisId: "left" },
                     { dataKey: "usdValue", stroke: "#82ca9d", yAxisId: "right" },
                 ]}
-                xAxisFormatter={(date) =>
+                xAxisFormatter={(date: string) =>
                     new Date(date).toLocaleDateString("de-CH", { month: "short", day: "2-digit" })
                 }
-                leftYAxisFormatter={(value) => (value !== null ? `${formatNumber(value, "axis")}` : "")}
-                rightYAxisFormatter={(value) => `$ ${formatNumber(value, "axis")}`}
+                leftYAxisFormatter={(value: number) => (value !== null ? `${formatNumber(value, "axis")}` : "")}
+                rightYAxisFormatter={(value: number) => `$ ${formatNumber(value, "axis")}`}
             />
         </Card>
     );
