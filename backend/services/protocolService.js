@@ -20,6 +20,20 @@ const createProtocolAccumulator = (name) => ({
     totalUSD: 0,
 });
 
+const mergeWalletAmount = (wallets, walletTag, walletAmount) => {
+    if (!walletTag || walletAmount === undefined) {
+        return;
+    }
+
+    const existingWallet = wallets.find((wallet) => wallet.tag === walletTag);
+    if (existingWallet) {
+        existingWallet.amount += Number(walletAmount || 0);
+        return;
+    }
+
+    wallets.push({ tag: walletTag, amount: Number(walletAmount || 0) });
+};
+
 const unifyPositions = (positions) => {
     const unified = {};
 
@@ -32,7 +46,11 @@ const unifyPositions = (positions) => {
 
         unified[key].amount += position.amount;
         unified[key].usdValue += position.usdValue;
-        unified[key].wallets = [...unified[key].wallets, ...position.wallets];
+        position.wallets.forEach((wallet) => {
+            mergeWalletAmount(unified[key].wallets, wallet.tag, wallet.amount);
+        });
+        unified[key].price =
+            unified[key].amount > 0 ? unified[key].usdValue / unified[key].amount : 0;
     });
 
     return Object.values(unified).sort((a, b) => b.usdValue - a.usdValue);
@@ -70,12 +88,11 @@ const addPosition = ({
     );
 
     if (existingPosition) {
-        if (walletTag && walletAmount !== undefined) {
-            const walletExists = existingPosition.wallets.some((wallet) => wallet.tag === walletTag);
-            if (!walletExists) {
-                existingPosition.wallets.push({ tag: walletTag, amount: walletAmount });
-            }
-        }
+        existingPosition.amount += totalAmount;
+        existingPosition.usdValue += totalUsdValue;
+        existingPosition.price =
+            existingPosition.amount > 0 ? existingPosition.usdValue / existingPosition.amount : 0;
+        mergeWalletAmount(existingPosition.wallets, walletTag, walletAmount);
     } else {
         acc[protocolName].positions.push({
             type: itemName,
