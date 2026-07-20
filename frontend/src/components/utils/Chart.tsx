@@ -16,7 +16,10 @@ interface ChartDatum {
     date: string;
     balance?: number | null;
     totalNetWorth?: number;
+    adjustedNetWorth?: number;
     usdValue?: number;
+    deposits?: number;
+    withdrawals?: number;
 }
 
 interface ChartLine {
@@ -33,6 +36,13 @@ interface ChartProps {
     rightYAxisFormatter: (value: number) => string;
     showBrush?: boolean;
 }
+
+const LINE_LABELS: Partial<Record<keyof ChartDatum, string>> = {
+    totalNetWorth: "Net worth",
+    adjustedNetWorth: "Flow-adjusted",
+    usdValue: "Value",
+    balance: "Balance",
+};
 
 const Chart = ({
     data,
@@ -87,9 +97,7 @@ const Chart = ({
                     if (active && payload && payload.length) {
                         const index = data.findIndex((datum) => datum.date === label);
                         const currentData = data[index] || {};
-                        const currentValue = currentData.totalNetWorth ?? currentData.usdValue ?? 0;
                         const balance = currentData.balance ?? 0;
-
 
                         return (<Card sx={{
                             borderRadius: 3,
@@ -98,8 +106,27 @@ const Chart = ({
                             backdropFilter: "blur(14px)",
                             boxShadow: "0 14px 40px rgba(0,0,0,.38)",
                         }}>
-                            <Typography fontWeight="bold">{`$ ${toFixedString(currentValue, 2)}`}</Typography>
-                            {balance ? <Typography>{`Balance: ${formatNumber(balance, "amount")}`}</Typography> : null}
+                            {payload.map((item) => (
+                                <Typography key={String(item.dataKey)} fontWeight="bold" sx={{color: item.color}}>
+                                    {LINE_LABELS[item.dataKey as keyof ChartDatum] || item.name}:{" "}
+                                    {item.dataKey === "balance"
+                                        ? formatNumber(Number(item.value) || 0, "amount")
+                                        : `$ ${toFixedString(Number(item.value) || 0, 2)}`}
+                                </Typography>
+                            ))}
+                            {balance && !payload.some((item) => item.dataKey === "balance")
+                                ? <Typography>{`Balance: ${formatNumber(balance, "amount")}`}</Typography>
+                                : null}
+                            {currentData.deposits ? (
+                                <Typography variant="body2" color="success.main">
+                                    Deposits: +$ {toFixedString(currentData.deposits, 2)}
+                                </Typography>
+                            ) : null}
+                            {currentData.withdrawals ? (
+                                <Typography variant="body2" color="warning.main">
+                                    Withdrawals: −$ {toFixedString(currentData.withdrawals, 2)}
+                                </Typography>
+                            ) : null}
                             <Typography variant="caption">{label}</Typography>
                         </Card>);
                     }

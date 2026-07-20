@@ -25,6 +25,12 @@ export interface TransactionTotals {
   fees: number;
 }
 
+export interface CashFlowEvent {
+  date: string;
+  depositsChf: number;
+  withdrawalsChf: number;
+}
+
 const normalize = (value: string | null | undefined) => (value || "").trim().toLowerCase();
 const absoluteNumber = (value: unknown) => Math.abs(Number(value) || 0);
 
@@ -66,6 +72,67 @@ const depositAmountChf = (transaction: TransactionRecord, eurToChfRate: number) 
   // CHF.HOLD, or the original EUR amount.
   return absoluteNumber(transaction.amount);
 };
+
+const transactionDate = (value: string | number): string | null => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString().split("T")[0];
+};
+
+export const calculateCashFlowEvents = (
+  transactions: TransactionRecord[],
+  gnosisTransactions: GnosisTransactionRecord[],
+  eurToChfRate: number
+): CashFlowEvent[] => {
+  const events = new Map<string, CashFlowEvent>();
+  const eventFor = (date: string) => {
+    const existing = events.get(date);
+    if (existing) return existing;
+
+    const event = {date, depositsChf: 0, withdrawalsChf: 0};
+    events.set(date, event);
+    return event;
+  };
+
+  transactions.forEach((transaction) => {
+    if (!isIncluded(transaction) || !isSuccessful(transaction)) return;
+    const date = transactionDate(transaction.date || transaction.timestamp);
+    if (!date) return;
+
+    const event = eventFor(date);
+    const exchange = normalize(transaction.exchange);
+    const asset = (transaction.asset || "").trim().toUpperCase();
+
+    if (isDeposit(transaction)) {
+      event.depositsChf += depositAmountChf(transaction, eurToChfRate);
+      return;
+    }
+
+    if (exchange === "rubic" && isXmr(transaction)) {
+      event.withdrawalsChf += absoluteNumber(transaction.chf_value);
+      return;
+    }
+
+    if (isWithdrawal(transaction)) {
+      if (isXmr(transaction)) {
+        event.withdrawalsChf += absoluteNumber(transaction.chf_value);
+      } else if (exchange === "binance" || FIAT_ASSETS.has(asset)) {
+        event.withdrawalsChf += absoluteNumber(transaction.amount);
+      }
+    }
+  });
+
+  gnosisTransactions.forEach((transaction) => {
+    if (!isApprovedGnosisTransaction(transaction)) return;
+    const date = transactionDate(transaction.date);
+    if (!date) return;
+    eventFor(date).withdrawalsChf += gnosisAmountChf(transaction);
+  });
+
+  return [...events.values()]
+    .filter(({depositsChf, withdrawalsChf}) => depositsChf > 0 || withdrawalsChf > 0)
+    .sort((left, right) => left.date.localeCompare(right.date));
+};
+
 
 const addDeposit = (
   totals: TransactionTotals,
