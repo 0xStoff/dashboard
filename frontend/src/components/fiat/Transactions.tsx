@@ -81,12 +81,7 @@ const Transactions = () => {
     const [transactionError, setTransactionError] = useState("");
 
     const { wallets } = useWallets();
-    const {
-        rate: usdToChfRate,
-        eurRate: eurToChfRate,
-        loading: exchangeRateLoading,
-        error: exchangeRateError,
-    } = useUsdToChfRate();
+    const { eurRate: eurToChfRate } = useUsdToChfRate();
 
     const closeRefetchDialog = () => {
         if (refetching) return;
@@ -229,9 +224,6 @@ const Transactions = () => {
             <TransactionCards
                 totals={totals}
                 gnosisSpending={gnosisSpending}
-                usdToChfRate={usdToChfRate}
-                exchangeRateLoading={exchangeRateLoading}
-                exchangeRateError={exchangeRateError || eurToChfRate === null}
             />
 
             <Box sx={{ display: "flex", gap: 2, mb: 2 }}>

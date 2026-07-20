@@ -18,7 +18,6 @@ import {
 import AppProviders from "./app/AppProviders";
 import { NetWorthChart } from "./components/crypto/NetWorthChart";
 import PortfolioInsights from "./components/crypto/PortfolioInsights";
-import CapitalPerformance from "./components/crypto/CapitalPerformance";
 import { TokenChart } from "./components/crypto/TokenChart";
 import Header from "./components/header/Header";
 import { useAuthStatus } from "./hooks/useAuthStatus";
@@ -143,7 +142,7 @@ const DashboardApp: React.FC = () => {
                             Everything you own, in one calm view.
                         </Typography>
                         <Typography mt={2} color="text.secondary">
-                            Connect your wallet to see balances, positions, protocols and performance.
+                            Connect your wallet to see balances, positions, protocols and history.
                         </Typography>
                     </Box>
                 </Box>
@@ -180,17 +179,6 @@ const DashboardApp: React.FC = () => {
                                             </IconButton>
                                         )}
                                     </Box>
-
-                                    {selectedWalletId === "all" &&
-                                        !searchQuery.trim() &&
-                                        chains.some((chain) => chain.chain_id === "hood") && (
-                                        <CapitalPerformance
-                                            currentValue={
-                                                chains.find((chain) => chain.chain_id === "hood")?.usd_value || 0
-                                            }
-                                            netWorthHistory={netWorth}
-                                        />
-                                    )}
 
                                     <PortfolioInsights
                                         chains={chains}

@@ -1,6 +1,6 @@
 import React from "react";
 import CloseIcon from "@mui/icons-material/Close";
-import { Box, Card, Chip, IconButton, Typography } from "@mui/material";
+import { Box, Card, IconButton, Typography } from "@mui/material";
 import { formatNumber } from "../../utils/number-utils";
 import { NetWorthData, Token } from "../../interfaces";
 import Chart from "../utils/Chart";
@@ -64,13 +64,7 @@ export const TokenChart: React.FC<{
     if (!netWorthHistory?.length) return null;
 
     const processedData = processHistory(netWorthHistory, selectedToken);
-    const firstPoint = processedData[0];
     const latestPoint = processedData[processedData.length - 1];
-    const trackedValueChange =
-        firstPoint && latestPoint ? latestPoint.usdValue - firstPoint.usdValue : 0;
-    const trackedValueChangePct =
-        firstPoint?.usdValue ? (trackedValueChange / firstPoint.usdValue) * 100 : 0;
-    const trackedTone = trackedValueChange >= 0 ? "success.main" : "error.main";
 
     return (
         <Card sx={{ borderRadius: 4, p: { xs: 2, sm: 3 }, mt: 2.5 }}>
@@ -90,34 +84,10 @@ export const TokenChart: React.FC<{
             </Box>
             {processedData.length ? (
                 <>
-                    <Box
-                        sx={{
-                            display: "grid",
-                            gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(3, minmax(0, 1fr))" },
-                            gap: 1.5,
-                            mb: 1.5,
-                        }}
-                    >
+                    <Box sx={{ mb: 1.5 }}>
                         <Box>
                             <Typography variant="overline" color="text.secondary">CURRENT VALUE</Typography>
                             <Typography variant="h6">${formatNumber(latestPoint.usdValue, "axis")}</Typography>
-                        </Box>
-                        <Box>
-                            <Typography variant="overline" color="text.secondary">TRACKED CHANGE</Typography>
-                            <Typography variant="h6" sx={{ color: trackedTone }}>
-                                {trackedValueChange >= 0 ? "+" : "−"}$
-                                {formatNumber(Math.abs(trackedValueChange), "axis")}
-                            </Typography>
-                        </Box>
-                        <Box sx={{ display: { xs: "none", sm: "block" } }}>
-                            <Typography variant="overline" color="text.secondary">SINCE FIRST SNAPSHOT</Typography>
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                <Typography variant="h6" sx={{ color: trackedTone }}>
-                                    {trackedValueChangePct >= 0 ? "+" : ""}
-                                    {trackedValueChangePct.toFixed(1)}%
-                                </Typography>
-                                <Chip label="Not cost-basis P&L" size="small" variant="outlined" />
-                            </Box>
                         </Box>
                     </Box>
                     <Chart

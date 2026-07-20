@@ -77,21 +77,6 @@ export interface NetWorthData {
   protocolHistory: Protocol[];
 }
 
-export interface CapitalFlow {
-  id: number;
-  scopeChainId: string;
-  type: "deposit" | "withdrawal";
-  asset: string;
-  amount: number;
-  usdValue: number;
-  occurredAt: string;
-  source: string | null;
-  txHash: string | null;
-  note: string | null;
-}
-
-export type NewCapitalFlow = Omit<CapitalFlow, "id">;
-
 export interface HistoryData {
   wallets: Wallet[];
   chains: Chain[];
