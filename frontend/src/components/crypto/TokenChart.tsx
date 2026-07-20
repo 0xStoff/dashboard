@@ -1,6 +1,6 @@
 import React from "react";
 import CloseIcon from "@mui/icons-material/Close";
-import { Box, Card, IconButton, Typography } from "@mui/material";
+import { Box, Card, Chip, IconButton, Typography } from "@mui/material";
 import { formatNumber } from "../../utils/number-utils";
 import { NetWorthData, Token } from "../../interfaces";
 import Chart from "../utils/Chart";
@@ -12,31 +12,49 @@ interface ChartHistoryPoint {
     usdValue: number;
 }
 
-const isHistoryPoint = <T,>(item: T | null): item is T => item !== null;
+const PROTOCOL_CHAIN_ID = "protocol";
 
-const processProtocolHistory = (netWorthHistory: NetWorthData[], selectedItem: string) =>
-    netWorthHistory
-        .map((entry) => {
-            const item = entry.protocolHistory?.find((historyItem) => historyItem.name === selectedItem);
-            return item
-                ? { date: new Date(entry.date).toISOString().split("T")[0], usdValue: item.totalUSD }
-                : null;
-        })
-        .filter(isHistoryPoint);
+const toFiniteNumber = (value: unknown): number | null => {
+    const parsed = typeof value === "number" ? value : Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+};
 
-const processTokenHistory = (netWorthHistory: NetWorthData[], selectedItem: string) =>
-    netWorthHistory
-        .map((entry) => {
-            const item = entry.tokenHistory?.find((historyItem) => historyItem.symbol === selectedItem);
-            return item
-                ? {
-                      date: new Date(entry.date).toISOString().split("T")[0],
-                      balance: item.amount,
-                      usdValue: item.total_usd_value,
-                  }
-                : null;
-        })
-        .filter(isHistoryPoint);
+const getHistoryDate = (value: string): string | null => {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString().split("T")[0];
+};
+
+const processHistory = (netWorthHistory: NetWorthData[], selectedToken: Token): ChartHistoryPoint[] => {
+    const points = netWorthHistory.reduce<ChartHistoryPoint[]>((historyPoints, entry) => {
+        const date = getHistoryDate(entry.date);
+        if (!date) return historyPoints;
+
+        if (selectedToken.chain_id === PROTOCOL_CHAIN_ID) {
+            const protocol = entry.protocolHistory?.find(({ name }) => name === selectedToken.name);
+            const usdValue = toFiniteNumber(protocol?.totalUSD);
+            if (usdValue !== null) historyPoints.push({ date, balance: null, usdValue });
+            return historyPoints;
+        }
+
+        const tokensWithSymbol = entry.tokenHistory?.filter(({ symbol }) => symbol === selectedToken.symbol) ?? [];
+        const token =
+            tokensWithSymbol.find(({ chain_id }) => chain_id === selectedToken.chain_id) ??
+            // Old snapshots did not always include a chain id. Only fall back when
+            // the symbol is unambiguous, otherwise a different chain would be charted.
+            (tokensWithSymbol.length === 1 ? tokensWithSymbol[0] : undefined);
+        const balance = toFiniteNumber(token?.amount);
+        const usdValue = toFiniteNumber(token?.total_usd_value);
+
+        if (balance !== null && usdValue !== null) {
+            historyPoints.push({ date, balance, usdValue });
+        }
+        return historyPoints;
+    }, []);
+
+    // Several refreshes can be stored on the same day. Keep the latest point so
+    // the x-axis and tooltip have a single, deterministic value per date.
+    return Array.from(new Map(points.map((point) => [point.date, point])).values());
+};
 
 export const TokenChart: React.FC<{
     netWorthHistory: NetWorthData[];
@@ -45,13 +63,14 @@ export const TokenChart: React.FC<{
 }> = ({ netWorthHistory, selectedToken, setSelectedToken }) => {
     if (!netWorthHistory?.length) return null;
 
-    let processedData: ChartHistoryPoint[] = processTokenHistory(netWorthHistory, selectedToken.symbol);
-    if (!processedData.length) {
-        processedData = processProtocolHistory(netWorthHistory, selectedToken.name).map((entry) => ({
-            ...entry,
-            balance: null,
-        }));
-    }
+    const processedData = processHistory(netWorthHistory, selectedToken);
+    const firstPoint = processedData[0];
+    const latestPoint = processedData[processedData.length - 1];
+    const trackedValueChange =
+        firstPoint && latestPoint ? latestPoint.usdValue - firstPoint.usdValue : 0;
+    const trackedValueChangePct =
+        firstPoint?.usdValue ? (trackedValueChange / firstPoint.usdValue) * 100 : 0;
+    const trackedTone = trackedValueChange >= 0 ? "success.main" : "error.main";
 
     return (
         <Card sx={{ borderRadius: 4, p: { xs: 2, sm: 3 }, mt: 2.5 }}>
@@ -69,18 +88,64 @@ export const TokenChart: React.FC<{
                     <CloseIcon fontSize="small" />
                 </IconButton>
             </Box>
-            <Chart
-                data={processedData}
-                lines={[
-                    { dataKey: "balance", stroke: "#8884d8", yAxisId: "left" },
-                    { dataKey: "usdValue", stroke: "#82ca9d", yAxisId: "right" },
-                ]}
-                xAxisFormatter={(date: string) =>
-                    new Date(date).toLocaleDateString("de-CH", { month: "short", day: "2-digit" })
-                }
-                leftYAxisFormatter={(value: number) => (value !== null ? `${formatNumber(value, "axis")}` : "")}
-                rightYAxisFormatter={(value: number) => `$ ${formatNumber(value, "axis")}`}
-            />
+            {processedData.length ? (
+                <>
+                    <Box
+                        sx={{
+                            display: "grid",
+                            gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(3, minmax(0, 1fr))" },
+                            gap: 1.5,
+                            mb: 1.5,
+                        }}
+                    >
+                        <Box>
+                            <Typography variant="overline" color="text.secondary">CURRENT VALUE</Typography>
+                            <Typography variant="h6">${formatNumber(latestPoint.usdValue, "axis")}</Typography>
+                        </Box>
+                        <Box>
+                            <Typography variant="overline" color="text.secondary">TRACKED CHANGE</Typography>
+                            <Typography variant="h6" sx={{ color: trackedTone }}>
+                                {trackedValueChange >= 0 ? "+" : "−"}$
+                                {formatNumber(Math.abs(trackedValueChange), "axis")}
+                            </Typography>
+                        </Box>
+                        <Box sx={{ display: { xs: "none", sm: "block" } }}>
+                            <Typography variant="overline" color="text.secondary">SINCE FIRST SNAPSHOT</Typography>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                <Typography variant="h6" sx={{ color: trackedTone }}>
+                                    {trackedValueChangePct >= 0 ? "+" : ""}
+                                    {trackedValueChangePct.toFixed(1)}%
+                                </Typography>
+                                <Chip label="Not cost-basis P&L" size="small" variant="outlined" />
+                            </Box>
+                        </Box>
+                    </Box>
+                    <Chart
+                        data={processedData}
+                        lines={[
+                            ...(selectedToken.chain_id === PROTOCOL_CHAIN_ID
+                                ? []
+                                : [{ dataKey: "balance" as const, stroke: "#8884d8", yAxisId: "left" as const }]),
+                            { dataKey: "usdValue", stroke: "#82ca9d", yAxisId: "right" },
+                        ]}
+                        xAxisFormatter={(date: string) =>
+                            new Date(date).toLocaleDateString("de-CH", { month: "short", day: "2-digit" })
+                        }
+                        leftYAxisFormatter={(value: number) => String(formatNumber(value, "axis"))}
+                        rightYAxisFormatter={(value: number) => `$ ${formatNumber(value, "axis")}`}
+                        showBrush={processedData.length > 14}
+                    />
+                </>
+            ) : (
+                <Box sx={{ minHeight: 220, display: "grid", placeItems: "center", textAlign: "center", px: 2 }}>
+                    <Box>
+                        <Typography fontWeight={700}>No history recorded for this asset yet</Typography>
+                        <Typography variant="body2" color="text.secondary" mt={0.5}>
+                            A point will appear after the next saved dashboard snapshot.
+                        </Typography>
+                    </Box>
+                </Box>
+            )}
         </Card>
     );
 };

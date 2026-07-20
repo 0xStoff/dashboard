@@ -17,7 +17,7 @@ const styles = {
 };
 
 const createProtocolSelectionToken = (protocol: Protocol): Token => ({
-    chain_id: protocol.positions[0]?.chain || "protocol",
+    chain_id: "protocol",
     name: protocol.name,
     symbol: protocol.name,
     decimals: 0,
@@ -39,7 +39,9 @@ const ProtocolTable: React.FC<{
 
     const handleTokenClick = (protocol: Protocol) => {
         setSelectedToken((prevSelected) =>
-            prevSelected?.symbol === protocol.name ? null : createProtocolSelectionToken(protocol)
+            prevSelected?.chain_id === "protocol" && prevSelected.name === protocol.name
+                ? null
+                : createProtocolSelectionToken(protocol)
         );
     };
 
@@ -54,7 +56,10 @@ const ProtocolTable: React.FC<{
                 .map((protocol) => (
                     <Card
                         onClick={() => handleTokenClick(protocol)}
-                        sx={styles.card(selectedToken?.symbol === protocol.name || selectedToken === null)}
+                        sx={styles.card(
+                            (selectedToken?.chain_id === "protocol" && selectedToken.name === protocol.name) ||
+                                selectedToken === null
+                        )}
                         key={protocol.name}
                     >
                         <CardContent sx={styles.cardContent(isMobile)}>

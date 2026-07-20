@@ -28,7 +28,10 @@ const styles = {
         cursor: "pointer",
         opacity: isActive ? 1 : 0.38,
         transition: "opacity .2s, background-color .2s",
-        "&:last-child td, &:last-child th": {border: 0}
+        "&:last-child td, &:last-child th": {
+            border: 0,
+            paddingBottom: 2.5,
+        }
     }), tableCell: {border: 0}, avatarWrapper: {
         display: "flex", alignItems: "center", position: "relative", width: "fit-content"
     }, chainLogo: {
@@ -95,7 +98,9 @@ const WalletTable: React.FC<{
     };
 
     const handleTokenClick = (token: Token) => {
-        setSelectedToken((prevSelected) => (prevSelected?.symbol === token.symbol ? null : token));
+        setSelectedToken((prevSelected) =>
+            prevSelected?.symbol === token.symbol && prevSelected.chain_id === token.chain_id ? null : token
+        );
     };
 
     if (!tokens.length) return <Typography>no tokens</Typography>;
@@ -128,9 +133,13 @@ const WalletTable: React.FC<{
                     <Table>
                         <TableBody>
                             {sortedTokens.map((item, index) => (
-                                <TableRow onClick={() => handleTokenClick(item)} key={index}
+                                <TableRow onClick={() => handleTokenClick(item)} key={`${item.chain_id}-${item.symbol}-${index}`}
                                           hover
-                                          sx={styles.tableRow( selectedToken?.symbol === item.symbol || selectedToken === null)}>
+                                          sx={styles.tableRow(
+                                              (selectedToken?.symbol === item.symbol &&
+                                                  selectedToken.chain_id === item.chain_id) ||
+                                                  selectedToken === null
+                                          )}>
                                     <TableCell sx={styles.tableCell}>
                                         <Box sx={styles.avatarWrapper}>
                                             <Avatar

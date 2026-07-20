@@ -2,15 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import apiClient from "../utils/api-client";
 import { GnosisTransactionRecord, TransactionRecord } from "../interfaces";
 
-const COMPLETED_RUBIC_STATUSES = new Set([
-    "completed",
-    "success",
-    "successful",
-    "done",
-    "executed",
-    "finished",
-]);
-
 const mapTransactionRecord = (transaction: Record<string, unknown>): TransactionRecord => ({
     orderNo: typeof transaction.orderNo === "string" ? transaction.orderNo : null,
     exchange: typeof transaction.exchange === "string" ? transaction.exchange : "Unknown",
@@ -25,14 +16,13 @@ const mapTransactionRecord = (transaction: Record<string, unknown>): Transaction
             ? transaction.date
             : 0,
     chf_value: Number(transaction.transactionAmount) || 0,
+    excludedFromTotals: Boolean(transaction.excludedFromTotals),
 });
 
 const useFetchTransactions = () => {
     const [transactions, setTransactions] = useState<TransactionRecord[]>([]);
     const [loading, setLoading] = useState(true);
     const [gnosisTransactions, setGnosisTransactions] = useState<GnosisTransactionRecord[]>([]);
-    const [rubicXmrSum, setRubicXmrSum] = useState(0);
-    const [rubicLoading, setRubicLoading] = useState(false);
     const effectRan = useRef(false);
 
     const fetchFormattedTransaction = useCallback(async (exchange: string) => {
@@ -88,37 +78,29 @@ const useFetchTransactions = () => {
         }
     }, []);
 
-    const fetchRubicXmrSum = useCallback(async (addresses: string[] = []) => {
-        try {
-            setRubicLoading(true);
-            const { data } = await apiClient.post("/rubic/transactions", { addresses });
-            setRubicXmrSum(Number(data?.sumChf) || 0);
-        } catch (error) {
-            console.error("Error fetching Rubic XMR sum:", error);
-            setRubicXmrSum(0);
-        } finally {
-            setRubicLoading(false);
-        }
-    }, []);
+    const updateTransactionExclusion = useCallback(
+        async (orderNo: string, excluded: boolean) => {
+            await apiClient.patch(`/transactions/${encodeURIComponent(orderNo)}/exclusion`, {
+                excluded,
+            });
 
-    const fetchRubicFromDb = useCallback(async () => {
-        try {
-            const response = await apiClient.get<GnosisTransactionRecord[]>("/transactions?exchange=Rubic");
-            const rows = Array.isArray(response.data) ? response.data : [];
-            const total = rows.reduce((sum, row) => {
-                const symbol = (row.asset || "").toString().toLowerCase();
-                const chf = Number(row.transactionAmount) || 0;
-                const status = (row.status || "").toString().toLowerCase();
-                return (symbol === "xmr" || symbol === "monero") && COMPLETED_RUBIC_STATUSES.has(status)
-                    ? sum + chf
-                    : sum;
-            }, 0);
-            setRubicXmrSum(total);
-        } catch (error) {
-            console.error("Error loading Rubic rows from DB:", error);
-            setRubicXmrSum(0);
-        }
-    }, []);
+            setTransactions((current) =>
+                current.map((transaction) =>
+                    transaction.orderNo === orderNo
+                        ? {...transaction, excludedFromTotals: excluded}
+                        : transaction
+                )
+            );
+            setGnosisTransactions((current) =>
+                current.map((transaction) =>
+                    transaction.orderNo === orderNo
+                        ? {...transaction, excludedFromTotals: excluded}
+                        : transaction
+                )
+            );
+        },
+        []
+    );
 
     const refetch = useCallback(
         async (addresses: string[] = [], gnosisPayToken: string) => {
@@ -132,9 +114,9 @@ const useFetchTransactions = () => {
                 apiClient.post("/rubic/transactions", { addresses }),
             ]);
 
-            await Promise.all([fetchRubicFromDb(), fetchTransactions(), fetchGnosisPayTransactions()]);
+            await Promise.all([fetchTransactions(), fetchGnosisPayTransactions()]);
         },
-        [fetchGnosisPayTransactions, fetchRubicFromDb, fetchTransactions, fetchTransactionsFromServer]
+        [fetchGnosisPayTransactions, fetchTransactions, fetchTransactionsFromServer]
     );
 
     useEffect(() => {
@@ -145,17 +127,14 @@ const useFetchTransactions = () => {
         effectRan.current = true;
         fetchTransactions();
         fetchGnosisPayTransactions();
-        fetchRubicFromDb();
-    }, [fetchGnosisPayTransactions, fetchRubicFromDb, fetchTransactions]);
+    }, [fetchGnosisPayTransactions, fetchTransactions]);
 
     return {
         transactions,
         loading,
         gnosisTransactions,
-        rubicXmrSum,
-        rubicLoading,
-        fetchRubicXmrSum,
         refetch,
+        updateTransactionExclusion,
     };
 };
 

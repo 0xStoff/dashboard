@@ -2,30 +2,36 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 
 export const useUsdToChfRate = () => {
-    const [rate, setRate] = useState(1);
+    const [rate, setRate] = useState<number | null>(null);
+    const [eurRate, setEurRate] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
 
     useEffect(() => {
-        const fetchUsdToChfRate = async () => {
+        const fetchRates = async () => {
             try {
-                const response = await axios.get("https://api.coingecko.com/api/v3/simple/price", {
-                    params: {
-                        ids: "usd",
-                        vs_currencies: "chf",
-                        x_cg_demo_api_key: process.env.REACT_APP_COINGECKO_API_KEY,
-                    },
-                });
-                const newRate = response.data.usd?.chf ?? null;
-                if (newRate) setRate(newRate);
+                const [usdResponse, eurResponse] = await Promise.all([
+                    axios.get<{rate: number}>("https://api.frankfurter.dev/v2/rate/USD/CHF", {
+                        params: {providers: "ECB"},
+                    }),
+                    axios.get<{rate: number}>("https://api.frankfurter.dev/v2/rate/EUR/CHF", {
+                        params: {providers: "ECB"},
+                    }),
+                ]);
+
+                setRate(Number(usdResponse.data.rate));
+                setEurRate(Number(eurResponse.data.rate));
+                setError(false);
             } catch (error) {
-                console.error("Error fetching USD to CHF rate:", error);
+                console.error("Error fetching fiat exchange rates:", error);
+                setError(true);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchUsdToChfRate();
+        void fetchRates();
     }, []);
 
-    return { rate, loading };
+    return { rate, eurRate, loading, error };
 };

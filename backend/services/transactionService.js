@@ -50,7 +50,14 @@ export const getKrakenRequestConfig = (query = {}) => {
 
 export const upsertTransactions = async (records) => {
     for (const record of records) {
-        await TransactionModel.upsert(record, {
+        const existing = await TransactionModel.findByPk(record.orderNo, {
+            attributes: ["excludedFromTotals"],
+        });
+
+        await TransactionModel.upsert({
+            ...record,
+            excludedFromTotals: existing?.excludedFromTotals ?? false,
+        }, {
             conflictFields: ["orderNo"],
         });
     }
@@ -68,7 +75,7 @@ export const syncBinanceFiatPayments = async () => {
             type: order.paymentMethod,
             amount: order.sourceAmount,
             fee: order.totalFee,
-            asset: order.cryptoCurrency,
+            asset: order.sourceCurrency || order.fiatCurrency || order.cryptoCurrency,
             status: order.status,
             date: new Date(order.createTime),
         }))

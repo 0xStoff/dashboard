@@ -77,6 +77,21 @@ export interface NetWorthData {
   protocolHistory: Protocol[];
 }
 
+export interface CapitalFlow {
+  id: number;
+  scopeChainId: string;
+  type: "deposit" | "withdrawal";
+  asset: string;
+  amount: number;
+  usdValue: number;
+  occurredAt: string;
+  source: string | null;
+  txHash: string | null;
+  note: string | null;
+}
+
+export type NewCapitalFlow = Omit<CapitalFlow, "id">;
+
 export interface HistoryData {
   wallets: Wallet[];
   chains: Chain[];
@@ -115,6 +130,7 @@ export interface TransactionRecord {
   date: string;
   timestamp: string | number;
   chf_value: number;
+  excludedFromTotals: boolean;
 }
 
 export interface GnosisTransactionRecord {
@@ -129,14 +145,17 @@ export interface GnosisTransactionRecord {
   merchant: string | null;
   transactionAmount: number | string | null;
   billingAmount: number | string | null;
+  excludedFromTotals: boolean;
 }
 
 export interface FormattedGnosisTransaction {
+  orderNo: string | null;
   createdAt: string;
   transactionAmountFormatted: string;
   billingAmountFormatted: string;
   merchantFormatted: string;
   status: string;
+  excludedFromTotals: boolean;
 }
 
 export interface TableColumn<T> {

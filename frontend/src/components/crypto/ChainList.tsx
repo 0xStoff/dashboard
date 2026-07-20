@@ -3,7 +3,6 @@ import { Avatar, Box, Card, Table, TableBody, TableCell, TableHead, TableRow, Ty
 import { Chain } from "../../interfaces";
 import { buildLogoUrl } from "../../config/env";
 
-
 const styles = {
   container: {
     flex: "0 0 auto", width: { md: 200 }, maxWidth: { md: 200 }
@@ -13,11 +12,9 @@ const styles = {
     cursor: "pointer",
     opacity: isActive ? 1 : 0.38,
     transition: "opacity .2s, background-color .2s",
-    // "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.08)" },
     "&:last-child td, &:last-child th": { border: 0 }
   }), tableCell: { border: 0 }
 };
-
 
 const ChainList: React.FC<{
   chains: Chain[];
@@ -26,7 +23,6 @@ const ChainList: React.FC<{
   const [selectedChainId, setSelectedChainId] = chainIdState;
 
   if (!chains.length) return null;
-
 
   const handleRowClick = (chain: Chain) => {
     setSelectedChainId(selectedChainId === chain.chain_id ? "all" : chain.chain_id);
@@ -55,7 +51,6 @@ const ChainList: React.FC<{
                   <TableCell
                     sx={{ display: "flex", alignItems: "center", ...styles.tableCell }}
                   >
-
                     <Avatar
                       alt={chain.name}
                       src={buildLogoUrl(chain.logo_path)}

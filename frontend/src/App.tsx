@@ -17,6 +17,8 @@ import {
 } from "./components";
 import AppProviders from "./app/AppProviders";
 import { NetWorthChart } from "./components/crypto/NetWorthChart";
+import PortfolioInsights from "./components/crypto/PortfolioInsights";
+import CapitalPerformance from "./components/crypto/CapitalPerformance";
 import { TokenChart } from "./components/crypto/TokenChart";
 import Header from "./components/header/Header";
 import { useAuthStatus } from "./hooks/useAuthStatus";
@@ -178,6 +180,26 @@ const DashboardApp: React.FC = () => {
                                             </IconButton>
                                         )}
                                     </Box>
+
+                                    {selectedWalletId === "all" &&
+                                        !searchQuery.trim() &&
+                                        chains.some((chain) => chain.chain_id === "hood") && (
+                                        <CapitalPerformance
+                                            currentValue={
+                                                chains.find((chain) => chain.chain_id === "hood")?.usd_value || 0
+                                            }
+                                            netWorthHistory={netWorth}
+                                        />
+                                    )}
+
+                                    <PortfolioInsights
+                                        chains={chains}
+                                        tokens={tokens}
+                                        totalProtocolUSD={totalProtocolUSD}
+                                        totalTokenUSD={totalTokenUSD}
+                                        onSelectChain={setSelectedChainId}
+                                        onSelectToken={setSelectedToken}
+                                    />
 
                                     {showChart && <NetWorthChart setShowChart={setShowChart} data={netWorth} />}
 

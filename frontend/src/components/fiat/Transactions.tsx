@@ -12,9 +12,7 @@ import {
     DialogContentText,
     DialogTitle,
     TextField,
-    useMediaQuery,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
 import TransactionsTable from "./TransactionsTable";
 import TransactionCards from "./TransactionCards";
 import useFetchTransactions from "../../hooks/useFetchTransactions";
@@ -25,6 +23,12 @@ import {
     TableColumn,
     TransactionRecord,
 } from "../../interfaces";
+import {
+    calculateTransactionTotals,
+    gnosisAmountChf,
+    isApprovedGnosisTransaction,
+} from "../../utils/transaction-calculations";
+import { useUsdToChfRate } from "../../hooks/useUsdToChfRate";
 
 const binanceTransactionColumns: TableColumn<TransactionRecord>[] = [
     { label: "Date", key: "date" },
@@ -52,25 +56,37 @@ const filterByDateRange = <T extends object>(
 ) =>
     items.filter((item) => {
         const itemDate = new Date(String(item[dateKey]));
-        return itemDate >= startDate && itemDate <= endDate;
+        const inclusiveEndDate = new Date(endDate);
+        inclusiveEndDate.setHours(23, 59, 59, 999);
+        return itemDate >= startDate && itemDate <= inclusiveEndDate;
     });
 
 const formatGnosisAmount = (amount: number | string | null, currency: string) =>
     `${(Number(amount) || 0) / 100} ${currency}`;
 
 const Transactions = () => {
-    const { transactions, loading, gnosisTransactions, rubicXmrSum, rubicLoading, refetch } =
-        useFetchTransactions();
+    const {
+        transactions,
+        loading,
+        gnosisTransactions,
+        refetch,
+        updateTransactionExclusion,
+    } = useFetchTransactions();
     const [startDate, setStartDate] = useState(new Date("2020-01-01"));
     const [endDate, setEndDate] = useState(new Date());
     const [refetchDialogOpen, setRefetchDialogOpen] = useState(false);
     const [gnosisPayToken, setGnosisPayToken] = useState("");
     const [refetching, setRefetching] = useState(false);
     const [refetchError, setRefetchError] = useState("");
+    const [transactionError, setTransactionError] = useState("");
 
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
     const { wallets } = useWallets();
+    const {
+        rate: usdToChfRate,
+        eurRate: eurToChfRate,
+        loading: exchangeRateLoading,
+        error: exchangeRateError,
+    } = useUsdToChfRate();
 
     const closeRefetchDialog = () => {
         if (refetching) return;
@@ -123,40 +139,42 @@ const Transactions = () => {
     const formattedGnosisTransactions = useMemo<FormattedGnosisTransaction[]>(
         () =>
             filteredGnosisTransactionsByDate.map((transaction: GnosisTransactionRecord) => ({
+                orderNo: transaction.orderNo,
                 createdAt: transaction.date,
                 transactionAmountFormatted: formatGnosisAmount(transaction.transactionAmount, "CHF"),
                 billingAmountFormatted: formatGnosisAmount(transaction.billingAmount, "EUR"),
                 merchantFormatted: transaction.merchant || "Unknown",
                 status: transaction.status,
+                excludedFromTotals: transaction.excludedFromTotals,
             })),
         [filteredGnosisTransactionsByDate]
     );
 
-    const approvedSum = useMemo(
+    const gnosisSpending = useMemo(
         () =>
-            filteredGnosisTransactionsByDate
-                .filter((transaction) => transaction.status === "Approved")
-                .reduce((total, transaction) => total + (Number(transaction.transactionAmount) || 0), 0) / 100,
-        [filteredGnosisTransactionsByDate]
+            gnosisTransactions
+                .filter(isApprovedGnosisTransaction)
+                .reduce((total, transaction) => total + gnosisAmountChf(transaction), 0),
+        [gnosisTransactions]
     );
 
-    const deposits = useMemo(
-        () =>
-            filteredTransactionsByDate.filter((transaction) =>
-                ["deposit", "credit card", "bank transfer"].includes(transaction.type.toLowerCase())
-            ),
-        [filteredTransactionsByDate]
+    const totals = useMemo(
+        () => calculateTransactionTotals(transactions, eurToChfRate || 0),
+        [eurToChfRate, transactions]
     );
 
-    const withdrawals = useMemo(
-        () => filteredTransactionsByDate.filter((transaction) => transaction.type.toLowerCase() === "withdrawal"),
-        [filteredTransactionsByDate]
-    );
-
-    const totalFees = useMemo(
-        () => filteredTransactionsByDate.reduce((sum, transaction) => sum + (Number(transaction.fee) || 0), 0),
-        [filteredTransactionsByDate]
-    );
+    const handleExclusionChange = async (orderNo: string, excluded: boolean) => {
+        setTransactionError("");
+        try {
+            await updateTransactionExclusion(orderNo, excluded);
+        } catch (error) {
+            const responseData = axios.isAxiosError(error) ? error.response?.data : null;
+            setTransactionError(
+                responseData?.error ||
+                (error instanceof Error ? error.message : "Failed to update transaction")
+            );
+        }
+    };
 
     if (loading) {
         return (
@@ -169,6 +187,11 @@ const Transactions = () => {
     return (
         <Container sx={{ marginTop: 10 }}>
             <Button onClick={() => setRefetchDialogOpen(true)}>Refetch</Button>
+            {transactionError && (
+                <Alert severity="error" sx={{mt: 2}} onClose={() => setTransactionError("")}>
+                    {transactionError}
+                </Alert>
+            )}
 
             <Dialog open={refetchDialogOpen} onClose={closeRefetchDialog} fullWidth maxWidth="xs">
                 <DialogTitle>Refetch transactions</DialogTitle>
@@ -204,11 +227,11 @@ const Transactions = () => {
             </Dialog>
 
             <TransactionCards
-                transactions={[...deposits, ...withdrawals]}
-                approvedSum={approvedSum}
-                totalFees={totalFees}
-                rubicXmrSum={rubicXmrSum}
-                rubicLoading={rubicLoading}
+                totals={totals}
+                gnosisSpending={gnosisSpending}
+                usdToChfRate={usdToChfRate}
+                exchangeRateLoading={exchangeRateLoading}
+                exchangeRateError={exchangeRateError || eurToChfRate === null}
             />
 
             <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
@@ -228,21 +251,19 @@ const Transactions = () => {
                 />
             </Box>
 
-            {!isMobile && (
-                <TransactionsTable
-                    title="Gnosis Pay Transactions"
-                    transactions={formattedGnosisTransactions}
-                    columns={gnosisColumns}
-                />
-            )}
+            <TransactionsTable
+                title="Gnosis Pay Transactions"
+                transactions={formattedGnosisTransactions}
+                columns={gnosisColumns}
+                onToggleExcluded={handleExclusionChange}
+            />
 
-            {!isMobile && (
-                <TransactionsTable
-                    title="Binance & Kraken Transactions"
-                    transactions={filteredTransactionsByDate}
-                    columns={binanceTransactionColumns}
-                />
-            )}
+            <TransactionsTable
+                title="Binance, Kraken & Rubic Transactions"
+                transactions={filteredTransactionsByDate}
+                columns={binanceTransactionColumns}
+                onToggleExcluded={handleExclusionChange}
+            />
         </Container>
     );
 };

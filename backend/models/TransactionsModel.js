@@ -48,6 +48,11 @@ const TransactionModel = sequelize.define(
             type: DataTypes.STRING,
             allowNull: true,
         },
+        excludedFromTotals: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        },
     },
     {
         timestamps: false,

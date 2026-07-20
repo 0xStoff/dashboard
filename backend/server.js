@@ -13,6 +13,7 @@ import netWorthRoutes from "./api/netWorth.js";
 import tokensRoutes from "./api/tokens.js";
 import transactionsRoutes from "./api/transactions.js";
 import authRoutes from "./api/auth.js";
+import capitalFlowsRoutes from "./api/capitalFlows.js";
 import authenticateToken from "./api/authMiddleware.js";
 
 import sequelize from "./sequelize.js";
@@ -22,6 +23,7 @@ import WalletTokenModel from "./models/WalletTokenModel.js";
 import ProtocolModel from "./models/ProtocolModel.js";
 import WalletProtocolModel from "./models/WalletProtocolModel.js";
 import UserModel from "./models/UserModel.js";
+import CapitalFlowModel from "./models/CapitalFlowModel.js";
 import { appConfig } from "./config/appConfig.js";
 
 const app = express();
@@ -49,6 +51,7 @@ app.use("/api", authenticateToken, tokensRoutes);
 app.use("/api", authenticateToken, protocolsRoutes);
 app.use("/api", authenticateToken, transactionsRoutes);
 app.use("/api", authenticateToken, netWorthRoutes);
+app.use("/api", authenticateToken, capitalFlowsRoutes);
 app.use("/api/settings", authenticateToken, settingsRoutes);
 app.use("/logos", express.static(path.join(__dirname, "logos")));
 
@@ -63,6 +66,8 @@ const setupAssociations = () => {
     WalletTokenModel.belongsTo(UserModel, { foreignKey: "user_id" });
     UserModel.hasMany(WalletProtocolModel, { foreignKey: "user_id" });
     WalletProtocolModel.belongsTo(UserModel, { foreignKey: "user_id" });
+    UserModel.hasMany(CapitalFlowModel, { foreignKey: "user_id" });
+    CapitalFlowModel.belongsTo(UserModel, { foreignKey: "user_id" });
 };
 
 const initDb = async () => {

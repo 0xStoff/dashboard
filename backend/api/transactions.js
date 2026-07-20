@@ -108,4 +108,33 @@ router.get("/transactions", async (req, res) => {
     }
 });
 
+router.patch("/transactions/:orderNo/exclusion", async (req, res) => {
+    const { excluded } = req.body;
+
+    if (typeof excluded !== "boolean") {
+        return res.status(400).json({error: "excluded must be a boolean"});
+    }
+
+    try {
+        const transaction = await TransactionModel.findByPk(req.params.orderNo);
+        if (!transaction) {
+            return res.status(404).json({error: "Transaction not found"});
+        }
+
+        transaction.excludedFromTotals = excluded;
+        await transaction.save();
+
+        return res.json({
+            orderNo: transaction.orderNo,
+            excludedFromTotals: transaction.excludedFromTotals,
+        });
+    } catch (error) {
+        console.error("Error updating transaction exclusion:", error);
+        return res.status(500).json({
+            error: "Failed to update transaction exclusion",
+            details: error.message || error,
+        });
+    }
+});
+
 export default router;
