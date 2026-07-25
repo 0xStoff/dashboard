@@ -15,6 +15,8 @@ export interface TransactionTotals {
   deposits: number;
   depositBreakdown: {
     binance: number;
+    cash: number;
+    coinbase: number;
     krakenChf: number;
     krakenEur: number;
     krakenXmr: number;
@@ -27,6 +29,8 @@ export interface TransactionTotals {
 
 const normalize = (value: string | null | undefined) => (value || "").trim().toLowerCase();
 const absoluteNumber = (value: unknown) => Math.abs(Number(value) || 0);
+const transactionValueChf = (transaction: TransactionRecord) =>
+  absoluteNumber(transaction.chf_value || transaction.transactionAmount);
 
 export const isIncluded = (transaction: { excludedFromTotals?: boolean }) =>
   !transaction.excludedFromTotals;
@@ -44,6 +48,8 @@ const isDeposit = (transaction: TransactionRecord) => {
   const exchange = normalize(transaction.exchange);
   const type = normalize(transaction.type);
 
+  if (exchange === "cash") return type === "deposit";
+  if (exchange === "coinbase") return type === "deposit";
   if (exchange === "kraken") return type === "deposit";
   if (exchange === "binance") return BINANCE_DEPOSIT_TYPES.has(type);
   return false;
@@ -56,9 +62,9 @@ const isXmr = (transaction: TransactionRecord) =>
   XMR_ASSETS.has((transaction.asset || "").trim().toUpperCase());
 
 const depositAmountChf = (transaction: TransactionRecord, eurToChfRate: number) => {
-  if (isXmr(transaction)) return absoluteNumber(transaction.chf_value);
+  if (isXmr(transaction)) return transactionValueChf(transaction);
   if ((transaction.asset || "").trim().toUpperCase().startsWith("EUR")) {
-    return absoluteNumber(transaction.amount) * eurToChfRate;
+    return transactionValueChf(transaction) || absoluteNumber(transaction.amount) * eurToChfRate;
   }
 
   // Binance's fiat-payment API stores sourceAmount here even though older rows
@@ -77,7 +83,11 @@ const addDeposit = (
   const asset = (transaction.asset || "").trim().toUpperCase();
 
   totals.deposits += amountChf;
-  if (exchange === "binance") {
+  if (exchange === "cash") {
+    totals.depositBreakdown.cash += amountChf;
+  } else if (exchange === "coinbase") {
+    totals.depositBreakdown.coinbase += amountChf;
+  } else if (exchange === "binance") {
     totals.depositBreakdown.binance += amountChf;
   } else if (isXmr(transaction)) {
     totals.depositBreakdown.krakenXmr += amountChf;
@@ -95,12 +105,14 @@ const feeAmountChf = (transaction: TransactionRecord, eurToChfRate: number) => {
   if (exchange === "binance") return absoluteNumber(transaction.fee);
   if (exchange === "kraken" && FIAT_ASSETS.has(asset)) return absoluteNumber(transaction.fee);
   if (exchange === "kraken" && asset.startsWith("EUR")) {
-    return absoluteNumber(transaction.fee) * eurToChfRate;
+    const amount = absoluteNumber(transaction.amount);
+    const historicalRate = amount ? transactionValueChf(transaction) / amount : 0;
+    return absoluteNumber(transaction.fee) * (historicalRate || eurToChfRate);
   }
   if (exchange === "kraken" && isXmr(transaction)) {
     const amount = absoluteNumber(transaction.amount);
     return amount
-      ? absoluteNumber(transaction.chf_value) * (absoluteNumber(transaction.fee) / amount)
+      ? transactionValueChf(transaction) * (absoluteNumber(transaction.fee) / amount)
       : 0;
   }
   return 0;
@@ -121,14 +133,14 @@ export const calculateTransactionTotals = (
 
       if (isWithdrawal(transaction)) {
         if (isXmr(transaction)) {
-          totals.xmrWithdrawals += absoluteNumber(transaction.chf_value);
+          totals.xmrWithdrawals += transactionValueChf(transaction);
         } else if (exchange === "binance" || FIAT_ASSETS.has((transaction.asset || "").toUpperCase())) {
           totals.fiatWithdrawals += absoluteNumber(transaction.amount);
         }
       }
 
       if (exchange === "rubic" && isXmr(transaction)) {
-        totals.rubicWithdrawals += absoluteNumber(transaction.chf_value);
+        totals.rubicWithdrawals += transactionValueChf(transaction);
       }
 
       totals.fees += feeAmountChf(transaction, eurToChfRate);
@@ -138,6 +150,8 @@ export const calculateTransactionTotals = (
       deposits: 0,
       depositBreakdown: {
         binance: 0,
+        cash: 0,
+        coinbase: 0,
         krakenChf: 0,
         krakenEur: 0,
         krakenXmr: 0,

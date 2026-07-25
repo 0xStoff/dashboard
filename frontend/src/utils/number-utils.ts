@@ -1,5 +1,5 @@
-export const toFixedString = (item: number | string, digits = 2) => {
-  const num = parseFloat(item.toString());
+export const toFixedString = (item: unknown, digits = 2) => {
+  const num = Number(item);
   if (!Number.isFinite(num)) return "0";
   return num.toLocaleString("de-CH", {
     minimumFractionDigits: digits,

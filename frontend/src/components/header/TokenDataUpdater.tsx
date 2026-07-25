@@ -8,6 +8,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   FormControl,
   IconButton,
   InputLabel,
@@ -30,8 +31,28 @@ const TokenDataUpdater: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedWallet, setSelectedWallet] = useState("");
   const [lastUpdated, setLastUpdated] = useState<string | null>(() => localStorage.getItem("lastUpdated"));
+  const [debankUnits, setDebankUnits] = useState<{ balance: number; stats: Array<{ usage: number; remains: number; date: string }> } | null>(null);
+  const [unitsLoading, setUnitsLoading] = useState(false);
 
   const { wallets, loading: walletsLoading } = useWallets();
+  const evmWallets = wallets.filter((wallet) => wallet.chain === "evm");
+
+  const loadDeBankUnits = useCallback(async () => {
+    setUnitsLoading(true);
+    try {
+      const response = await apiClient.get("/debank/units");
+      setDebankUnits(response.data);
+    } catch {
+      setDebankUnits(null);
+    } finally {
+      setUnitsLoading(false);
+    }
+  }, []);
+
+  const openModal = () => {
+    setModalOpen(true);
+    void loadDeBankUnits();
+  };
 
   const formatLastUpdated = (timestamp: string | null) => {
     if (!timestamp) return "-";
@@ -88,11 +109,18 @@ const TokenDataUpdater: React.FC = () => {
 
       try {
         const response = await apiClient.post(endpoint);
-        setMessageSeverity("success");
-        setMessage(response.data?.message || "Token data refreshed successfully.");
+        const failures = Array.isArray(response.data?.results)
+          ? response.data.results.filter((result: { status?: string }) => result.status === "failed")
+          : [];
+        setMessageSeverity(failures.length ? "warning" : "success");
+        setMessage(failures.length
+          ? `${response.data.message}: ${failures.map((result: { provider: string }) => result.provider).join(", ")}`
+          : response.data?.message || "Token data refreshed successfully.");
         const now = new Date().toISOString();
         setLastUpdated(now);
         localStorage.setItem("lastUpdated", now);
+        window.dispatchEvent(new Event("dashboard-data-refreshed"));
+        void loadDeBankUnits();
       } catch (error) {
         console.error(error);
         setMessageSeverity("error");
@@ -102,13 +130,13 @@ const TokenDataUpdater: React.FC = () => {
         setSnackbarOpen(true);
       }
     },
-    [selectedWallet]
+    [loadDeBankUnits, selectedWallet]
   );
 
   return (
     <>
       <Tooltip title="Refetch Token Data">
-        <IconButton color="primary" onClick={() => setModalOpen(true)}>
+        <IconButton color="primary" onClick={openModal}>
           <RefreshIcon fontSize="medium" />
         </IconButton>
       </Tooltip>
@@ -120,6 +148,18 @@ const TokenDataUpdater: React.FC = () => {
         </Typography>
         <DialogContent>
           <Box display="flex" flexDirection="column" gap={2} mt={1}>
+            <Box sx={{ p: 2, border: "1px solid", borderColor: "divider", borderRadius: 2.5, bgcolor: "rgba(139,124,255,.06)" }}>
+              <Typography variant="overline" color="text.secondary" fontWeight={800}>DEBANK API</Typography>
+              {unitsLoading ? <CircularProgress size={22} sx={{ display: "block", mt: 1 }} /> : debankUnits ? <>
+                <Typography variant="h5" fontWeight={760}>{debankUnits.balance.toLocaleString()} units left</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {Number(debankUnits.stats[0]?.usage || 0).toLocaleString()} used today
+                </Typography>
+              </> : <Typography color="text.secondary">Usage unavailable</Typography>}
+            </Box>
+
+            <Divider />
+
             <Button onClick={() => handleUpdate("all")} variant="contained" disabled={isLoading}>
               {isLoading ? <CircularProgress size={24} /> : "Refetch All Wallets"}
             </Button>
@@ -136,7 +176,7 @@ const TokenDataUpdater: React.FC = () => {
               <Typography textAlign="center" color="gray">
                 Loading wallets...
               </Typography>
-            ) : wallets.length > 0 ? (
+            ) : evmWallets.length > 0 ? (
               <FormControl fullWidth>
                 <InputLabel id="wallet-refetch-label">Wallet</InputLabel>
                 <Select
@@ -148,7 +188,7 @@ const TokenDataUpdater: React.FC = () => {
                   <MenuItem value="" disabled>
                     Select wallet
                   </MenuItem>
-                  {wallets.map((wallet) => (
+                  {evmWallets.map((wallet) => (
                     <MenuItem key={wallet.id} value={wallet.id}>
                       {wallet.tag}
                     </MenuItem>
@@ -164,7 +204,7 @@ const TokenDataUpdater: React.FC = () => {
             <Button
               onClick={() => handleUpdate("evm_wallet")}
               variant="contained"
-              disabled={isLoading || wallets.length === 0}
+              disabled={isLoading || evmWallets.length === 0}
             >
               {isLoading ? <CircularProgress size={24} /> : "Refetch EVM (By Wallet)"}
             </Button>

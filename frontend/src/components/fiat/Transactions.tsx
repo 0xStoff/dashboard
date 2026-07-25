@@ -27,6 +27,8 @@ import {
     calculateTransactionTotals,
     gnosisAmountChf,
     isApprovedGnosisTransaction,
+    isIncluded,
+    isSuccessful,
 } from "../../utils/transaction-calculations";
 import { useUsdToChfRate } from "../../hooks/useUsdToChfRate";
 
@@ -35,8 +37,10 @@ const binanceTransactionColumns: TableColumn<TransactionRecord>[] = [
     { label: "Exchange", key: "exchange" },
     { label: "Type", key: "type" },
     { label: "Amount", key: "amount" },
+    { label: "CHF Value", key: "transactionAmount" },
     { label: "Fee", key: "fee" },
     { label: "Asset", key: "asset" },
+    { label: "Reference", key: "merchant" },
     { label: "Status", key: "status" },
 ];
 
@@ -51,15 +55,20 @@ const gnosisColumns: TableColumn<FormattedGnosisTransaction>[] = [
 const filterByDateRange = <T extends object>(
     items: T[],
     dateKey: keyof T,
-    startDate: Date,
-    endDate: Date
-) =>
-    items.filter((item) => {
+    startDate: string,
+    endDate: string
+) => {
+    const rangeStart = new Date(`${startDate}T00:00:00`);
+    const rangeEnd = new Date(`${endDate}T23:59:59.999`);
+    if (Number.isNaN(rangeStart.getTime()) || Number.isNaN(rangeEnd.getTime()) || rangeStart > rangeEnd) {
+        return [];
+    }
+
+    return items.filter((item) => {
         const itemDate = new Date(String(item[dateKey]));
-        const inclusiveEndDate = new Date(endDate);
-        inclusiveEndDate.setHours(23, 59, 59, 999);
-        return itemDate >= startDate && itemDate <= inclusiveEndDate;
+        return !Number.isNaN(itemDate.getTime()) && itemDate >= rangeStart && itemDate <= rangeEnd;
     });
+};
 
 const formatGnosisAmount = (amount: number | string | null, currency: string) =>
     `${(Number(amount) || 0) / 100} ${currency}`;
@@ -72,8 +81,9 @@ const Transactions = () => {
         refetch,
         updateTransactionExclusion,
     } = useFetchTransactions();
-    const [startDate, setStartDate] = useState(new Date("2020-01-01"));
-    const [endDate, setEndDate] = useState(new Date());
+    const today = new Date().toLocaleDateString("en-CA");
+    const [startDate, setStartDate] = useState("2020-01-01");
+    const [endDate, setEndDate] = useState(today);
     const [refetchDialogOpen, setRefetchDialogOpen] = useState(false);
     const [gnosisPayToken, setGnosisPayToken] = useState("");
     const [refetching, setRefetching] = useState(false);
@@ -145,18 +155,35 @@ const Transactions = () => {
         [filteredGnosisTransactionsByDate]
     );
 
+    const approvedGnosisTransactions = useMemo(
+        () => filteredGnosisTransactionsByDate.filter(isApprovedGnosisTransaction),
+        [filteredGnosisTransactionsByDate]
+    );
+
     const gnosisSpending = useMemo(
-        () =>
-            gnosisTransactions
-                .filter(isApprovedGnosisTransaction)
-                .reduce((total, transaction) => total + gnosisAmountChf(transaction), 0),
-        [gnosisTransactions]
+        () => approvedGnosisTransactions.reduce(
+            (total, transaction) => total + gnosisAmountChf(transaction),
+            0
+        ),
+        [approvedGnosisTransactions]
     );
 
     const totals = useMemo(
-        () => calculateTransactionTotals(transactions, eurToChfRate || 0),
-        [eurToChfRate, transactions]
+        () => calculateTransactionTotals(filteredTransactionsByDate, eurToChfRate || 0),
+        [eurToChfRate, filteredTransactionsByDate]
     );
+
+    const activityStats = useMemo(() => ({
+        includedTransactions:
+            filteredTransactionsByDate.filter((transaction) => isIncluded(transaction) && isSuccessful(transaction)).length +
+            approvedGnosisTransactions.length,
+        cardPayments: approvedGnosisTransactions.length,
+        excludedTransactions:
+            filteredTransactionsByDate.filter((transaction) => !isIncluded(transaction)).length +
+            filteredGnosisTransactionsByDate.filter((transaction) => !isIncluded(transaction)).length,
+    }), [approvedGnosisTransactions, filteredGnosisTransactionsByDate, filteredTransactionsByDate]);
+
+    const invalidDateRange = startDate > endDate;
 
     const handleExclusionChange = async (orderNo: string, excluded: boolean) => {
         setTransactionError("");
@@ -224,24 +251,29 @@ const Transactions = () => {
             <TransactionCards
                 totals={totals}
                 gnosisSpending={gnosisSpending}
+                activityStats={activityStats}
             />
 
-            <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+            <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap" }}>
                 <TextField
                     label="Start Date"
                     type="date"
                     InputLabelProps={{ shrink: true }}
-                    value={startDate.toISOString().split("T")[0]}
-                    onChange={(event) => setStartDate(new Date(event.target.value))}
+                    value={startDate}
+                    inputProps={{ max: endDate }}
+                    onChange={(event) => setStartDate(event.target.value)}
                 />
                 <TextField
                     label="End Date"
                     type="date"
                     InputLabelProps={{ shrink: true }}
-                    value={endDate.toISOString().split("T")[0]}
-                    onChange={(event) => setEndDate(new Date(event.target.value))}
+                    value={endDate}
+                    inputProps={{ min: startDate, max: today }}
+                    onChange={(event) => setEndDate(event.target.value)}
                 />
             </Box>
+
+            {invalidDateRange && <Alert severity="warning" sx={{ mb: 2 }}>Start date must be before the end date.</Alert>}
 
             <TransactionsTable
                 title="Gnosis Pay Transactions"

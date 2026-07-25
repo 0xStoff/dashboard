@@ -8,11 +8,31 @@ const getPortfolioItems = (wallet) => {
 };
 
 const getAssetTokenList = (item) => {
-    const tokens = item?.detail?.supply_token_list;
-    return Array.isArray(tokens) ? tokens : [];
-};
+    const detail = item?.detail || {};
+    const candidates = [
+        ...(Array.isArray(detail.supply_token_list) ? detail.supply_token_list : []),
+        ...(Array.isArray(detail.reward_token_list) ? detail.reward_token_list : []),
+        ...(detail.token ? [detail.token] : []),
+    ];
+    const tokens = new Map();
 
-const getSupplyTokenAmount = (item) => Number(item?.detail?.supply_token_list?.[0]?.amount || 0);
+    candidates.forEach((token) => {
+        const key = `${token.chain || ""}-${token.id || token.symbol || token.name || "unknown"}`;
+        const existing = tokens.get(key);
+        if (existing) {
+            existing.amount += Number(token.amount || 0);
+        } else {
+            tokens.set(key, { ...token, amount: Number(token.amount || 0) });
+        }
+    });
+    return [...tokens.values()];
+};
+const getPositionUsdValue = (item) => {
+    const rawNetValue = item?.stats?.net_usd_value;
+    const netValue = rawNetValue == null ? Number.NaN : Number(rawNetValue);
+    if (Number.isFinite(netValue)) return netValue;
+    return Number(item?.stats?.asset_usd_value || 0);
+};
 
 const createProtocolAccumulator = (name) => ({
     name,
@@ -20,7 +40,7 @@ const createProtocolAccumulator = (name) => ({
     totalUSD: 0,
 });
 
-const mergeWalletAmount = (wallets, walletTag, walletAmount) => {
+const mergeWalletAmount = (wallets, walletTag, walletAmount, walletUsdValue) => {
     if (!walletTag || walletAmount === undefined) {
         return;
     }
@@ -28,10 +48,15 @@ const mergeWalletAmount = (wallets, walletTag, walletAmount) => {
     const existingWallet = wallets.find((wallet) => wallet.tag === walletTag);
     if (existingWallet) {
         existingWallet.amount += Number(walletAmount || 0);
+        existingWallet.usdValue += Number(walletUsdValue || 0);
         return;
     }
 
-    wallets.push({ tag: walletTag, amount: Number(walletAmount || 0) });
+    wallets.push({
+        tag: walletTag,
+        amount: Number(walletAmount || 0),
+        usdValue: Number(walletUsdValue || 0),
+    });
 };
 
 const unifyPositions = (positions) => {
@@ -47,10 +72,9 @@ const unifyPositions = (positions) => {
         unified[key].amount += position.amount;
         unified[key].usdValue += position.usdValue;
         position.wallets.forEach((wallet) => {
-            mergeWalletAmount(unified[key].wallets, wallet.tag, wallet.amount);
+            mergeWalletAmount(unified[key].wallets, wallet.tag, wallet.amount, wallet.usdValue);
         });
-        unified[key].price =
-            unified[key].amount > 0 ? unified[key].usdValue / unified[key].amount : 0;
+        unified[key].price = unified[key].tokenCount === 1 ? position.price : 0;
     });
 
     return Object.values(unified).sort((a, b) => b.usdValue - a.usdValue);
@@ -63,12 +87,13 @@ const addPosition = ({
     itemName,
     walletTag,
     walletAmount,
+    walletUsdValue,
     selectedChainId,
     item,
 }) => {
     const validTokens = tokens
         .filter((token) => selectedChainId === "all" || token.chain === selectedChainId)
-        .filter((token) => Number(token.amount || 0) * Number(token.price || 0) > 0.01 || Number(item?.stats?.asset_usd_value || 0) > 0.01);
+        .filter((token) => Number(token.amount || 0) * Number(token.price || 0) > 0.01 || walletUsdValue > 0.01);
 
     if (!validTokens.length) {
         return;
@@ -77,8 +102,8 @@ const addPosition = ({
     const tokenNames = validTokens.map((token) => token.name).join(" + ");
     const logoUrls = validTokens.map((token) => token.logo_url).filter(Boolean);
     const totalAmount = validTokens.reduce((sum, token) => sum + Number(token.amount || 0), 0);
-    const totalUsdValue = Number(item?.stats?.asset_usd_value || 0);
-    const averagePrice = totalAmount > 0 ? totalUsdValue / totalAmount : 0;
+    const totalUsdValue = walletUsdValue;
+    const displayPrice = validTokens.length === 1 ? Number(validTokens[0].price || 0) : 0;
 
     const existingPosition = acc[protocolName].positions.find(
         (position) =>
@@ -90,19 +115,21 @@ const addPosition = ({
     if (existingPosition) {
         existingPosition.amount += totalAmount;
         existingPosition.usdValue += totalUsdValue;
-        existingPosition.price =
-            existingPosition.amount > 0 ? existingPosition.usdValue / existingPosition.amount : 0;
-        mergeWalletAmount(existingPosition.wallets, walletTag, walletAmount);
+        existingPosition.price = existingPosition.tokenCount === 1 ? displayPrice : 0;
+        mergeWalletAmount(existingPosition.wallets, walletTag, totalAmount, walletUsdValue);
     } else {
         acc[protocolName].positions.push({
             type: itemName,
             chain: validTokens[0].chain,
             tokenNames,
             logoUrls,
-            price: averagePrice,
+            price: displayPrice,
             amount: totalAmount,
             usdValue: totalUsdValue,
-            wallets: walletTag && walletAmount !== undefined ? [{ tag: walletTag, amount: walletAmount }] : [],
+            tokenCount: validTokens.length,
+            wallets: walletTag && walletAmount !== undefined
+                ? [{ tag: walletTag, amount: totalAmount, usdValue: walletUsdValue }]
+                : [],
         });
     }
 
@@ -166,7 +193,11 @@ export const getProtocolsTable = async ({ chain, walletId, searchQuery, userId }
                         tokens: getAssetTokenList(item),
                         itemName: item.name,
                         walletTag: wallet.tag,
-                        walletAmount: getSupplyTokenAmount(item),
+                        walletAmount: getAssetTokenList(item).reduce(
+                            (sum, token) => sum + Number(token.amount || 0),
+                            0
+                        ),
+                        walletUsdValue: getPositionUsdValue(item),
                         selectedChainId: chain,
                         item,
                     });

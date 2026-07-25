@@ -18,6 +18,7 @@ import {
 import AppProviders from "./app/AppProviders";
 import { NetWorthChart } from "./components/crypto/NetWorthChart";
 import PortfolioInsights from "./components/crypto/PortfolioInsights";
+import RobinhoodPerformance from "./components/crypto/RobinhoodPerformance";
 import { TokenChart } from "./components/crypto/TokenChart";
 import Header from "./components/header/Header";
 import { useAuthStatus } from "./hooks/useAuthStatus";
@@ -90,15 +91,23 @@ const DashboardApp: React.FC = () => {
     useEffect(() => {
         if (!isAuthenticated || dashboardLoading) return;
         if (selectedWalletId !== "all" || selectedChainId !== "all" || searchQuery.trim()) return;
+        if (!tokens.length || !chains.length || !Number.isFinite(totalUSDValue) || totalUSDValue <= 0) return;
 
-        void saveNetWorth(totalUSDValue, {
-            wallets,
-            chains,
-            tokens,
-            protocolsTable,
-            totalProtocolUSD,
-            totalTokenUSD,
-        });
+        // A filter change briefly leaves the previous result in state before the new
+        // requests enter their loading state. Waiting for the view to settle prevents
+        // those partial wallet/chain totals from being stored as portfolio snapshots.
+        const saveTimer = window.setTimeout(() => {
+            void saveNetWorth(totalUSDValue, {
+                wallets,
+                chains,
+                tokens,
+                protocolsTable,
+                totalProtocolUSD,
+                totalTokenUSD,
+            });
+        }, 1200);
+
+        return () => window.clearTimeout(saveTimer);
     }, [
         chains,
         dashboardLoading,
@@ -189,7 +198,15 @@ const DashboardApp: React.FC = () => {
                                         onSelectToken={setSelectedToken}
                                     />
 
-                                    {showChart && <NetWorthChart setShowChart={setShowChart} data={netWorth} />}
+                                    {selectedChainId === "hood" && <RobinhoodPerformance assets={tokens} />}
+
+                                    {showChart && (
+                                        <NetWorthChart
+                                            currentNetWorth={totalUSDValue}
+                                            data={netWorth}
+                                            setShowChart={setShowChart}
+                                        />
+                                    )}
 
                                     {selectedToken && (
                                         <div ref={tokenChartRef}>

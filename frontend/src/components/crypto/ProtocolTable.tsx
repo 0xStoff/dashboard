@@ -52,7 +52,6 @@ const ProtocolTable: React.FC<{
     return (
         <Container>
             {protocols
-                .filter((protocol) => protocol.totalUSD > 10)
                 .map((protocol) => (
                     <Card
                         onClick={() => handleTokenClick(protocol)}

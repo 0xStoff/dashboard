@@ -126,7 +126,12 @@ export const syncKrakenLedgers = async (query = {}) => {
             asset: entry.asset,
             status: entry.status || "Completed",
             date: new Date(entry.time * 1000),
-            transactionAmount: entry.transactionAmount || 0,
+            // Kraken does not provide a CHF valuation for ledger entries. Do
+            // not write a synthetic zero here: it would overwrite historical
+            // CHF values that were reconstructed and stored separately.
+            ...(entry.transactionAmount != null
+                ? { transactionAmount: entry.transactionAmount }
+                : {}),
         }))
     );
 

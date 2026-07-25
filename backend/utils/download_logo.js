@@ -15,11 +15,6 @@ if (!fs.existsSync(LOGO_DIR)) {
 export const downloadLogo = async (logoUrl, id) => {
     if (!logoUrl || !id) return null;
 
-    const parsedUrl = new URL(logoUrl);
-    if (parsedUrl.protocol !== 'https:') {
-        throw new Error(`Refusing non-HTTPS logo URL for ${id}`);
-    }
-
     const safeId = String(id).replace(/[^a-zA-Z0-9._-]/g, '_');
     const filename = `${safeId}.png`;
     const logoPath = path.join(LOGO_DIR, filename);
@@ -29,6 +24,11 @@ export const downloadLogo = async (logoUrl, id) => {
     }
 
     try {
+        const parsedUrl = new URL(logoUrl);
+        if (parsedUrl.protocol !== 'https:') {
+            throw new Error('Logo URL must use HTTPS');
+        }
+
         const response = await axios.get(logoUrl, {
             responseType: 'arraybuffer',
             timeout: 15000,

@@ -8,7 +8,7 @@ import {downloadLogo} from "../utils/download_logo.js";
 
 dotenv.config();
 
-const ACTIVE_CHAIN_IDS = ["hood", "monad"];
+const ACTIVE_CHAIN_IDS = ["hood", "monad", "hyper"];
 
 const syncActiveChains = async () => {
     const chains = await fetchDebankData("/chain/list");

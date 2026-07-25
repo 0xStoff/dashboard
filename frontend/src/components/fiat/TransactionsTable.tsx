@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
     Box,
     Chip,
@@ -48,6 +48,10 @@ function TransactionsTable<T extends ExcludableTransaction>({
 }: TransactionsTableProps<T>) {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
+
+    useEffect(() => {
+        setPage(0);
+    }, [transactions]);
 
     const paginatedTransactions = useMemo(
         () => transactions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),

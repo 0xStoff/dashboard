@@ -7,26 +7,31 @@ import CloseIcon from "@mui/icons-material/Close";
 
 interface NetWorthChartProps {
     data: NetWorthData[];
+    currentNetWorth: number;
     setShowChart: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const processDailyData = (data: NetWorthData[]) => {
-    const groupedData: Record<string, {totalNetWorth: number; count: number}> = {};
+const processDailyData = (data: NetWorthData[], currentNetWorth: number) => {
+    const latestByDay = new Map<string, {date: string; totalNetWorth: number}>();
 
-    data.forEach((entry: NetWorthData) => {
-        const date = new Date(entry.date).toISOString().split("T")[0];
-        if (!groupedData[date]) {
-            groupedData[date] = {totalNetWorth: 0, count: 0};
-        }
-        groupedData[date].totalNetWorth += entry.totalNetWorth;
-        groupedData[date].count += 1;
-    });
+    [...data]
+        .filter((entry) => Number.isFinite(entry.totalNetWorth) && entry.totalNetWorth > 0)
+        .sort((left, right) => new Date(left.date).getTime() - new Date(right.date).getTime())
+        .forEach((entry) => {
+            const date = new Date(entry.date).toISOString().split("T")[0];
+            latestByDay.set(date, entry);
+        });
 
-    return Object.entries(groupedData)
-        .map(([date, values]) => ({
-            date,
-            totalNetWorth: values.totalNetWorth / values.count,
-        }))
+    if (Number.isFinite(currentNetWorth) && currentNetWorth > 0) {
+        const now = new Date();
+        latestByDay.set(now.toISOString().split("T")[0], {
+            date: now.toISOString(),
+            totalNetWorth: currentNetWorth,
+        });
+    }
+
+    return Array.from(latestByDay.entries())
+        .map(([date, entry]) => ({date, totalNetWorth: entry.totalNetWorth}))
         .sort((left, right) => left.date.localeCompare(right.date));
 };
 
@@ -39,9 +44,12 @@ const RANGE_MONTHS: Partial<Record<RangeKey, number>> = {
     "1Y": 12,
 };
 
-export const NetWorthChart = ({data, setShowChart}: NetWorthChartProps) => {
+export const NetWorthChart = ({currentNetWorth, data, setShowChart}: NetWorthChartProps) => {
     const [range, setRange] = useState<RangeKey>("ALL");
-    const processedData = useMemo(() => processDailyData(data), [data]);
+    const processedData = useMemo(
+        () => processDailyData(data, currentNetWorth),
+        [currentNetWorth, data]
+    );
     const visibleData = useMemo(() => {
         const months = RANGE_MONTHS[range];
         if (!months || !processedData.length) return processedData;

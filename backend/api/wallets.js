@@ -3,6 +3,8 @@ import { Op } from "sequelize";
 import {
     fetchAndSaveEvmTokenData,
     fetchAndSaveEvmTokenDataForAllWallets,
+    fetchAndSaveHyperliquidData,
+    fetchAndSaveHyperliquidDataForAllWallets,
     fetchAndSaveSolTokenDataForAllWallets,
     fetchCosmosTokens,
     writeAptosDataToDB,
@@ -11,6 +13,7 @@ import {
 } from "../token_data/index.js";
 import WalletModel from "../models/WalletModel.js";
 import { SUPPORTED_TRACKED_WALLET_CHAINS } from "../config/supportedChains.js";
+import fetchDebankData from "../utils/debank_api.js";
 
 const router = express.Router();
 
@@ -23,6 +26,33 @@ const getOwnedWallet = async (walletId, userId) =>
             user_id: userId,
         },
     });
+
+const runRefreshTasks = async (tasks) => Promise.all(
+    Object.entries(tasks).map(async ([provider, task]) => {
+        try {
+            const details = await task();
+            if (details?.skipped) return { provider, status: "skipped", details };
+            return { provider, status: "success", details: details || null };
+        } catch (error) {
+            console.error(`${provider} refetch failed:`, error.message);
+            return { provider, status: "failed", error: error.message };
+        }
+    })
+);
+
+const sendRefreshResults = (res, results, successMessage) => {
+    const failures = results.filter((result) => result.status === "failed");
+    const skipped = results.filter((result) => result.status === "skipped");
+    const message = failures.length
+        ? `Refetch completed with ${failures.length} provider failure${failures.length === 1 ? "" : "s"}`
+        : skipped.length ? `${successMessage} (${skipped.length} optional provider skipped)` : successMessage;
+
+    return res.status(failures.length ? 207 : 200).json({
+        ok: failures.length === 0,
+        message,
+        results,
+    });
+};
 
 router.get("/wallets", async (req, res) => {
     try {
@@ -43,6 +73,19 @@ router.get("/wallets", async (req, res) => {
     } catch (error) {
         console.error("Error fetching wallets:", error);
         return res.status(500).json({ error: "Failed to fetch wallets" });
+    }
+});
+
+router.get("/debank/units", async (_req, res) => {
+    try {
+        const units = await fetchDebankData("/account/units", {}, { ttlMs: 60 * 1000 });
+        return res.json({
+            balance: Number(units.balance || 0),
+            stats: Array.isArray(units.stats) ? units.stats.slice(0, 30) : [],
+        });
+    } catch (error) {
+        console.error("Failed to fetch DeBank units:", error.message);
+        return res.status(502).json({ error: "DeBank usage is temporarily unavailable" });
     }
 });
 
@@ -133,64 +176,45 @@ router.delete("/wallets/:id", async (req, res) => {
 });
 
 router.post("/wallets/refetch", async (req, res) => {
-    try {
-        console.log("Refetching wallet data...");
-
-        await Promise.all([
-            (async () => {
-                console.log("Fetching non-EVM and static token data...");
-                await writeStaticDataToDB();
-                await writeAptosDataToDB();
-                await writeSuiDataToDB();
-                await fetchAndSaveSolTokenDataForAllWallets();
-                await fetchCosmosTokens();
-                console.log("Non-EVM and static token data fetched");
-            })(),
-            (async () => {
-                console.log("Fetching EVM token data...");
-                await fetchAndSaveEvmTokenDataForAllWallets(req);
-                console.log("EVM token data fetched");
-            })(),
-        ]);
-
-        return res.status(200).json({
-            message: "Wallet data refetched successfully",
-        });
-    } catch (error) {
-        console.error("Error executing token data functions:", error);
-        return res.status(500).json({
-            error: "Failed to refetch wallet data",
-            details: error.message,
-        });
-    }
+    console.log("Refetching wallet data...");
+    const userId = getUserId(req);
+    const results = await runRefreshTasks({
+        evm: () => fetchAndSaveEvmTokenDataForAllWallets(req),
+        solana: () => fetchAndSaveSolTokenDataForAllWallets(userId),
+        sui: () => writeSuiDataToDB(userId),
+        aptos: () => writeAptosDataToDB(userId),
+        cosmos: () => fetchCosmosTokens(userId),
+        hyperliquid: () => fetchAndSaveHyperliquidDataForAllWallets(userId),
+        static: writeStaticDataToDB,
+    });
+    return sendRefreshResults(res, results, "Wallet data refetched successfully");
 });
 
-router.post("/wallets/refetch/other", async (_req, res) => {
-    try {
-        console.log("Refetching non-EVM and static token data...");
-
-        await Promise.all([
-            writeStaticDataToDB(),
-            writeAptosDataToDB(),
-            writeSuiDataToDB(),
-            fetchAndSaveSolTokenDataForAllWallets(),
-            fetchCosmosTokens(),
-        ]);
-
-        return res.status(200).json({ message: "Other token data refetched successfully" });
-    } catch (error) {
-        console.error("Error refetching other token data:", error);
-        return res.status(500).json({
-            error: "Failed to refetch other token data",
-            details: error.message,
-        });
-    }
+router.post("/wallets/refetch/other", async (req, res) => {
+    console.log("Refetching non-EVM and static token data...");
+    const userId = getUserId(req);
+    const results = await runRefreshTasks({
+        solana: () => fetchAndSaveSolTokenDataForAllWallets(userId),
+        sui: () => writeSuiDataToDB(userId),
+        aptos: () => writeAptosDataToDB(userId),
+        cosmos: () => fetchCosmosTokens(userId),
+        hyperliquid: () => fetchAndSaveHyperliquidDataForAllWallets(userId),
+        static: writeStaticDataToDB,
+    });
+    return sendRefreshResults(res, results, "Other token data refetched successfully");
 });
 
 router.post("/wallets/refetch/evm", async (req, res) => {
     try {
+        const userId = getUserId(req);
+        if (!userId) {
+            return res.status(401).json({ error: "Unauthorized: Missing user ID" });
+        }
         console.log("Refetching EVM token data for all wallets...");
-        await fetchAndSaveEvmTokenDataForAllWallets(req);
+        await Promise.all([
+            fetchAndSaveEvmTokenDataForAllWallets(req),
+            fetchAndSaveHyperliquidDataForAllWallets(userId),
+        ]);
         return res.status(200).json({ message: "EVM token data for all wallets refetched successfully" });
     } catch (error) {
         console.error("Error refetching EVM token data for all wallets:", error);
@@ -215,7 +239,10 @@ router.post("/wallets/refetch/evm/:walletId", async (req, res) => {
             return res.status(404).json({ error: "Wallet not found or not an EVM wallet" });
         }
 
-        await fetchAndSaveEvmTokenData(wallet.id, wallet.wallet, req);
+        await Promise.all([
+            fetchAndSaveEvmTokenData(wallet.id, wallet.wallet, req, { forceTokens: true }),
+            fetchAndSaveHyperliquidData(wallet),
+        ]);
         return res.status(200).json({ message: "EVM token data refetched successfully" });
     } catch (error) {
         console.error("Error refetching EVM token data for wallet:", error);

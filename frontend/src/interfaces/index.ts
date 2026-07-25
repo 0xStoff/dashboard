@@ -38,6 +38,7 @@ export interface Token {
 export interface ProtocolWallet {
   tag: string;
   amount: number;
+  usdValue: number;
 }
 
 export interface Position {
@@ -48,6 +49,7 @@ export interface Position {
   price: number;
   amount: number;
   usdValue: number;
+  tokenCount?: number;
   wallets: ProtocolWallet[];
 }
 
@@ -113,6 +115,8 @@ export interface TransactionRecord {
   asset: string;
   status: string;
   date: string;
+  merchant?: string | null;
+  transactionAmount?: number | string | null;
   timestamp: string | number;
   chf_value: number;
   excludedFromTotals: boolean;

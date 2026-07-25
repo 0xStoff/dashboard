@@ -21,6 +21,26 @@ interface PortfolioInsightsProps {
 }
 
 const valueOf = (token: Token) => Number(token.total_usd_value) || token.amount * token.price || 0;
+const isEth = (token: Token) => token.symbol.trim().toUpperCase() === "ETH";
+
+const aggregateEthAcrossNetworks = (tokens: Token[]): Token | null => {
+    const ethTokens = tokens.filter(isEth);
+    if (!ethTokens.length) return null;
+
+    const totalValue = ethTokens.reduce((sum, token) => sum + valueOf(token), 0);
+    const totalAmount = ethTokens.reduce((sum, token) => sum + Number(token.amount || 0), 0);
+    const representative = ethTokens.sort((a, b) => valueOf(b) - valueOf(a))[0];
+
+    return {
+        ...representative,
+        chain_id: "all",
+        name: "Ethereum across all networks",
+        amount: totalAmount,
+        price: totalAmount > 0 ? totalValue / totalAmount : Number(representative.price || 0),
+        total_usd_value: totalValue,
+        wallets: ethTokens.flatMap((token) => token.wallets || []),
+    };
+};
 
 const InsightCard: React.FC<{
     eyebrow: string;
@@ -92,7 +112,12 @@ const PortfolioInsights: React.FC<PortfolioInsightsProps> = ({
     onSelectToken,
 }) => {
     const insights = useMemo(() => {
-        const sortedTokens = [...tokens].sort((a, b) => valueOf(b) - valueOf(a));
+        const aggregatedEth = aggregateEthAcrossNetworks(tokens);
+        const positionTokens = [
+            ...tokens.filter((token) => !isEth(token)),
+            ...(aggregatedEth ? [aggregatedEth] : []),
+        ];
+        const sortedTokens = positionTokens.sort((a, b) => valueOf(b) - valueOf(a));
         const topToken = sortedTokens[0] || null;
         const largestMover =
             [...tokens]

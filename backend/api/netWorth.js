@@ -55,9 +55,10 @@ router.get("/net-worth", async (req, res) => {
 
 router.post("/net-worth", async (req, res) => {
   const { date, totalNetWorth, historyData } = req.body;
+  const numericNetWorth = Number(totalNetWorth);
 
-  if (!date || !totalNetWorth) {
-    return res.status(400).json({ error: "Date and totalNetWorth are required" });
+  if (!date || !Number.isFinite(numericNetWorth) || numericNetWorth <= 0) {
+    return res.status(400).json({ error: "A valid date and positive totalNetWorth are required" });
   }
 
   try {
@@ -66,13 +67,13 @@ router.post("/net-worth", async (req, res) => {
     });
 
 
-    if (lastEntry && parseFloat(lastEntry.totalNetWorth) === parseFloat(totalNetWorth.toFixed(8))) {
+    if (lastEntry && parseFloat(lastEntry.totalNetWorth) === parseFloat(numericNetWorth.toFixed(8))) {
       return res.status(200).json({
         message: "Net worth not changed",
       });
     }
 
-    await NetWorth.create({ date, totalNetWorth, history: historyData });
+    await NetWorth.create({ date, totalNetWorth: numericNetWorth, history: historyData });
     res.status(201).json({ message: "Net worth saved successfully" });
   } catch (error) {
     console.error("Error saving net worth:", error);

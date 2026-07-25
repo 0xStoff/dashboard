@@ -5,12 +5,16 @@ import { GnosisTransactionRecord, TransactionRecord } from "../interfaces";
 const mapTransactionRecord = (transaction: Record<string, unknown>): TransactionRecord => ({
     orderNo: typeof transaction.orderNo === "string" ? transaction.orderNo : null,
     exchange: typeof transaction.exchange === "string" ? transaction.exchange : "Unknown",
-    type: typeof transaction.type === "string" ? transaction.type : "Unknown",
+    // Some legacy Binance fiat rows have no method/type. An empty value is a
+    // valid deposit classification; converting it to "Unknown" drops funding.
+    type: typeof transaction.type === "string" ? transaction.type : "",
     amount: Number(transaction.amount) || 0,
     asset: typeof transaction.asset === "string" ? transaction.asset : "Unknown",
     fee: Number(transaction.fee) || 0,
     status: typeof transaction.status === "string" ? transaction.status : "Unknown",
     date: typeof transaction.date === "string" ? transaction.date : "",
+    merchant: typeof transaction.merchant === "string" ? transaction.merchant : null,
+    transactionAmount: Number(transaction.transactionAmount) || 0,
     timestamp:
         typeof transaction.date === "string" || typeof transaction.date === "number"
             ? transaction.date
@@ -25,39 +29,27 @@ const useFetchTransactions = () => {
     const [gnosisTransactions, setGnosisTransactions] = useState<GnosisTransactionRecord[]>([]);
     const effectRan = useRef(false);
 
-    const fetchFormattedTransaction = useCallback(async (exchange: string) => {
-        try {
-            const response = await apiClient.get<Record<string, unknown>[]>(`/transactions?exchange=${exchange}`);
-            return (response.data || [])
-                .filter((transaction) => transaction.orderNo !== null)
-                .map(mapTransactionRecord);
-        } catch (error) {
-            console.error(`Error fetching formatted transaction for ${exchange}:`, error);
-            return [];
-        }
-    }, []);
-
     const fetchTransactions = useCallback(async () => {
         try {
             setLoading(true);
-
-            const [binanceLedgers, krakenLedgers, rubicRows] = await Promise.all([
-                fetchFormattedTransaction("binance"),
-                fetchFormattedTransaction("kraken"),
-                fetchFormattedTransaction("rubic"),
-            ]);
-
-            setTransactions(
-                [...binanceLedgers, ...krakenLedgers, ...rubicRows].sort(
-                    (left, right) => new Date(String(right.date)).getTime() - new Date(String(left.date)).getTime()
+            const response = await apiClient.get<Record<string, unknown>[]>("/transactions");
+            const rows = (response.data || [])
+                .filter((transaction) =>
+                    transaction.orderNo !== null &&
+                    String(transaction.exchange || "").toLowerCase() !== "gnosis pay"
                 )
-            );
+                .map(mapTransactionRecord)
+                .sort(
+                    (left, right) => new Date(String(right.date)).getTime() - new Date(String(left.date)).getTime()
+                );
+
+            setTransactions(rows);
         } catch (error) {
             console.error("Error fetching transactions:", error);
         } finally {
             setLoading(false);
         }
-    }, [fetchFormattedTransaction]);
+    }, []);
 
     const fetchGnosisPayTransactions = useCallback(async () => {
         try {

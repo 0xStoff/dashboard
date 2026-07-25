@@ -37,6 +37,15 @@ const processHistory = (netWorthHistory: NetWorthData[], selectedToken: Token): 
         }
 
         const tokensWithSymbol = entry.tokenHistory?.filter(({ symbol }) => symbol === selectedToken.symbol) ?? [];
+        if (selectedToken.chain_id === "all") {
+            const balance = tokensWithSymbol.reduce((sum, token) => sum + (toFiniteNumber(token.amount) || 0), 0);
+            const usdValue = tokensWithSymbol.reduce(
+                (sum, token) => sum + (toFiniteNumber(token.total_usd_value) || 0),
+                0
+            );
+            if (tokensWithSymbol.length) historyPoints.push({ date, balance, usdValue });
+            return historyPoints;
+        }
         const token =
             tokensWithSymbol.find(({ chain_id }) => chain_id === selectedToken.chain_id) ??
             // Old snapshots did not always include a chain id. Only fall back when
