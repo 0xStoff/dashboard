@@ -1,0 +1,20 @@
+{
+  "name": "@dashboard/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file=../../.env src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node --env-file-if-exists=../../.env dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.41",
+    "@dashboard/config": "workspace:*",
+    "@dashboard/contracts": "workspace:*",
+    "@dashboard/database": "workspace:*",
+    "fastify": "^5.6.2"
+  }
+}

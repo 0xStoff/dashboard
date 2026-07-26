@@ -1,0 +1,30 @@
+{
+  "name": "@dashboard/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test test/*.test.mjs",
+    "migrate": "drizzle-kit migrate",
+    "import:legacy": "tsx src/migration/import-legacy.ts",
+    "verify:legacy": "tsx src/migration/verify-legacy.ts"
+  },
+  "dependencies": {
+    "@dashboard/config": "workspace:*",
+    "@dashboard/contracts": "workspace:*",
+    "drizzle-orm": "^0.45.1",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.6",
+    "drizzle-kit": "^0.31.8"
+  }
+}

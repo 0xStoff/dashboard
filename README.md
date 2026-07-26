@@ -14,8 +14,13 @@ Multi-chain portfolio dashboard for tracking wallets, token balances, protocol p
 
 - `frontend/`: React + TypeScript UI
 - `backend/`: Express API, sync jobs, and persistence
+- `apps/`: local-only v2 web, API, and worker runtimes
+- `packages/`: v2 domain, contracts, database, provider, UI, and config boundaries
 - `backend/config/static-data.example.json`: template for private optional static data
 - `docs/deployment.md`: deployment and Pi workflow notes
+- `docs/redesign/`: audit and target-architecture gate for the staged replacement
+
+The replacement foundation is being built alongside the unchanged legacy app. Begin with the [redesign documentation gate](docs/redesign/README.md), including its owner decisions and migration safeguards.
 
 ## Setup
 
@@ -87,3 +92,15 @@ Default local URLs:
 
 - Backend: `http://localhost:3000`
 - Frontend: `http://localhost:8080`
+
+The existing `npm start` command still launches those legacy services. The v2
+workspace uses pinned pnpm tooling and a separate local PostgreSQL database:
+
+```sh
+cp .env.example .env
+pnpm install
+pnpm v2:dev
+```
+
+Do not point `DATABASE_URL` at production. The first v2 migration creates only
+the additive `portfolio_v2` schema; it does not alter legacy tables.

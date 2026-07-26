@@ -1,12 +1,29 @@
 {
-  "name": "crypto_dashboard",
+  "name": "crypto-dashboard",
+  "private": true,
+  "packageManager": "pnpm@9.10.0",
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
     "start": "concurrently \"cd backend && yarn start\" \"cd frontend && yarn start\"",
+    "legacy:start": "concurrently \"cd backend && yarn start\" \"cd frontend && yarn start\"",
     "setup": "yarn install && cd backend && yarn install && cd ../frontend && yarn install",
-    "db:init": "psql -U stoff -d crypto_dashboard -f backend/scripts/db_init.sql"
-
+    "legacy:setup": "yarn install && cd backend && yarn install && cd ../frontend && yarn install",
+    "db:init": "psql -U stoff -d crypto_dashboard -f backend/scripts/db_init.sql",
+    "v2:dev": "pnpm v2:build:packages && pnpm --parallel --filter @dashboard/api --filter @dashboard/worker --filter @dashboard/web dev",
+    "v2:build:packages": "pnpm -r --filter './packages/**' build",
+    "v2:build": "pnpm -r --filter './packages/**' --filter './apps/**' build",
+    "v2:typecheck": "pnpm v2:build:packages && pnpm -r --filter './packages/**' --filter './apps/**' typecheck",
+    "v2:test": "pnpm -r --filter './packages/**' --filter './apps/**' test",
+    "v2:test:domain": "node --experimental-strip-types --test packages/domain/test/*.test.ts",
+    "v2:test:foundation": "node --experimental-strip-types --test packages/domain/test/*.test.ts packages/config/test/*.test.ts && node --test packages/database/test/*.test.mjs tests/architecture/*.test.mjs"
   },
   "devDependencies": {
-    "concurrently": "^7.0.0"
+    "concurrently": "^7.0.0",
+    "@types/node": "^24.10.0",
+    "tsx": "^4.20.6",
+    "typescript": "5.9.3",
+    "vitest": "3.2.4"
   }
 }

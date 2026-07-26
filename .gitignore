@@ -18,6 +18,7 @@ backend/node_modules
 # misc
 .DS_Store
 ._*
+.Rhistory
 /frontend/.env
 .env
 .env.local
@@ -26,6 +27,8 @@ backend/node_modules
 .env.production.local
 .idea
 dist
+*.tsbuildinfo
+.pnpm-store
 .env.*
 !.env.example
 
@@ -39,3 +42,6 @@ hetzner_db.dump
 *.bak-*
 scratch_*.js
 backend/config/static-data.private.json
+
+# Sensitive local-only Pi snapshots and migration evidence
+/local-data/
