@@ -69,7 +69,15 @@ const setupAssociations = () => {
 
 const initDb = async () => {
     setupAssociations();
-    await sequelize.sync();
+    if (process.env.ALLOW_LEGACY_SCHEMA_SYNC === "true") {
+        console.warn("ALLOW_LEGACY_SCHEMA_SYNC is enabled; do not use this mode in production");
+        await sequelize.sync();
+        return;
+    }
+
+    // Production schema changes are applied explicitly through checked SQL
+    // migrations. Startup only verifies connectivity and never mutates tables.
+    await sequelize.authenticate();
 };
 
 initDb()

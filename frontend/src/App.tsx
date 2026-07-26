@@ -17,7 +17,6 @@ import {
 } from "./components";
 import AppProviders from "./app/AppProviders";
 import { NetWorthChart } from "./components/crypto/NetWorthChart";
-import PortfolioInsights from "./components/crypto/PortfolioInsights";
 import RobinhoodPerformance from "./components/crypto/RobinhoodPerformance";
 import { TokenChart } from "./components/crypto/TokenChart";
 import Header from "./components/header/Header";
@@ -188,15 +187,6 @@ const DashboardApp: React.FC = () => {
                                             </IconButton>
                                         )}
                                     </Box>
-
-                                    <PortfolioInsights
-                                        chains={chains}
-                                        tokens={tokens}
-                                        totalProtocolUSD={totalProtocolUSD}
-                                        totalTokenUSD={totalTokenUSD}
-                                        onSelectChain={setSelectedChainId}
-                                        onSelectToken={setSelectedToken}
-                                    />
 
                                     {selectedChainId === "hood" && <RobinhoodPerformance assets={tokens} />}
 
