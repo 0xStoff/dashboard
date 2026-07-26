@@ -50,3 +50,5 @@ explicit migration and deployment is approved.
   immutable source observations, high-precision prices, adjustments, and audit logs.
 - Production schema synchronization is replaced by validation unless explicitly
   enabled for a disposable legacy development database.
+- Production frontend and backend containers are immutable builds with locked
+  dependencies. They do not install packages or mount source code at startup.

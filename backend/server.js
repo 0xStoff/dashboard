@@ -43,6 +43,15 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ limit: "1mb", extended: true }));
 app.use(cookieParser());
 
+app.get("/healthz", async (_req, res) => {
+    try {
+        await sequelize.authenticate();
+        return res.json({ status: "ok" });
+    } catch {
+        return res.status(503).json({ status: "unavailable" });
+    }
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api", authenticateToken, chainsRoutes);
 app.use("/api", authenticateToken, walletRoutes);

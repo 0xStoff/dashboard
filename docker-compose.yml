@@ -29,7 +29,6 @@ services:
       context: .
       dockerfile: Dockerfile
       target: backend
-    working_dir: /app/backend
     environment:
       DB_HOST: postgres
       DB_USER: ${POSTGRES_USER:-stoff}
@@ -48,17 +47,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ./backend:/app/backend
-    command: >
-      sh -c "
-        corepack enable &&
-        yarn config set network-timeout 600000 -g &&
-        yarn config set network-concurrency 1 -g &&
-        npm config set registry https://registry.npmjs.org/ &&
-        yarn install --ignore-optional &&
-        yarn start
-      "
     expose:
       - "3000"
     restart: unless-stopped
@@ -66,40 +54,27 @@ services:
 
   frontend:
     container_name: dashboard-frontend
-    image: node:20-alpine
-    working_dir: /app
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend
+      args:
+        REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL:-https://api.dashboard.stoeff.xyz/api}
+        REACT_APP_LOGO_BASE_URL: ${REACT_APP_LOGO_BASE_URL:-https://api.dashboard.stoeff.xyz/logos/}
     environment:
-      HOST: "0.0.0.0"
-      PORT: "8080"
       VIRTUAL_HOST: ${FRONTEND_VIRTUAL_HOST:-dashboard.stoeff.xyz}
       LETSENCRYPT_HOST: ${FRONTEND_LETSENCRYPT_HOST:-${FRONTEND_VIRTUAL_HOST:-dashboard.stoeff.xyz}}
       LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-christoph.tiger@hotmail.com}
       VIRTUAL_PORT: "8080"
-      REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL:-https://api.dashboard.stoeff.xyz/api}
-      REACT_APP_LOGO_BASE_URL: ${REACT_APP_LOGO_BASE_URL:-https://api.dashboard.stoeff.xyz/logos/}
       TZ: ${TZ:-Europe/Zurich}
-    command: >
-      sh -c "
-        apk add --no-cache python3 make g++ >/dev/null 2>&1 || true &&
-        corepack enable &&
-        yarn config set network-timeout 600000 -g &&
-        yarn config set network-concurrency 1 -g &&
-        npm config set registry https://registry.npmjs.org/ &&
-        yarn install --ignore-optional &&
-        yarn start
-      "
     expose:
       - "8080"
-    volumes:
-      - ./frontend:/app
-      - frontend_yarn:/usr/local/share/.cache/yarn
     restart: unless-stopped
     networks: [proxy]
 
 
 volumes:
   postgres_data:
-  frontend_yarn:
 
 
 networks:

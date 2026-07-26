@@ -1,0 +1,15 @@
+.git
+.idea
+.env
+.env.*
+**/.env
+**/.env.*
+**/node_modules
+**/dist
+**/build
+backend/db_data
+backend/config/static-data.private.json
+*.dump
+*.bak
+*.bak-*
+local-data
