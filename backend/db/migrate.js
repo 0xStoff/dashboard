@@ -5,6 +5,7 @@ import { migrateWalletGroups } from "./migrations/002_wallet_groups.js";
 import { migrateRefreshJobs } from "./migrations/003_refresh_jobs.js";
 import { migrateWalletRefreshPolicy } from "./migrations/004_wallet_refresh_policy.js";
 import { migrateRobinhoodHistoricalAudit } from "./migrations/005_robinhood_historical_audit.js";
+import { migrateRobinhoodIncrementalIndex } from "./migrations/006_robinhood_incremental_index.js";
 import PortfolioSnapshot from "../models/PortfolioSnapshotModel.js";
 import PortfolioAsset from "../models/PortfolioAssetModel.js";
 import PortfolioAssetSnapshot from "../models/PortfolioAssetSnapshotModel.js";
@@ -29,6 +30,10 @@ const migrations = [
   {
     id: "005_robinhood_historical_audit",
     up: migrateRobinhoodHistoricalAudit,
+  },
+  {
+    id: "006_robinhood_incremental_index",
+    up: migrateRobinhoodIncrementalIndex,
   },
 ];
 

@@ -21,6 +21,7 @@ import robinhoodPerformanceRoutes from "./api/robinhoodPerformance.js";
 import dashboardSnapshotRoutes from "./api/dashboardSnapshot.js";
 import poolRadarRoutes from "./api/poolRadar.js";
 import { startPoolRadarIndexer } from "./services/poolRadarService.js";
+import { startRobinhoodIndexer } from "./services/robinhood/incrementalIndexService.js";
 import { runMigrations } from "./db/migrate.js";
 import { setupAssociations } from "./models/associations.js";
 import { markInterruptedRefreshJobs } from "./services/refreshJobService.js";
@@ -67,6 +68,7 @@ initDb()
     .then(() => {
         console.log("Database synced");
         startPoolRadarIndexer();
+        startRobinhoodIndexer();
 
         server.listen(appConfig.port, appConfig.host, () => {
             console.log(`Server running on ${appConfig.host}:${appConfig.port}`);

@@ -1,4 +1,10 @@
-import { fetchRobinhoodAccount, fetchRobinhoodWalletLedger } from "./blockscoutClient.js";
+import { fetchRobinhoodAccount } from "./blockscoutClient.js";
+import {
+    getRobinhoodIndexStatus,
+    indexRobinhoodWallet,
+    loadRobinhoodIndexedLedger,
+    seedRobinhoodIndexFromLedgers,
+} from "./incrementalIndexService.js";
 import { calculateRobinhoodPerformance } from "./performanceAccounting.js";
 import {
     HISTORICAL_GMGN_AUDIT_ADDRESSES,
@@ -731,7 +737,7 @@ export const getRobinhoodPerformance = async ({ userId, force = false } = {}) =>
     // A legacy verified ledger already contains the outbound half of a MM →
     // RED 25 move. Calculating it against the expanded wallet group correctly
     // keeps that move internal before RED 25's own explorer history arrives.
-    const activeCached = cached || legacyCached;
+    let activeCached = cached || legacyCached;
     const publicHistoricalAudit = {
         ...historicalAudit,
         // This expresses coverage, not asset ownership: inventory is always
@@ -756,45 +762,62 @@ export const getRobinhoodPerformance = async ({ userId, force = false } = {}) =>
         ? calculateFromLedgers(activeCached.liveLedgers)
         : withHistoricalAudit(applyDatabaseCurrentState(activeCached.value, currentState));
 
-    if (!force && activeCached && Date.now() - activeCached.savedAt < CACHE_MS) {
-        return withDataFreshness(
-            materializeCachedValue(),
-            {
-                source: "cache",
-                savedAt: activeCached.savedAt,
-                isIndexing: refreshByWallet.has(cacheKey),
-                indexingMessage: refreshByWallet.has(cacheKey) ? "Indexing Robinhood wallet history in the background." : null,
-            }
-        );
+    // Existing verified cache files are a safe one-time bootstrap for the new
+    // durable index. From then on every page is checkpointed in Postgres and
+    // refreshes only scan the newest explorer pages.
+    if (Array.isArray(cached?.liveLedgers) && cached.liveLedgers.length === addresses.length) {
+        await seedRobinhoodIndexFromLedgers({ userId, addresses, ledgers: cached.liveLedgers });
+    }
+    let indexStatus = await getRobinhoodIndexStatus({ userId, addresses });
+
+    const commitIndexedLedgers = async () => {
+        const ledgers = [];
+        for (const walletAddress of addresses) {
+            ledgers.push(await loadRobinhoodIndexedLedger({ userId, address: walletAddress }));
+        }
+        const value = calculateFromLedgers(ledgers);
+        const nextCache = { savedAt: Date.now(), value, liveLedgers: ledgers };
+        cacheByWallet.set(cacheKey, nextCache);
+        await writePersistentCache(cacheKey, nextCache);
+        activeCached = nextCache;
+        return value;
+    };
+
+    // The background worker may have committed events since the last API
+    // request. Recalculate locally only when the durable event set changed.
+    if (activeCached && indexStatus.complete && indexStatus.lastEventAt
+        && Date.parse(indexStatus.lastEventAt) > activeCached.savedAt) {
+        await commitIndexedLedgers();
+        indexStatus = await getRobinhoodIndexStatus({ userId, addresses });
     }
 
     const refresh = () => {
         if (refreshByWallet.has(cacheKey)) return refreshByWallet.get(cacheKey);
-        // When RED 25 was added, reuse the complete MM + Degen snapshot and
-        // request only the new wallet. The existing snapshot is still enough
-        // to classify MM → RED 25 as an internal transfer.
-        const reusedLedgers = !cached && Array.isArray(legacyCached?.liveLedgers)
-            ? legacyCached.liveLedgers
-            : [];
-        const addressesToFetch = reusedLedgers.length
-            ? addresses.filter((walletAddress) => !LEGACY_PERFORMANCE_WALLET_ADDRESSES.has(walletAddress))
-            : addresses;
-        const promise = addressesToFetch.reduce(
-            (ledgerPromise, walletAddress) => ledgerPromise.then(async (ledgers) => [
-                ...ledgers,
-                await fetchRobinhoodWalletLedger(walletAddress, {
-                accountOverride: { coin_balance: "0", exchange_rate: currentState.account.exchange_rate },
+        const promise = addresses.reduce(
+            (indexPromise, walletAddress) => indexPromise.then(async (results) => [
+                ...results,
+                await indexRobinhoodWallet({
+                    userId,
+                    address: walletAddress,
+                    maxBackfillPages: activeCached ? undefined : 500,
                 }),
             ]),
-            Promise.resolve(reusedLedgers)
+            Promise.resolve([])
         )
-            .then((ledgers) => ({ ledgers, value: calculateFromLedgers(ledgers) }))
-            .then(async (value) => {
-                const nextCache = { savedAt: Date.now(), value: value.value, liveLedgers: value.ledgers };
-                cacheByWallet.set(cacheKey, nextCache);
-                await writePersistentCache(cacheKey, nextCache);
+            .then(async (results) => {
+                const status = await getRobinhoodIndexStatus({ userId, addresses });
+                if (!status.complete) {
+                    throw new Error(`Robinhood history backfill is incomplete; ${status.eventCount} events are safely checkpointed.`);
+                }
+                const inserted = results.reduce((sum, result) => sum + Number(result.inserted || 0), 0);
+                // If the explorer returned only events already in Postgres,
+                // retain the verified calculation and just rematerialize live
+                // balances/provider values. No historical accounting rebuild.
+                const value = activeCached && inserted === 0
+                    ? materializeCachedValue()
+                    : await commitIndexedLedgers();
                 refreshErrorByWallet.delete(cacheKey);
-                return value.value;
+                return value;
             })
             .catch((error) => {
                 refreshErrorByWallet.set(cacheKey, { at: Date.now(), message: error.message });
@@ -808,7 +831,8 @@ export const getRobinhoodPerformance = async ({ userId, force = false } = {}) =>
     if (activeCached) {
         const previousError = refreshErrorByWallet.get(cacheKey);
         const errorIsCoolingDown = previousError && Date.now() - previousError.at < CACHE_MS;
-        const shouldRefresh = force || (!errorIsCoolingDown && Date.now() - activeCached.savedAt >= CACHE_MS);
+        const shouldRefresh = force || !indexStatus.complete
+            || (!errorIsCoolingDown && Date.now() - activeCached.savedAt >= CACHE_MS);
         if (shouldRefresh && !refreshByWallet.has(cacheKey)) {
             // Keep the verified snapshot visible while Blockscout is scanned.
             // The client polls this endpoint until the new cache is committed.
@@ -816,14 +840,16 @@ export const getRobinhoodPerformance = async ({ userId, force = false } = {}) =>
                 console.warn("Robinhood background refresh failed; retaining verified snapshot:", error.message);
             });
         }
-        const isIndexing = refreshByWallet.has(cacheKey);
+        const isIndexing = refreshByWallet.has(cacheKey) || indexStatus.indexing || !indexStatus.complete;
         return withDataFreshness(
             materializeCachedValue(),
             {
                 source: legacyCached ? "stale-cache" : "cache",
                 savedAt: activeCached.savedAt,
                 isIndexing,
-                indexingMessage: isIndexing ? "Indexing Robinhood wallet history in the background." : null,
+                indexingMessage: isIndexing
+                    ? `Incrementally indexing Robinhood history (${indexStatus.eventCount.toLocaleString()} events saved).`
+                    : null,
                 lastError: !isIndexing && previousError
                     ? "The latest explorer refresh failed; the last verified snapshot is still shown."
                     : null,

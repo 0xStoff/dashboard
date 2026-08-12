@@ -99,6 +99,34 @@ const compactV2TokenTransfer = (item) => ({
     token_id: item?.token_id ?? item?.total?.token_id,
 });
 
+export const fetchRobinhoodResourcePage = async (
+    address,
+    resource,
+    { cursor = null, query: initialQuery = {}, maxRetries = 8 } = {}
+) => {
+    const query = new URLSearchParams({ ...initialQuery, ...(cursor || {}) });
+    const suffix = query.size ? `?${query.toString()}` : "";
+    const payload = await fetchJson(`${API_BASE}/addresses/${address}/${resource}${suffix}`, 0, maxRetries);
+    if (!Array.isArray(payload?.items)) {
+        throw new Error(`Unexpected Blockscout ${resource} response`);
+    }
+    return {
+        items: resource === "token-transfers"
+            ? payload.items.map(compactV2TokenTransfer)
+            : payload.items,
+        nextPageParams: payload.next_page_params || null,
+    };
+};
+
+export const fetchRobinhoodAccountSnapshot = async (address) => {
+    const account = await fetchJson(`${API_BASE}/addresses/${address}`);
+    const balances = await fetchJson(`${API_BASE}/addresses/${address}/token-balances`);
+    return {
+        account,
+        tokenBalances: Array.isArray(balances) ? balances : balances?.items || [],
+    };
+};
+
 const legacyTokenTransfers = async (address, { pageSize = LEGACY_PAGE_SIZE } = {}) => {
     const transfers = [];
     for (let page = 1; page <= MAX_PAGES; page += 1) {
