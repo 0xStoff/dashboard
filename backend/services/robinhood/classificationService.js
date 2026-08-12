@@ -141,7 +141,12 @@ export const buildRobinhoodLpStrategies = (data) => {
             // enough to establish that this old shell has zero current value.
             return !(Number(position.depositsUsd || 0) > 0 && Number(position.returnedUsd || 0) > 0);
         }).map((row) => String(row.position.positionId));
-        const complete = incompletePositionIds.length === 0 && depositsUsd > 0;
+        // Large real gains are possible, so do not reject ordinary profitable
+        // lifecycles. This guard targets the impossible-looking multi-NFT cases
+        // where indexed returns exceed twice all recorded capital even before
+        // adding the still-live position value.
+        const cashFlowAnomaly = returnedUsd > depositsUsd * 2 + currentValueUsd;
+        const complete = incompletePositionIds.length === 0 && depositsUsd > 0 && !cashFlowAnomaly;
         const pnlUsd = complete ? currentValueUsd + returnedUsd - depositsUsd - gasUsd : null;
         const netInvestedUsd = depositsUsd - returnedUsd;
 
@@ -159,6 +164,9 @@ export const buildRobinhoodLpStrategies = (data) => {
             pnlUsd,
             returnPercent: pnlUsd != null && netInvestedUsd > 0 ? pnlUsd / netInvestedUsd * 100 : null,
             accountingStatus: complete ? "tracked" : "pending",
+            accountingIssue: cashFlowAnomaly
+                ? "Indexed returns exceed deposits plus current value; earlier LP deposit events are missing or ambiguous."
+                : null,
             incompletePositionIds,
             events: rows.flatMap((row) => row.position.events || [])
                 .sort((left, right) => String(left.timestamp || "").localeCompare(String(right.timestamp || ""))),

@@ -139,6 +139,7 @@ export interface RobinhoodPerformanceData {
         pnlUsd: number | null;
         returnPercent: number | null;
         accountingStatus: "tracked" | "pending";
+        accountingIssue?: string | null;
         incompletePositionIds: string[];
         events: LpLifecycleEvent[];
     }>;

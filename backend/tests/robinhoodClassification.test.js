@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { applyRobinhoodClassifications } from "../services/robinhood/classificationService.js";
+import { applyRobinhoodClassifications, buildRobinhoodLpStrategies } from "../services/robinhood/classificationService.js";
 
 test("manual LP assignments reconstruct lifecycle cash flow and total portfolio P&L", () => {
     const event = {
@@ -132,4 +132,20 @@ test("an incomplete NFT makes the whole active pair pending instead of a false l
     assert.equal(result.portfolioPnl.totalPnlUsd, null);
     assert.equal(result.portfolioPnl.knownTotalPnlUsd, 50);
     assert.equal(result.portfolioPnl.completeness, "partial");
+});
+
+test("returns above all indexed capital stay unavailable instead of becoming fake LP profit", () => {
+    const data = {
+        lpLifecycle: {
+            positions: [{
+                positionId: "1", status: "closed", valuationStatus: "valued",
+                depositsUsd: 100, returnedUsd: 250, gasUsd: 1, events: [],
+            }],
+        },
+        lpPerformance: [],
+    };
+    const [strategy] = buildRobinhoodLpStrategies(data);
+    assert.equal(strategy.pnlUsd, null);
+    assert.equal(strategy.accountingStatus, "pending");
+    assert.match(strategy.accountingIssue, /returns exceed deposits/i);
 });
