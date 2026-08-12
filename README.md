@@ -9,6 +9,7 @@ Multi-chain portfolio dashboard for tracking wallets, token balances, protocol p
 - Supports wallet tagging, filtering, search, and hide-small-balance controls
 - Syncs optional CEX and payment-provider transaction history
 - Keeps private/manual static data outside of committed source
+- Includes a separate ETH/USDG Pool Radar for timestamped Uniswap v2/v3/v4 LP fee and estimated APY tracking on Robinhood Chain
 
 ## Project Structure
 
@@ -40,6 +41,8 @@ RABBY_ACCESS_KEY=your_rabby_api_key
 COINGECKO_API_KEY=your_coingecko_api_key
 JWT_SECRET=replace_me
 ```
+
+Pool Radar defaults to Robinhood Chain's public RPC and verified Uniswap deployment addresses. Override the `ROBINHOOD_*` and `POOL_RADAR_*` values shown in `.env.example` when using a dedicated RPC. Its background indexer stores pool keys and timestamped aggregate swap values in PostgreSQL; it does not store trader wallet addresses.
 
 Optional transaction integrations:
 

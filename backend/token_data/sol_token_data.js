@@ -154,12 +154,19 @@ export const fetchAndSaveSolTokenData = async (walletId, walletAddress) => {
     const retainedTokenIds = [];
 
     for (const token of tokenData) {
-        const { name, symbol, decimals, logoURI, amount, usd, price_24h_change } = token;
+        const { name, symbol, decimals, logoURI, amount, usd, price_24h_change, address, mint } = token;
 
         const logoPath = logoURI ? await downloadLogo(logoURI, symbol) : null;
 
         const [dbToken] = await TokenModel.upsert({
-            chain_id: 'sol', name, symbol, decimals, logo_path: logoPath, price: usd, price_24h_change
+            chain_id: 'sol',
+            name,
+            symbol,
+            contract_address: address || mint || null,
+            decimals,
+            logo_path: logoPath,
+            price: usd,
+            price_24h_change
         }, { conflictFields: ['chain_id', 'symbol'], returning: true });
         retainedTokenIds.push(dbToken.id);
 

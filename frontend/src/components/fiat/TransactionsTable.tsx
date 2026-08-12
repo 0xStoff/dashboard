@@ -20,7 +20,12 @@ interface TransactionsTableProps<T extends Record<string, unknown>> {
     columns: TableColumn<T>[];
 }
 
-const AMOUNT_COLUMNS = new Set(["amount", "transactionAmountFormatted", "billingAmountFormatted"]);
+const AMOUNT_COLUMNS = new Set([
+    "amount",
+    "transactionAmountFormatted",
+    "billingAmountFormatted",
+    "feeFormatted",
+]);
 const COMPLETED_STATUSES = new Set(["Approved", "Completed"]);
 
 const formatDateTime = (value: unknown) =>

@@ -19,6 +19,10 @@ const TokenModel = sequelize.define("tokens", {
     type: DataTypes.STRING,
     allowNull: false
   },
+  contract_address: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   decimals: {
     type: DataTypes.INTEGER,
     allowNull: false

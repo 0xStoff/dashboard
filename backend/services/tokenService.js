@@ -10,6 +10,7 @@ import { SUPPORTED_TRACKED_WALLET_CHAINS } from "../config/supportedChains.js";
 const TOKEN_ATTRIBUTES = [
     "name",
     "symbol",
+    "contract_address",
     "decimals",
     "price",
     "logo_path",
@@ -69,6 +70,7 @@ export const aggregateTokens = async (wallets) => {
                 name,
                 chain_id,
                 symbol,
+                contract_address,
                 decimals,
                 logo_path,
                 price,
@@ -84,6 +86,7 @@ export const aggregateTokens = async (wallets) => {
                     chain_id,
                     name,
                     symbol,
+                    contract_address: contract_address || null,
                     decimals,
                     logo_path,
                     price: Number(price || 0),

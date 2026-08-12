@@ -1,5 +1,5 @@
 import React, {useState} from "react";
-import {AppBar, Box, IconButton, Toolbar, Typography, useMediaQuery} from "@mui/material";
+import {AppBar, Avatar, Box, IconButton, Toolbar, Tooltip, Typography, useMediaQuery} from "@mui/material";
 import CurrencyBitcoinIcon from "@mui/icons-material/CurrencyBitcoin";
 import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
@@ -7,8 +7,10 @@ import TokenDataUpdater from "./TokenDataUpdater";
 import SearchInput from "./SearchInput";
 import {useTheme} from "@mui/material/styles";
 import {Settings} from "@mui/icons-material";
+import RadarIcon from "@mui/icons-material/Radar";
 import {SettingsDialog} from "../index";
 import ConnectButton from "../ConnectButton";
+import { buildLogoUrl } from "../../config/env";
 
 interface NavHeaderProps {
     isCryptoView: boolean;
@@ -19,6 +21,10 @@ interface NavHeaderProps {
     isAuthenticated: boolean;
     currency: "CHF" | "$";
     setCurrency: React.Dispatch<React.SetStateAction<"CHF" | "$">>;
+    showRobinhoodDashboard: boolean;
+    setShowRobinhoodDashboard: React.Dispatch<React.SetStateAction<boolean>>;
+    showPoolRadar: boolean;
+    setShowPoolRadar: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const NavHeader: React.FC<NavHeaderProps> = ({
@@ -29,7 +35,11 @@ const NavHeader: React.FC<NavHeaderProps> = ({
                        setIsAuthenticated,
                        isAuthenticated,
                        currency,
-                       setCurrency
+                       setCurrency,
+                       showRobinhoodDashboard,
+                       setShowRobinhoodDashboard,
+                       showPoolRadar,
+                       setShowPoolRadar
                    }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -55,8 +65,57 @@ const NavHeader: React.FC<NavHeaderProps> = ({
                     <Settings/>
                 </IconButton>
 
+                <Tooltip title={showRobinhoodDashboard ? "Robinhood portfolio open" : "Open Robinhood portfolio"}>
+                    <IconButton
+                        aria-label="Open Robinhood portfolio"
+                        color={showRobinhoodDashboard ? "secondary" : "primary"}
+                        onClick={() => {
+                            setIsCryptoView(true);
+                            setShowPoolRadar(false);
+                            setShowRobinhoodDashboard((open) => !open);
+                            const url = new URL(window.location.href);
+                            url.searchParams.delete("view");
+                            window.history.replaceState({}, "", url);
+                        }}
+                    >
+                        <Avatar alt="Robinhood" src={buildLogoUrl("/logos/hood.png")} sx={{ width: 24, height: 24, bgcolor: "primary.main" }}>R</Avatar>
+                    </IconButton>
+                </Tooltip>
 
-                <IconButton onClick={() => setIsCryptoView(!isCryptoView)} color="primary" sx={{fontSize: "2rem"}}>
+                <Tooltip title={showPoolRadar ? "Pool Radar open" : "Open ETH / USDG Pool Radar"}>
+                    <IconButton
+                        aria-label="Open ETH / USDG Pool Radar"
+                        color={showPoolRadar ? "secondary" : "primary"}
+                        onClick={() => {
+                            setIsCryptoView(true);
+                            setShowRobinhoodDashboard(false);
+                            setShowPoolRadar(true);
+                            const url = new URL(window.location.href);
+                            url.searchParams.set("view", "pool-radar");
+                            window.history.replaceState({}, "", url);
+                        }}
+                    >
+                        <RadarIcon />
+                    </IconButton>
+                </Tooltip>
+
+
+                <IconButton onClick={() => {
+                    if (showPoolRadar) {
+                        setShowPoolRadar(false);
+                        setIsCryptoView(true);
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete("view");
+                        window.history.replaceState({}, "", url);
+                        return;
+                    }
+                    if (showRobinhoodDashboard) {
+                        setShowRobinhoodDashboard(false);
+                        setIsCryptoView(true);
+                        return;
+                    }
+                    setIsCryptoView(!isCryptoView);
+                }} color="primary" sx={{fontSize: "2rem"}}>
                     {isCryptoView ? <CurrencyBitcoinIcon fontSize="large"/> : <MonetizationOnIcon fontSize="large"/>}
                 </IconButton>
 

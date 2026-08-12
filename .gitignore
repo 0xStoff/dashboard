@@ -39,3 +39,14 @@ hetzner_db.dump
 *.bak-*
 scratch_*.js
 backend/config/static-data.private.json
+/.codex/
+/work/
+/pi-compose.tmp.yml
+/frontend/build/
+/frontend/dist/
+/backend/.cache/
+/package-lock.json
+/backend/scripts/auditRobinhoodFinal.js
+/backend/scripts/inspectProtocolPositions.js
+/backend/scripts/inspectRobinhood*.js
+/backend/scripts/inspectSnapshotSchema.sql

@@ -1,75 +1,63 @@
 import React from "react";
-import { Avatar, Box, Card, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
+import { Avatar, Box, ButtonBase, Card, Typography } from "@mui/material";
 import { Chain } from "../../interfaces";
 import { buildLogoUrl } from "../../config/env";
-
-
-const styles = {
-  container: {
-    flex: "0 0 auto", width: { md: 200 }, maxWidth: { md: 200 }
-  }, card: {
-    borderRadius: 10
-  }, tableRow: (isActive: boolean) => ({
-    cursor: "pointer",
-    opacity: isActive ? 1 : 0.5,
-    // "&:hover": { backgroundColor: "rgba(0, 0, 0, 0.08)" },
-    "&:last-child td, &:last-child th": { border: 0 }
-  }), tableCell: { border: 0 }
-};
-
+import { formatNumber } from "../../utils/number-utils";
 
 const ChainList: React.FC<{
   chains: Chain[];
   chainIdState: [string, React.Dispatch<React.SetStateAction<string>>];
-}> = ({ chains, chainIdState }) => {
+  conversionRate?: number;
+  currencyLabel?: string;
+}> = ({ chains, chainIdState, conversionRate = 1, currencyLabel = "$" }) => {
   const [selectedChainId, setSelectedChainId] = chainIdState;
 
   if (!chains.length) return null;
 
-
-  const handleRowClick = (chain: Chain) => {
-    setSelectedChainId(selectedChainId === chain.chain_id ? "all" : chain.chain_id);
+  const selectChain = (chainId: string) => {
+    setSelectedChainId(chainId === "all" || selectedChainId === chainId ? "all" : chainId);
   };
 
-  return (<Box sx={styles.container}>
-      <Card sx={styles.card}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ border: 0, padding: 3 }} colSpan={6}>
-                <Typography variant="h5" fontWeight="bold">Chains</Typography>
-              </TableCell>
-            </TableRow>
-          </TableHead>
-        </Table>
-        <Box sx={{ height: 400, overflow: "auto", maxHeight: "fit-content" }}>
-          <Table>
-            <TableBody>
-              {chains.map((chain) => (<TableRow
-                  key={chain.chain_id}
-                  hover
-                  onClick={() => handleRowClick(chain)}
-                  sx={styles.tableRow(selectedChainId === "all" || selectedChainId === chain.chain_id)}
-                >
-                  <TableCell
-                    sx={{ display: "flex", alignItems: "center", ...styles.tableCell }}
-                  >
-
-                    <Avatar
-                      alt={chain.name}
-                      src={buildLogoUrl(chain.logo_path)}
-                      sx={{ width: 35, height: 35 }}
-                    />
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: "bold", ...styles.tableCell }} align="right">
-                    $ {(+chain.usd_value).toLocaleString("de-CH")}
-                  </TableCell>
-                </TableRow>))}
-            </TableBody>
-          </Table>
-        </Box>
-      </Card>
-    </Box>);
+  return (
+    <Card sx={{ p: { xs: 1.5, sm: 2 }, my: { xs: 2, md: 2.5 }, width: "100%", borderRadius: "16px", overflow: "hidden" }}>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, mb: 1.25 }}>
+        <Typography variant="subtitle1" fontWeight={800}>Networks</Typography>
+        <Typography variant="caption" color="text.secondary">Filter assets and protocols</Typography>
+      </Box>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(auto-fit, minmax(150px, 1fr))" },
+          gap: 1,
+        }}
+      >
+        <ButtonBase
+          onClick={() => selectChain("all")}
+          aria-pressed={selectedChainId === "all"}
+          sx={{ minHeight: 48, px: 1.5, justifyContent: "center", borderRadius: "12px", border: "1px solid", borderColor: selectedChainId === "all" ? "primary.main" : "divider", bgcolor: selectedChainId === "all" ? "rgba(139,124,255,.14)" : "transparent" }}
+        >
+          <Typography variant="body2" fontWeight={750}>All networks</Typography>
+        </ButtonBase>
+        {chains.map((chain) => {
+          const active = selectedChainId === chain.chain_id;
+          return (
+            <ButtonBase
+              key={chain.chain_id}
+              onClick={() => selectChain(chain.chain_id)}
+              aria-pressed={active}
+              sx={{ minWidth: 0, minHeight: 48, display: "flex", justifyContent: "flex-start", gap: 1, px: 1.25, borderRadius: "12px", border: "1px solid", borderColor: active ? "primary.main" : "transparent", bgcolor: active ? "rgba(139,124,255,.14)" : "transparent", "&:hover": { bgcolor: active ? "rgba(139,124,255,.18)" : "rgba(255,255,255,.045)" } }}
+            >
+              <Avatar alt={chain.name} src={buildLogoUrl(chain.logo_path)} sx={{ width: 26, height: 26 }} />
+              <Box minWidth={0} textAlign="left">
+                <Typography variant="body2" fontWeight={700} noWrap>{chain.name}</Typography>
+                <Typography variant="caption" color="text.secondary" noWrap>{currencyLabel} {formatNumber(Number(chain.usd_value) * conversionRate, "axis")}</Typography>
+              </Box>
+            </ButtonBase>
+          );
+        })}
+      </Box>
+    </Card>
+  );
 };
 
 export default ChainList;

@@ -34,6 +34,7 @@ CREATE TABLE tokens
     chain_id         VARCHAR(255) NOT NULL,
     name             VARCHAR(255) NOT NULL,
     symbol           VARCHAR(255)  NOT NULL,
+    contract_address VARCHAR(255),
     decimals         INT          NOT NULL,
     price            DECIMAL(20, 8),
     price_24h_change DECIMAL(20, 16),

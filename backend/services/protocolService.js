@@ -1,6 +1,8 @@
 import ProtocolModel from "../models/ProtocolModel.js";
 import WalletModel from "../models/WalletModel.js";
-import { getHideSmallBalances } from "./settingsService.js";
+import { normalizeContractAddress } from "../utils/tokenAddress.js";
+import { getCanonicalTokenLogo } from "../utils/token_logo.js";
+import { getProtocolPositionAssets, getProtocolPositionValuation } from "./valuationService.js";
 
 const getPortfolioItems = (wallet) => {
     const items = wallet?.portfolio_item_list;
@@ -8,11 +10,24 @@ const getPortfolioItems = (wallet) => {
 };
 
 const getAssetTokenList = (item) => {
-    const tokens = item?.detail?.supply_token_list;
-    return Array.isArray(tokens) ? tokens : [];
-};
+    const detail = item?.detail || {};
+    const candidates = [
+        ...getProtocolPositionAssets(item),
+        ...(Array.isArray(detail.reward_token_list) ? detail.reward_token_list : []),
+    ];
+    const tokens = new Map();
 
-const getSupplyTokenAmount = (item) => Number(item?.detail?.supply_token_list?.[0]?.amount || 0);
+    candidates.forEach((token) => {
+        const key = `${token.chain || ""}-${token.id || token.symbol || token.name || "unknown"}`;
+        const existing = tokens.get(key);
+        if (existing) {
+            existing.amount += Number(token.amount || 0);
+        } else {
+            tokens.set(key, { ...token, amount: Number(token.amount || 0) });
+        }
+    });
+    return [...tokens.values()];
+};
 
 const createProtocolAccumulator = (name) => ({
     name,
@@ -20,11 +35,86 @@ const createProtocolAccumulator = (name) => ({
     totalUSD: 0,
 });
 
+const mergeContractAddresses = (existing = [], next = []) =>
+    [...new Set([...(existing || []), ...(next || [])].filter(Boolean))];
+
+const mergeAssetAmounts = (existing = [], next = []) => {
+    const assets = new Map();
+    [...existing, ...next].forEach((asset) => {
+        const key = `${asset.symbol || asset.name}-${asset.contract || ""}`;
+        const current = assets.get(key) || { ...asset, amount: 0, usdValue: 0 };
+        current.amount += Number(asset.amount || 0);
+        current.usdValue += Number(asset.usdValue || 0);
+        if (current.amount > 0 && current.usdValue > 0) {
+            current.price = current.usdValue / current.amount;
+        }
+        if (current.pricingMethod !== asset.pricingMethod) {
+            current.pricingMethod = "mixed";
+        }
+        assets.set(key, current);
+    });
+    return [...assets.values()];
+};
+
+const mergePositionValuation = (existing, next) => {
+    if (!existing) return next;
+    if (!next || existing.method === next.method) return existing;
+    return {
+        method: "mixed",
+        confidence: "estimated",
+        source: "multiple valuation methods across merged positions",
+        inferredAssetPrices: [
+            ...(existing.inferredAssetPrices || []),
+            ...(next.inferredAssetPrices || []),
+        ],
+    };
+};
+
+const mergeWalletAmount = (wallets, walletId, walletTag, walletAmount, walletUsdValue) => {
+    if ((!walletId && !walletTag) || walletAmount === undefined) {
+        return;
+    }
+
+    // Tags are user-editable labels. Keep the immutable wallet ID alongside the
+    // display label so two wallets with the same tag do not silently merge.
+    const existingWallet = wallets.find((wallet) =>
+        walletId != null ? wallet.id === walletId : wallet.tag === walletTag
+    );
+    if (existingWallet) {
+        existingWallet.amount += Number(walletAmount || 0);
+        existingWallet.usdValue += Number(walletUsdValue || 0);
+        return;
+    }
+
+    wallets.push({
+        id: walletId ?? null,
+        tag: walletTag,
+        amount: Number(walletAmount || 0),
+        usdValue: Number(walletUsdValue || 0),
+    });
+};
+
+const positionIdentity = ({ protocolName, item, itemName, chain, contractAddresses }) => {
+    const detail = item?.detail || {};
+    const explicitId = [
+        item?.id,
+        item?.position_id,
+        detail?.id,
+        detail?.position_id,
+        detail?.pool?.id,
+        detail?.pool?.address,
+        detail?.contract_address,
+        item?.contract_address,
+    ].find(Boolean);
+    const assetIdentity = [...(contractAddresses || [])].filter(Boolean).sort().join("|");
+    return `${protocolName}|${chain || "unknown"}|${itemName || "position"}|${explicitId || assetIdentity || "unknown"}`;
+};
+
 const unifyPositions = (positions) => {
     const unified = {};
 
     positions.forEach((position) => {
-        const key = `${position.tokenNames}-${position.type}-${position.chain}`;
+        const key = position.positionKey || `${position.tokenNames}-${position.tokenSymbols || ""}-${position.type}-${position.chain}`;
         if (!unified[key]) {
             unified[key] = { ...position, wallets: [...position.wallets] };
             return;
@@ -32,7 +122,15 @@ const unifyPositions = (positions) => {
 
         unified[key].amount += position.amount;
         unified[key].usdValue += position.usdValue;
-        unified[key].wallets = [...unified[key].wallets, ...position.wallets];
+        position.wallets.forEach((wallet) => {
+            mergeWalletAmount(unified[key].wallets, wallet.id, wallet.tag, wallet.amount, wallet.usdValue);
+        });
+        unified[key].price = unified[key].tokenCount === 1 ? position.price : 0;
+        unified[key].contractAddresses = mergeContractAddresses(
+            unified[key].contractAddresses,
+            position.contractAddresses
+        );
+        unified[key].assetAmounts = mergeAssetAmounts(unified[key].assetAmounts, position.assetAmounts);
     });
 
     return Object.values(unified).sort((a, b) => b.usdValue - a.usdValue);
@@ -44,48 +142,98 @@ const addPosition = ({
     tokens,
     itemName,
     walletTag,
+    walletId,
     walletAmount,
+    walletUsdValue,
+    valuation,
     selectedChainId,
     item,
 }) => {
     const validTokens = tokens
         .filter((token) => selectedChainId === "all" || token.chain === selectedChainId)
-        .filter((token) => Number(token.amount || 0) * Number(token.price || 0) > 0.01 || Number(item?.stats?.asset_usd_value || 0) > 0.01);
+        .filter((token) => Number(token.amount || 0) * Number(token.price || 0) > 0.01 || walletUsdValue > 0.01);
 
     if (!validTokens.length) {
         return;
     }
 
     const tokenNames = validTokens.map((token) => token.name).join(" + ");
-    const logoUrls = validTokens.map((token) => token.logo_url).filter(Boolean);
+    const tokenSymbols = validTokens.map((token) => token.symbol || token.name).join(" + ");
+    const contractAddresses = mergeContractAddresses(
+        [],
+        validTokens.map((token) => normalizeContractAddress(token.chain, token.id || token.address || null))
+    );
+    const positionKey = positionIdentity({
+        protocolName,
+        item,
+        itemName,
+        chain: validTokens[0]?.chain,
+        contractAddresses,
+    });
+    const impliedPrices = new Map(
+        (valuation?.pricing?.inferredAssetPrices || []).map((entry) => [entry.contract, Number(entry.priceUsd || 0)])
+    );
+    const assetAmounts = validTokens.map((token) => {
+        const contract = normalizeContractAddress(token.chain, token.id || token.address || null);
+        const providerPrice = Number(token.price || 0);
+        const impliedPrice = Number(impliedPrices.get(contract) || 0);
+        const price = providerPrice > 0 ? providerPrice : impliedPrice;
+        const logoPath = getCanonicalTokenLogo(token.symbol || token.name) || token.logo_url || null;
+        return {
+            contract,
+            symbol: token.symbol || token.name || "Unknown",
+            name: token.name || token.symbol || "Unknown",
+            amount: Number(token.amount || 0),
+            price,
+            usdValue: Number(token.amount || 0) * price,
+            pricingMethod: providerPrice > 0 ? "provider" : impliedPrice > 0 ? "pool-implied" : "unavailable",
+            logoPath,
+        };
+    });
+    // Prefer our canonical local assets, then use the token image supplied by
+    // the same portfolio provider that supplied the position payload.
+    const logoUrls = validTokens.map((token) =>
+        getCanonicalTokenLogo(token.symbol || token.name) || token.logo_url || ""
+    );
     const totalAmount = validTokens.reduce((sum, token) => sum + Number(token.amount || 0), 0);
-    const totalUsdValue = Number(item?.stats?.asset_usd_value || 0);
-    const averagePrice = totalAmount > 0 ? totalUsdValue / totalAmount : 0;
+    const totalUsdValue = walletUsdValue;
+    const displayPrice = validTokens.length === 1 ? Number(validTokens[0].price || 0) : 0;
 
     const existingPosition = acc[protocolName].positions.find(
         (position) =>
-            position.tokenNames === tokenNames &&
-            position.chain === validTokens[0].chain &&
-            position.type === itemName
+            position.positionKey === positionKey
     );
 
     if (existingPosition) {
-        if (walletTag && walletAmount !== undefined) {
-            const walletExists = existingPosition.wallets.some((wallet) => wallet.tag === walletTag);
-            if (!walletExists) {
-                existingPosition.wallets.push({ tag: walletTag, amount: walletAmount });
-            }
-        }
+        existingPosition.amount += totalAmount;
+        existingPosition.usdValue += totalUsdValue;
+        existingPosition.price = existingPosition.tokenCount === 1 ? displayPrice : 0;
+        existingPosition.contractAddresses = mergeContractAddresses(
+            existingPosition.contractAddresses,
+            contractAddresses
+        );
+        existingPosition.assetAmounts = mergeAssetAmounts(existingPosition.assetAmounts, assetAmounts);
+        existingPosition.logoUrls = existingPosition.logoUrls.map((url, index) => url || logoUrls[index] || "");
+        existingPosition.valuation = mergePositionValuation(existingPosition.valuation, valuation?.pricing);
+        mergeWalletAmount(existingPosition.wallets, walletId, walletTag, totalAmount, walletUsdValue);
     } else {
         acc[protocolName].positions.push({
+            positionKey,
             type: itemName,
             chain: validTokens[0].chain,
             tokenNames,
+            tokenSymbols,
+            contractAddresses,
+            assetAmounts,
             logoUrls,
-            price: averagePrice,
+            price: displayPrice,
             amount: totalAmount,
             usdValue: totalUsdValue,
-            wallets: walletTag && walletAmount !== undefined ? [{ tag: walletTag, amount: walletAmount }] : [],
+            tokenCount: validTokens.length,
+            valuation: valuation?.pricing,
+            wallets: walletTag && walletAmount !== undefined
+                ? [{ id: walletId ?? null, tag: walletTag, amount: totalAmount, usdValue: walletUsdValue }]
+                : [],
         });
     }
 
@@ -131,7 +279,6 @@ export const fetchProtocolData = async (userId) => {
 };
 
 export const getProtocolsTable = async ({ chain, walletId, searchQuery, userId }) => {
-    const hideSmallBalances = await getHideSmallBalances();
     const protocolData = await fetchProtocolData(userId);
 
     const groupedByProtocol = protocolData.reduce((acc, protocol) => {
@@ -143,13 +290,20 @@ export const getProtocolsTable = async ({ chain, walletId, searchQuery, userId }
             .filter((wallet) => walletId === "all" || wallet.id === Number(walletId))
             .forEach((wallet) => {
                 getPortfolioItems(wallet).forEach((item) => {
+                    const valuation = getProtocolPositionValuation(item);
                     addPosition({
                         protocolName: protocol.name,
                         acc,
                         tokens: getAssetTokenList(item),
                         itemName: item.name,
+                        walletId: wallet.id,
                         walletTag: wallet.tag,
-                        walletAmount: getSupplyTokenAmount(item),
+                        walletAmount: getAssetTokenList(item).reduce(
+                            (sum, token) => sum + Number(token.amount || 0),
+                            0
+                        ),
+                        walletUsdValue: valuation.usdValue,
+                        valuation,
                         selectedChainId: chain,
                         item,
                     });
@@ -164,7 +318,7 @@ export const getProtocolsTable = async ({ chain, walletId, searchQuery, userId }
             ...protocol,
             positions: unifyPositions(protocol.positions),
         }))
-        .filter((protocol) => protocol.totalUSD > hideSmallBalances)
+        .filter((protocol) => protocol.totalUSD > 0)
         .sort((a, b) => b.totalUSD - a.totalUSD);
 
     if (!searchQuery) {
@@ -174,6 +328,9 @@ export const getProtocolsTable = async ({ chain, walletId, searchQuery, userId }
     const normalizedQuery = searchQuery.toLowerCase();
     return protocols
         .map((protocol) => {
+            if (protocol.name.toLowerCase().includes(normalizedQuery)) {
+                return protocol;
+            }
             const matchingPositions = protocol.positions.filter((position) =>
                 position.tokenNames.toLowerCase().includes(normalizedQuery)
             );

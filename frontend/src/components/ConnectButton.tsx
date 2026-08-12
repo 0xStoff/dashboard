@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
-import { IconButton, Tooltip } from "@mui/material";
+import {
+    IconButton,
+    Tooltip,
+} from "@mui/material";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import { env } from "../config/env";
 
 const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: boolean) => void }) => {
     const [account, setAccount] = useState<string | null>(null);
-
-    useEffect(() => {
-        checkAuthentication();
-    }, []);
 
     const checkAuthentication = async () => {
         try {
@@ -29,6 +28,10 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
             console.error("Error checking authentication:", error);
         }
     };
+
+    useEffect(() => {
+        void checkAuthentication();
+    }, []);
 
     const connectWallet = async () => {
         if (!window.ethereum) {

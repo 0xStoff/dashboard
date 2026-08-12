@@ -26,6 +26,7 @@ export interface Token {
   chain_id: string;
   name: string;
   symbol: string;
+  contract_address?: string | null;
   decimals: number;
   logo_path: string;
   price: number;
@@ -110,11 +111,14 @@ export interface TransactionRecord {
   type: string;
   amount: number;
   fee: number;
-  asset: string;
+  asset: string | null;
   status: string;
   date: string;
   timestamp: string | number;
   chf_value: number;
+  merchant?: string | null;
+  billingAmount?: number | string | null;
+  reference?: string | null;
 }
 
 export interface GnosisTransactionRecord {
@@ -142,4 +146,16 @@ export interface FormattedGnosisTransaction {
 export interface TableColumn<T> {
   label: string;
   key: keyof T;
+}
+
+export interface ActivityTableRow {
+  date: string;
+  exchange: string;
+  type: string;
+  merchantFormatted: string;
+  asset: string;
+  amount: string;
+  billingAmountFormatted: string;
+  feeFormatted: string;
+  status: string;
 }

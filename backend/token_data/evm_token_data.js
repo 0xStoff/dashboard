@@ -47,6 +47,7 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress, req) => 
                     chain_id: chain,
                     name,
                     symbol,
+                    contract_address: id,
                     decimals,
                     logo_path: logoPath,
                     price,

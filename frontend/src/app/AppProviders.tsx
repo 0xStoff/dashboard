@@ -3,6 +3,7 @@ import { CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import { WalletsProvider } from "../context/WalletsContext";
 import { appTheme } from "../styles/appTheme";
+import { DashboardSettingsProvider } from "../context/DashboardSettingsContext";
 
 interface AppProvidersProps {
     children: React.ReactNode;
@@ -10,12 +11,14 @@ interface AppProvidersProps {
 
 const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
     return (
-        <WalletsProvider>
-            <ThemeProvider theme={appTheme}>
-                <CssBaseline />
-                {children}
-            </ThemeProvider>
-        </WalletsProvider>
+        <DashboardSettingsProvider>
+            <WalletsProvider>
+                <ThemeProvider theme={appTheme}>
+                    <CssBaseline />
+                    {children}
+                </ThemeProvider>
+            </WalletsProvider>
+        </DashboardSettingsProvider>
     );
 };
 

@@ -13,7 +13,10 @@ import netWorthRoutes from "./api/netWorth.js";
 import tokensRoutes from "./api/tokens.js";
 import transactionsRoutes from "./api/transactions.js";
 import authRoutes from "./api/auth.js";
+import poolRadarRoutes from "./api/poolRadar.js";
+import robinhoodPerformanceRoutes from "./api/robinhoodPerformance.js";
 import authenticateToken from "./api/authMiddleware.js";
+import { startPoolRadarIndexer } from "./services/poolRadarService.js";
 
 import sequelize from "./sequelize.js";
 import WalletModel from "./models/WalletModel.js";
@@ -50,6 +53,8 @@ app.use("/api", authenticateToken, protocolsRoutes);
 app.use("/api", authenticateToken, transactionsRoutes);
 app.use("/api", authenticateToken, netWorthRoutes);
 app.use("/api/settings", authenticateToken, settingsRoutes);
+app.use("/api", authenticateToken, poolRadarRoutes);
+app.use("/api", authenticateToken, robinhoodPerformanceRoutes);
 app.use("/logos", express.static(path.join(__dirname, "logos")));
 
 const setupAssociations = () => {
@@ -73,6 +78,7 @@ const initDb = async () => {
 initDb()
     .then(() => {
         console.log("Database synced");
+        startPoolRadarIndexer();
 
         server.listen(appConfig.port, appConfig.host, () => {
             console.log(`Server running on ${appConfig.host}:${appConfig.port}`);

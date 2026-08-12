@@ -22,7 +22,7 @@ import {ChipWithTooltip} from "../utils/ChipWithTooltip";
 import { buildLogoUrl } from "../../config/env";
 
 const styles = {
-    container: {flex: 1}, card: {borderRadius: 10, overflowX: "auto", position: "relative"},
+    container: { flex: 1, minWidth: 0 }, card: { borderRadius: "16px", overflowX: "auto", position: "relative" },
 
     tableRow: (isActive: boolean) => ({
         cursor: "pointer",
@@ -72,18 +72,22 @@ const WalletTable: React.FC<{
     const [sortConfig, setSortConfig] = useState({key: "holdings", order: "desc"});
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
-    const totalUSD = useMemo(() => tokens.reduce((acc, item) => acc + item.amount * item.price, 0), [tokens]);
+    const visibleTokens = useMemo(
+        () => tokens.filter((item) => item.amount * item.price >= 1),
+        [tokens]
+    );
+    const totalUSD = useMemo(() => visibleTokens.reduce((acc, item) => acc + item.amount * item.price, 0), [visibleTokens]);
 
 
     const getChainLogo = (chainId: string) => chainList.find((c) => c.chain_id === chainId)?.logo_path || "";
 
     const sortedTokens = useMemo(() => {
-        return [...tokens].sort((a, b) => {
+        return [...visibleTokens].sort((a, b) => {
             const valueA = sortConfig.key === "holdings" ? a.amount * a.price : (a.price_24h_change || 0);
             const valueB = sortConfig.key === "holdings" ? b.amount * b.price : (b.price_24h_change || 0);
             return sortConfig.order === "asc" ? valueA - valueB : valueB - valueA;
         });
-    }, [tokens, sortConfig]);
+    }, [visibleTokens, sortConfig]);
 
 
     const handleSortChange = (key: "holdings" | "change") => {
@@ -97,7 +101,7 @@ const WalletTable: React.FC<{
         setSelectedToken((prevSelected) => (prevSelected?.symbol === token.symbol ? null : token));
     };
 
-    if (!tokens.length) return <Typography>no tokens</Typography>;
+    if (!visibleTokens.length) return <Typography>No wallet assets above $1</Typography>;
 
 
 
@@ -116,8 +120,8 @@ const WalletTable: React.FC<{
                     <TableHead>
                         <TableRow>
                             <TableCell sx={{border: 0, padding: 3}} colSpan={isMobile ? 3 : 6}>
-                                <Typography variant="h5" fontWeight="bold">Wallet</Typography>
-                                <Typography variant="body2" fontWeight="bold">$ {toFixedString(totalUSD)}</Typography>
+                                <Typography variant="h5" fontWeight="bold">Wallet assets</Typography>
+                                <Typography variant="body2" color="text.secondary">$ {toFixedString(totalUSD)} · {visibleTokens.length} assets</Typography>
                             </TableCell>
                         </TableRow>
                     </TableHead>
