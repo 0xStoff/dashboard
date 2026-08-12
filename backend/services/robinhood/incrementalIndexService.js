@@ -28,6 +28,14 @@ const eventTimestamp = (item) => {
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 };
+const canonicalInteger = (value) => {
+    if (value == null || value === "") return "";
+    try {
+        return BigInt(value).toString();
+    } catch {
+        return String(value).toLowerCase();
+    }
+};
 export const robinhoodEventKey = (resource, item) => {
     const hash = transactionHash(item) || "nohash";
     if (resource === "transactions") return hash;
@@ -37,9 +45,9 @@ export const robinhoodEventKey = (resource, item) => {
             ? `${hash}:${lower(item?.from?.hash || item?.from)}:${lower(item?.to?.hash || item?.to)}:${item?.value || 0}`
             : `${hash}:${index}`;
     }
-    const logIndex = item?.log_index ?? item?.logIndex ?? "";
+    const logIndex = canonicalInteger(item?.log_index ?? item?.logIndex);
     const token = lower(item?.token?.address_hash || item?.token?.address || item?.contractAddress);
-    const tokenId = item?.token_id ?? item?.total?.token_id ?? "";
+    const tokenId = canonicalInteger(item?.token_id ?? item?.total?.token_id);
     return `${hash}:${logIndex}:${token}:${tokenId}`;
 };
 
@@ -269,11 +277,15 @@ export const loadRobinhoodIndexedLedger = async ({ userId, address }) => {
         WHERE user_id = :userId AND wallet_address = :address
         ORDER BY block_number ASC NULLS FIRST, event_timestamp ASC NULLS FIRST, id ASC
     `, { replacements: { userId, address: normalized }, type: QueryTypes.SELECT });
+    const uniquePayloads = (resource) => [...new Map(
+        rows.filter((row) => row.resource === resource)
+            .map((row) => [robinhoodEventKey(resource, row.payload), row.payload])
+    ).values()];
     return {
         account: account?.account || { coin_balance: "0", exchange_rate: 0 },
-        transactions: rows.filter((row) => row.resource === "transactions").map((row) => row.payload),
-        internalTransactions: rows.filter((row) => row.resource === "internal-transactions").map((row) => row.payload),
-        tokenTransfers: rows.filter((row) => row.resource === "token-transfers").map((row) => row.payload),
+        transactions: uniquePayloads("transactions"),
+        internalTransactions: uniquePayloads("internal-transactions"),
+        tokenTransfers: uniquePayloads("token-transfers"),
         tokenBalances: account?.tokenBalances || [],
         internalTransactionsAvailable: true,
         source: "postgres-incremental-index-v1",
