@@ -4,7 +4,7 @@ services:
     image: postgres:16
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-stoff}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-abc123}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:-crypto_dashboard}
       TZ: ${TZ:-Europe/Zurich}
     volumes:
@@ -33,10 +33,10 @@ services:
     environment:
       DB_HOST: postgres
       DB_USER: ${POSTGRES_USER:-stoff}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-abc123}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       DB_NAME: ${POSTGRES_DB:-crypto_dashboard}
       DB_PORT: 5432
-      DATABASE_URL: postgres://${POSTGRES_USER:-stoff}:${POSTGRES_PASSWORD:-abc123}@postgres:5432/${POSTGRES_DB:-crypto_dashboard}
+      DATABASE_URL: postgres://${POSTGRES_USER:-stoff}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-crypto_dashboard}
       HOST: "0.0.0.0"
       PORT: "3000"
       VIRTUAL_HOST: ${BACKEND_VIRTUAL_HOST:-api.dashboard.stoeff.xyz}
