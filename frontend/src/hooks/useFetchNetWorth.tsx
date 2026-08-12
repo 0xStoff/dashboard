@@ -9,7 +9,12 @@ interface UseFetchNetWorthReturn {
   saveNetWorth: (totalNetWorth: number, historyData: HistoryData) => Promise<void>;
 }
 
-export const useFetchNetWorth = ({ latest, includeDetails }): UseFetchNetWorthReturn => {
+interface UseFetchNetWorthOptions {
+  latest: boolean;
+  includeDetails: boolean;
+}
+
+export const useFetchNetWorth = ({ latest, includeDetails }: UseFetchNetWorthOptions): UseFetchNetWorthReturn => {
   const loadNetWorth = useCallback(async () => {
     const response = await apiClient.get<NetWorthData[] | NetWorthData>(
       `/net-worth?latest=${latest}&includeDetails=${includeDetails}`

@@ -90,51 +90,65 @@ const persistWalletTokens = async ({ chainId, walletId, userId, tokens }) => {
 
         retainedTokenIds.push(dbToken.id);
 
-        await WalletTokenModel.upsert({
-            wallet_id: walletId,
-            user_id: userId,
-            token_id: dbToken.id,
-            amount: token.amount,
-            raw_amount: token.amount * 10 ** token.decimals,
-            usd_value: token.amount * token.price,
-        });
+        await WalletTokenModel.upsert(
+            {
+                wallet_id: walletId,
+                user_id: userId,
+                token_id: dbToken.id,
+                amount: token.amount,
+                raw_amount: token.amount * 10 ** token.decimals,
+                usd_value: token.amount * token.price,
+            },
+            { conflictFields: ["wallet_id", "token_id"] }
+        );
     }
 
     await removeMissingWalletRows(walletId, chainId, retainedTokenIds);
 };
 
-export const writeAptosDataToDB = async () => {
-    try {
-        const aptosData = await fetchAptosData();
-        if (!aptosData) {
-            console.log("Skipping Aptos static sync because no private config is present");
-            return;
-        }
+export const writeAptosDataToDB = async (userId) => {
+    const wallets = await WalletModel.findAll({
+        order: [["id", "ASC"]],
+        where: { chain: "aptos", ...(userId ? { user_id: userId } : {}) },
+    });
+    if (!wallets.length) return { walletsUpdated: 0 };
 
+    const aptosClient = new Aptos(new AptosConfig({ network: Network.MAINNET }));
+    const aptosPrice = await fetchTokenPriceCoingecko("aptos");
+    if (!aptosPrice?.usd) throw new Error("No Aptos price returned");
+
+    for (const wallet of wallets) {
+        const liquid = await aptosClient.getAccountAPTAmount({ accountAddress: wallet.wallet }) / 1e8;
         await persistWalletTokens({
             chainId: "aptos",
-            walletId: aptosData.walletId,
-            userId: aptosData.userId,
-            tokens: aptosData.tokens,
+            walletId: wallet.id,
+            userId: wallet.user_id,
+            tokens: [{
+                name: "Aptos",
+                symbol: "APT",
+                decimals: 8,
+                logo_url: "https://cryptologos.cc/logos/aptos-apt-logo.png",
+                price: aptosPrice.usd,
+                price_24h_change: (aptosPrice.price_24h_change || 0) * 100,
+                amount: liquid,
+            }].filter((token) => token.amount > 0),
         });
-
-        console.log("Aptos token data successfully saved/updated");
-    } catch (error) {
-        console.error("Error saving Aptos token data:", error.message);
     }
+
+    console.log("Aptos token data successfully saved/updated");
+    return { walletsUpdated: wallets.length, includesDelegatedStake: false };
 };
 
 export const writeStaticDataToDB = async () => {
-    try {
         if (!ENABLE_STATIC_CHAIN_SYNC) {
             console.log("Skipping manual static token sync because ENABLE_STATIC_CHAIN_SYNC is not enabled");
-            return;
+            return { skipped: true, reason: "disabled" };
         }
 
         const staticData = await fetchStaticData();
         if (!staticData.length) {
             console.log("Skipping static token sync because no private config is present");
-            return;
+            return { skipped: true, reason: "not configured" };
         }
 
         for (const chainData of staticData) {
@@ -147,42 +161,40 @@ export const writeStaticDataToDB = async () => {
 
             console.log(`Static token data successfully saved/updated for chain ${chainData.chainId}`);
         }
-    } catch (error) {
-        console.error("Error saving static token data:", error.message);
-    }
+        return { chainsUpdated: staticData.length };
 };
 
-export const writeSuiDataToDB = async () => {
-    try {
+export const writeSuiDataToDB = async (userId) => {
         const wallets = await WalletModel.findAll({
             order: [["id", "ASC"]],
-            where: { chain: SUI_CHAIN_ID },
+            where: { chain: SUI_CHAIN_ID, ...(userId ? { user_id: userId } : {}) },
         });
 
         if (!wallets.length) {
             console.log("Skipping Sui sync because no tracked Sui wallets were found");
-            return;
+            return { walletsUpdated: 0 };
         }
 
         const client = new SuiClient({ url: getFullnodeUrl("mainnet") });
         const prices = await Promise.all(
             SUI_TOKEN_CONFIGS.map((token) => fetchTokenPriceCoingecko(token.priceKey))
         );
+        if (prices.some((price) => !price?.usd)) throw new Error("One or more Sui token prices are unavailable");
 
         for (const wallet of wallets) {
-            const [coins, stakes] = await Promise.all([
-                client.getAllCoins({ owner: wallet.wallet }),
+            const [balances, stakes] = await Promise.all([
+                client.getAllBalances({ owner: wallet.wallet }),
                 client.getStakes({ owner: wallet.wallet }),
             ]);
 
-            const balancesByType = (coins.data || []).reduce((accumulator, coin) => {
-                const matchingConfig = SUI_TOKEN_CONFIGS.find((token) => token.matchCoinType(coin.coinType));
+            const balancesByType = (balances || []).reduce((accumulator, balance) => {
+                const matchingConfig = SUI_TOKEN_CONFIGS.find((token) => token.matchCoinType(balance.coinType));
                 if (!matchingConfig) {
                     return accumulator;
                 }
 
                 accumulator[matchingConfig.symbol] =
-                    (accumulator[matchingConfig.symbol] || 0) + Number(coin.balance || 0) / 10 ** matchingConfig.decimals;
+                    (accumulator[matchingConfig.symbol] || 0) + Number(balance.totalBalance || 0) / 10 ** matchingConfig.decimals;
 
                 return accumulator;
             }, {});
@@ -216,9 +228,7 @@ export const writeSuiDataToDB = async () => {
         }
 
         console.log("Sui token data successfully saved/updated");
-    } catch (error) {
-        console.error("Error saving Sui token data:", error.message);
-    }
+        return { walletsUpdated: wallets.length, trackedTokens: SUI_TOKEN_CONFIGS.length };
 };
 
 export const fetchAptosData = async () => {

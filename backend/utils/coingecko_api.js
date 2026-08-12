@@ -3,8 +3,10 @@ import axios from "axios";
 const fetchTokenPrice = async (coingeckoId) => {
     try {
         if (!coingeckoId) return null;
-        const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?x_cg_demo_api_key=${process.env.COINGECKO_API_KEY}`, {
+        const apiKey = process.env.COINGECKO_API_KEY?.trim();
+        const response = await axios.get('https://api.coingecko.com/api/v3/simple/price', {
             params: {
+                ...(apiKey ? { x_cg_demo_api_key: apiKey } : {}),
                 ids: coingeckoId,
                 vs_currencies: 'usd',
                 include_market_cap: true,
@@ -15,7 +17,7 @@ const fetchTokenPrice = async (coingeckoId) => {
         });
         return response.data[coingeckoId] ? response.data[coingeckoId] : null;
     } catch (error) {
-        console.error(`Error fetching price for ${coingeckoId}:`, error);
+        console.warn(`Price lookup failed for ${coingeckoId}: ${error.message}`);
         return null;
     }
 };

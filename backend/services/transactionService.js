@@ -50,7 +50,14 @@ export const getKrakenRequestConfig = (query = {}) => {
 
 export const upsertTransactions = async (records) => {
     for (const record of records) {
-        await TransactionModel.upsert(record, {
+        const existing = await TransactionModel.findByPk(record.orderNo, {
+            attributes: ["excludedFromTotals"],
+        });
+
+        await TransactionModel.upsert({
+            ...record,
+            excludedFromTotals: existing?.excludedFromTotals ?? false,
+        }, {
             conflictFields: ["orderNo"],
         });
     }
@@ -68,7 +75,7 @@ export const syncBinanceFiatPayments = async () => {
             type: order.paymentMethod,
             amount: order.sourceAmount,
             fee: order.totalFee,
-            asset: order.cryptoCurrency,
+            asset: order.sourceCurrency || order.fiatCurrency || order.cryptoCurrency,
             status: order.status,
             date: new Date(order.createTime),
         }))
@@ -119,7 +126,12 @@ export const syncKrakenLedgers = async (query = {}) => {
             asset: entry.asset,
             status: entry.status || "Completed",
             date: new Date(entry.time * 1000),
-            transactionAmount: entry.transactionAmount || 0,
+            // Kraken does not provide a CHF valuation for ledger entries. Do
+            // not write a synthetic zero here: it would overwrite historical
+            // CHF values that were reconstructed and stored separately.
+            ...(entry.transactionAmount != null
+                ? { transactionAmount: entry.transactionAmount }
+                : {}),
         }))
     );
 
@@ -143,12 +155,12 @@ const fetchEurToChfRate = async () => {
     }
 };
 
-export const syncGnosisPayTransactions = async () => {
+export const syncGnosisPayTransactions = async (bearerToken) => {
     const response = await axios.get("https://api.gnosispay.com/api/v1/cards/transactions", {
         headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
-            Authorization: `Bearer ${process.env.BEARER_TOKEN}`,
+            Authorization: `Bearer ${bearerToken}`,
         },
     });
 

@@ -5,6 +5,10 @@ export {
 } from "./evm_token_data.js";
 export { fetchAndSaveSolTokenDataForAllWallets } from "./sol_token_data.js";
 export {
+    fetchAndSaveHyperliquidData,
+    fetchAndSaveHyperliquidDataForAllWallets,
+} from "./hyperliquid_token_data.js";
+export {
     writeAptosDataToDB,
     writeStaticDataToDB,
     writeSuiDataToDB,

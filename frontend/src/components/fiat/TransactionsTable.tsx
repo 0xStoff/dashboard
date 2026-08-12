@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
     Box,
     Chip,
@@ -10,14 +10,22 @@ import {
     TableHead,
     TablePagination,
     TableRow,
+    Switch,
+    Tooltip,
     Typography,
 } from "@mui/material";
 import { TableColumn } from "../../interfaces";
 
-interface TransactionsTableProps<T extends Record<string, unknown>> {
+interface ExcludableTransaction {
+    orderNo: string | null;
+    excludedFromTotals: boolean;
+}
+
+interface TransactionsTableProps<T extends ExcludableTransaction> {
     title: string;
     transactions: T[];
     columns: TableColumn<T>[];
+    onToggleExcluded?: (orderNo: string, excluded: boolean) => Promise<void>;
 }
 
 const AMOUNT_COLUMNS = new Set([
@@ -37,13 +45,18 @@ const formatDateTime = (value: unknown) =>
         minute: "2-digit",
     });
 
-function TransactionsTable<T extends Record<string, unknown>>({
+function TransactionsTable<T extends ExcludableTransaction>({
     title,
     transactions,
     columns,
+    onToggleExcluded,
 }: TransactionsTableProps<T>) {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
+
+    useEffect(() => {
+        setPage(0);
+    }, [transactions]);
 
     const paginatedTransactions = useMemo(
         () => transactions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
@@ -71,14 +84,26 @@ function TransactionsTable<T extends Record<string, unknown>>({
                             {columns.map((column) => (
                                 <TableCell key={String(column.key)}>{column.label}</TableCell>
                             ))}
+                            {onToggleExcluded && <TableCell align="center">Totals</TableCell>}
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {paginatedTransactions.map((transaction, rowIndex) => (
-                            <TableRow key={rowIndex}>
+                            <TableRow
+                                key={transaction.orderNo || rowIndex}
+                                sx={{
+                                    opacity: transaction.excludedFromTotals ? 0.5 : 1,
+                                    transition: "opacity .2s, background-color .2s",
+                                    backgroundColor: transaction.excludedFromTotals
+                                        ? "rgba(255,255,255,.025)"
+                                        : "transparent",
+                                }}
+                            >
                                 {columns.map((column) => {
                                     const value = transaction[column.key];
-                                    const status = String(transaction.status || "");
+                                    const status = String(
+                                        (transaction as T & {status?: unknown}).status || ""
+                                    );
                                     const isCompleted = COMPLETED_STATUSES.has(status);
                                     const key = String(column.key);
 
@@ -133,6 +158,38 @@ function TransactionsTable<T extends Record<string, unknown>>({
 
                                     return <TableCell key={key}>{String(value ?? "")}</TableCell>;
                                 })}
+                                {onToggleExcluded && (
+                                    <TableCell align="center">
+                                        <Tooltip
+                                            title={
+                                                transaction.excludedFromTotals
+                                                    ? "Excluded from totals"
+                                                    : "Included in totals"
+                                            }
+                                        >
+                                            <span>
+                                                <Switch
+                                                    size="small"
+                                                    checked={!transaction.excludedFromTotals}
+                                                    disabled={!transaction.orderNo}
+                                                    onChange={(_event, checked) => {
+                                                        if (transaction.orderNo) {
+                                                            void onToggleExcluded(
+                                                                transaction.orderNo,
+                                                                !checked
+                                                            );
+                                                        }
+                                                    }}
+                                                    inputProps={{
+                                                        "aria-label": transaction.excludedFromTotals
+                                                            ? "Include transaction in totals"
+                                                            : "Exclude transaction from totals",
+                                                    }}
+                                                />
+                                            </span>
+                                        </Tooltip>
+                                    </TableCell>
+                                )}
                             </TableRow>
                         ))}
                     </TableBody>

@@ -50,9 +50,14 @@ router.get("/kraken/ledgers", async (req, res) => {
     }
 });
 
-router.get("/gnosispay/transactions", async (_req, res) => {
+router.get("/gnosispay/transactions", async (req, res) => {
     try {
-        const transactions = await syncGnosisPayTransactions();
+        const bearerToken = req.get("X-Gnosis-Pay-Token")?.trim();
+        if (!bearerToken) {
+            return res.status(400).json({error: "Gnosis Pay bearer token is required"});
+        }
+
+        const transactions = await syncGnosisPayTransactions(bearerToken);
         return res.json(transactions);
     } catch (error) {
         const details = error.response?.data || error.message || String(error);
@@ -98,6 +103,35 @@ router.get("/transactions", async (req, res) => {
         console.error("Error fetching transactions from DB:", error);
         return res.status(500).json({
             error: "Failed to fetch transactions from DB",
+            details: error.message || error,
+        });
+    }
+});
+
+router.patch("/transactions/:orderNo/exclusion", async (req, res) => {
+    const { excluded } = req.body;
+
+    if (typeof excluded !== "boolean") {
+        return res.status(400).json({error: "excluded must be a boolean"});
+    }
+
+    try {
+        const transaction = await TransactionModel.findByPk(req.params.orderNo);
+        if (!transaction) {
+            return res.status(404).json({error: "Transaction not found"});
+        }
+
+        transaction.excludedFromTotals = excluded;
+        await transaction.save();
+
+        return res.json({
+            orderNo: transaction.orderNo,
+            excludedFromTotals: transaction.excludedFromTotals,
+        });
+    } catch (error) {
+        console.error("Error updating transaction exclusion:", error);
+        return res.status(500).json({
+            error: "Failed to update transaction exclusion",
             details: error.message || error,
         });
     }

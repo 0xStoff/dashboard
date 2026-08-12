@@ -34,13 +34,14 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
     }, []);
 
     const connectWallet = async () => {
-        if (!window.ethereum) {
+        const ethereum = (window as Window & {ethereum?: ethers.Eip1193Provider}).ethereum;
+        if (!ethereum) {
             alert("Please install MetaMask or Rabby Wallet.");
             return;
         }
 
         try {
-            const provider = new ethers.BrowserProvider(window.ethereum);
+            const provider = new ethers.BrowserProvider(ethereum);
             const signer = await provider.getSigner();
             const address = await signer.getAddress();
             setAccount(address);
@@ -53,6 +54,11 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
 
     const authenticateUser = async (address: string) => {
         try {
+            const ethereum = (window as Window & {ethereum?: ethers.Eip1193Provider}).ethereum;
+            if (!ethereum) {
+                throw new Error("Wallet provider is unavailable");
+            }
+
             const nonceResponse = await fetch(`${env.apiBaseUrl}/auth/message?wallet=${address}`, {
                 credentials: "include",
             });
@@ -61,7 +67,7 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
 
             const { message } = await nonceResponse.json();
 
-            const provider = new ethers.BrowserProvider(window.ethereum);
+            const provider = new ethers.BrowserProvider(ethereum);
             const signer = await provider.getSigner();
             const signature = await signer.signMessage(message);
 
@@ -76,12 +82,12 @@ const ConnectButton = ({ setIsAuthenticated }: { setIsAuthenticated: (auth: bool
 
             if (data.success) {
                 setIsAuthenticated(true);
-                window.location.reload()
+                window.location.reload();
             } else {
                 alert(data.error || "Unauthorized wallet.");
                 setIsAuthenticated(false);
-            } }
-        catch (error) {
+            }
+        } catch (error) {
             console.error("Authentication error:", error);
         }
     };

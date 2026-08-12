@@ -46,10 +46,11 @@ const NavHeader: React.FC<NavHeaderProps> = ({
     const [openSettings, setOpenSettings] = useState(false)
 
 
-    return (<AppBar position="sticky" sx={{background: "#121212", padding: "0 16px"}}>
-        <Toolbar sx={{display: "flex", justifyContent: "space-between", alignItems: "center"}}>
+    return (<AppBar position="sticky" elevation={0} sx={{background: "rgba(9,11,18,.78)", backdropFilter: 'blur(20px)', borderBottom: '1px solid', borderColor: 'divider', padding: {xs: "0 4px", sm: "0 20px"}}}>
+        <Toolbar sx={{display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: {xs: 64, md: 72}}}>
 
-            {!isMobile ? <Typography variant="h5" sx={{flexGrow: 1}}>
+            {!isMobile ? <Typography variant="h6" fontWeight={800} letterSpacing="-.03em" sx={{flexGrow: 1}}>
+                <Box component="span" sx={{display: 'inline-grid', placeItems: 'center', width: 32, height: 32, mr: 1.25, borderRadius: '10px', background: 'linear-gradient(135deg, #8b7cff, #5de4c7)', color: '#090b12'}}>π</Box>
                 Pi Dashboard
             </Typography> : <Box sx={{flexGrow: 1}}></Box>}
             {isAuthenticated && <>

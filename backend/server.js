@@ -26,6 +26,7 @@ import ProtocolModel from "./models/ProtocolModel.js";
 import WalletProtocolModel from "./models/WalletProtocolModel.js";
 import UserModel from "./models/UserModel.js";
 import { appConfig } from "./config/appConfig.js";
+import robinhoodPerformanceRoutes from "./api/robinhoodPerformance.js";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -52,6 +53,7 @@ app.use("/api", authenticateToken, tokensRoutes);
 app.use("/api", authenticateToken, protocolsRoutes);
 app.use("/api", authenticateToken, transactionsRoutes);
 app.use("/api", authenticateToken, netWorthRoutes);
+app.use("/api", authenticateToken, robinhoodPerformanceRoutes);
 app.use("/api/settings", authenticateToken, settingsRoutes);
 app.use("/api", authenticateToken, poolRadarRoutes);
 app.use("/api", authenticateToken, robinhoodPerformanceRoutes);

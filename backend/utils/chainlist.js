@@ -1,7 +1,7 @@
 import axios from "axios";
 import fetchDebankData from "./debank_api.js";
 
-export const evmChains = async () => fetchDebankData('/chain/list')
+export const evmChains = async () => fetchDebankData('/chain/list', {}, { ttlMs: 24 * 60 * 60 * 1000 })
 
 export const nonEvmChains = [{
     id: "akash-network",
@@ -14,6 +14,7 @@ export const nonEvmChains = [{
     id: "dymension",
     name: "Dymension",
     endpoint: "https://dymension-rest.publicnode.com",
+    fallback_endpoints: ["https://dymension-api.polkachu.com", "https://rest.cosmos.directory/dymension"],
     decimals: 18,
     logo_url: "https://s2.coinmarketcap.com/static/img/coins/200x200/28932.png",
     symbol: "DYM"
@@ -49,6 +50,7 @@ export const nonEvmChains = [{
     id: "kujira",
     name: "Kujira",
     endpoint: "https://kujira-rest.publicnode.com",
+    fallback_endpoints: ["https://kujira-api.polkachu.com", "https://rest.cosmos.directory/kujira"],
     decimals: 6,
     logo_url: "https://seeklogo.com/images/K/kujira-kuji-logo-AD5D735DCD-seeklogo.com.png",
     symbol: "KUJI"

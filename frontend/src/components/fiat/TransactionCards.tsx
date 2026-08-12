@@ -1,142 +1,115 @@
-import React, { useMemo } from "react";
-import { Card, Tooltip, Typography } from "@mui/material";
-import { Box, Container } from "@mui/system";
-import { TransactionRecord } from "../../interfaces";
+import React from "react";
+import { Card, Chip, Tooltip, Typography } from "@mui/material";
+import { Box } from "@mui/system";
 import { toFixedString } from "../../utils/number-utils";
-import { useFetchNetWorth } from "../../hooks/useFetchNetWorth";
-import { useUsdToChfRate } from "../../hooks/useUsdToChfRate";
+import { TransactionTotals } from "../../utils/transaction-calculations";
 
 interface TransactionCardsProps {
-    approvedSum: number;
-    transactions: TransactionRecord[];
-    totalFees: number;
-    rubicXmrSum?: number;
-    rubicLoading?: boolean;
+    activityStats: {
+        includedTransactions: number;
+        cardPayments: number;
+        excludedTransactions: number;
+    };
+    gnosisSpending: number;
+    totals: TransactionTotals;
 }
 
-const isWithdrawal = (transaction: TransactionRecord) => transaction.type.toLowerCase() === "withdrawal";
-const isDeposit = (transaction: TransactionRecord) =>
-    ["deposit", "credit card", "bank transfer"].includes(transaction.type.toLowerCase());
-
 const TransactionCards: React.FC<TransactionCardsProps> = ({
-    approvedSum,
-    transactions,
-    totalFees,
-    rubicXmrSum = 0,
-    rubicLoading = false,
+    activityStats,
+    gnosisSpending,
+    totals,
 }) => {
-    const { netWorth, loading } = useFetchNetWorth({ latest: true, includeDetails: false });
-    const { rate, loading: exchangeLoading } = useUsdToChfRate();
+    const totalOutflows =
+        totals.fiatWithdrawals +
+        totals.xmrWithdrawals +
+        totals.rubicWithdrawals +
+        gnosisSpending;
+    const netCashReturned = totalOutflows - totals.deposits;
+    const averageCardPayment = activityStats.cardPayments
+        ? gnosisSpending / activityStats.cardPayments
+        : 0;
 
-    const totals = useMemo(() => {
-        const totalXmrWithdrawals = transactions
-            .filter(isWithdrawal)
-            .reduce((sum, transaction) => sum + (Number(transaction.chf_value) || 0), 0);
-
-        const totalWithdrawals = transactions
-            .filter(isWithdrawal)
-            .reduce((sum, transaction) => sum + (Number(transaction.amount) || 0), 0);
-
-        const totalDeposits = transactions
-            .filter(isDeposit)
-            .reduce((sum, transaction) => sum + (Number(transaction.amount) || 0), 0);
-
-        return {
-            totalXmrWithdrawals,
-            totalWithdrawals,
-            totalDeposits,
-        };
-    }, [transactions]);
-
-    const lastNetWorth = (netWorth?.totalNetWorth || 0) * rate;
-    const netWithdrawals =
-        totals.totalWithdrawals - approvedSum - totals.totalXmrWithdrawals - rubicXmrSum;
-    const netProfit =
-        totals.totalWithdrawals +
-        totals.totalDeposits -
-        approvedSum -
-        totals.totalXmrWithdrawals -
-        rubicXmrSum -
-        lastNetWorth;
+    const statCard = (label: string, value: number, detail: string, tone?: string) => (
+        <Card sx={{ padding: { xs: 2.25, sm: 3 }, borderRadius: 4, minWidth: 0 }}>
+            <Typography variant="overline" color="text.secondary" fontWeight={800}>{label}</Typography>
+            <Typography variant="h4" fontWeight="bold" sx={{ mt: .4, color: tone || "text.primary" }}>
+                CHF {toFixedString(value, 0)}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: .6 }}>{detail}</Typography>
+        </Card>
+    );
 
     return (
-        <Container sx={{ display: { md: "flex" }, justifyContent: "space-between", marginBottom: 5 }}>
-            <Card sx={{ padding: 3, borderRadius: 10, marginY: 3 }}>
-                <Typography variant="h5">Deposits</Typography>
-                <Typography variant="h4" fontWeight="bold">
-                    CHF {toFixedString(totals.totalDeposits, 0)}
-                </Typography>
-            </Card>
-
+        <Box sx={{ marginY: 3, marginBottom: 4 }}>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", lg: "repeat(4, 1fr)" }, gap: 2 }}>
             <Tooltip
                 title={
                     <Box>
-                        <Typography variant="body2">gnosis {toFixedString(approvedSum, 0)} CHF</Typography>
                         <Typography variant="body2">
-                            kraken {toFixedString(totals.totalWithdrawals, 0)} CHF
+                            Binance deposits: CHF {toFixedString(totals.depositBreakdown.binance, 0)}
                         </Typography>
                         <Typography variant="body2">
-                            kraken xmr {toFixedString(totals.totalXmrWithdrawals, 0)} CHF
+                            Cash-funded deposits: CHF {toFixedString(totals.depositBreakdown.cash, 0)}
                         </Typography>
                         <Typography variant="body2">
-                            rubic xmr {toFixedString(rubicXmrSum, 0)} CHF
+                            Coinbase deposits: CHF {toFixedString(totals.depositBreakdown.coinbase, 0)}
+                        </Typography>
+                        <Typography variant="body2">
+                            Kraken CHF deposits: CHF {toFixedString(totals.depositBreakdown.krakenChf, 0)}
+                        </Typography>
+                        <Typography variant="body2">
+                            Kraken EUR deposits: CHF {toFixedString(totals.depositBreakdown.krakenEur, 0)}
+                        </Typography>
+                        <Typography variant="body2">
+                            Kraken XMR deposits: CHF {toFixedString(totals.depositBreakdown.krakenXmr, 0)}
                         </Typography>
                     </Box>
                 }
                 arrow
             >
-                <Card sx={{ padding: 3, borderRadius: 10, marginY: 3 }}>
-                    <Typography variant="h5">Withdrawals</Typography>
-                    <Typography variant="h4" fontWeight="bold">
-                        CHF {toFixedString(netWithdrawals, 0)}
-                    </Typography>
-                </Card>
+                {statCard("Deposits", totals.deposits, "Funds added in this period")}
             </Tooltip>
-
-            <Card sx={{ padding: 3, borderRadius: 10, marginY: 3 }}>
-                <Typography variant="h5">Fees</Typography>
-                <Typography variant="h4" fontWeight="bold">
-                    CHF {toFixedString(totalFees, 0)}
-                </Typography>
-            </Card>
 
             <Tooltip
                 title={
-                    loading ? (
-                        "Loading..."
-                    ) : (
-                        <Box>
-                            <Typography variant="body2">
-                                + total withdrawals: CHF {toFixedString(totals.totalWithdrawals, 0)}
-                            </Typography>
-                            <Typography variant="body2">
-                                - gnosis (approved): CHF {toFixedString(approvedSum, 0)}
-                            </Typography>
-                            <Typography variant="body2">
-                                - kraken xmr: CHF {toFixedString(totals.totalXmrWithdrawals, 0)}
-                            </Typography>
-                            <Typography variant="body2">
-                                - rubic XMR: CHF {toFixedString(rubicXmrSum, 0)}
-                            </Typography>
-                            <Typography variant="body2">
-                                - total deposits: CHF {toFixedString(totals.totalDeposits, 0)}
-                            </Typography>
-                            <Typography variant="body2">
-                                - net worth: CHF {toFixedString(lastNetWorth, 0)}
-                            </Typography>
-                        </Box>
-                    )
+                    <Box>
+                        <Typography variant="body2">
+                            Gnosis Pay spending: CHF {toFixedString(gnosisSpending, 0)}
+                        </Typography>
+                        <Typography variant="body2">
+                            Fiat withdrawals: CHF {toFixedString(totals.fiatWithdrawals, 0)}
+                        </Typography>
+                        <Typography variant="body2">
+                            Kraken XMR withdrawals: CHF {toFixedString(totals.xmrWithdrawals, 0)}
+                        </Typography>
+                        <Typography variant="body2">
+                            Rubic XMR: CHF {toFixedString(totals.rubicWithdrawals, 0)}
+                        </Typography>
+                    </Box>
                 }
                 arrow
             >
-                <Card sx={{ padding: 3, borderRadius: 10, marginY: 3 }}>
-                    <Typography variant="h5">Net Profit</Typography>
-                    <Typography variant="h4" fontWeight="bold">
-                        {loading || exchangeLoading || rubicLoading ? "Loading..." : `CHF ${toFixedString(netProfit, 0)}`}
-                    </Typography>
-                </Card>
+                {statCard("Value taken out", totalOutflows, "Spending and withdrawals")}
             </Tooltip>
-        </Container>
+
+            {statCard(
+                "Net cash returned",
+                netCashReturned,
+                "Value taken out minus deposits",
+                netCashReturned >= 0 ? "success.main" : "error.main"
+            )}
+            {statCard("Fees", totals.fees, "Included exchange fees")}
+          </Box>
+
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1.5 }}>
+            <Chip label={`${activityStats.includedTransactions} included transactions`} variant="outlined" />
+            <Chip label={`${activityStats.cardPayments} card payments`} variant="outlined" />
+            <Chip label={`CHF ${toFixedString(averageCardPayment, 0)} average card payment`} variant="outlined" />
+            {activityStats.excludedTransactions > 0 && (
+                <Chip label={`${activityStats.excludedTransactions} excluded`} color="warning" variant="outlined" />
+            )}
+          </Box>
+        </Box>
     );
 };
 

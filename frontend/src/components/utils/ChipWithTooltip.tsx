@@ -45,6 +45,7 @@ export const ChipWithTooltip: React.FC<ChipWithTooltipProps> = ({ item, wallet }
                     variant="outlined"
                     size="small"
                     fillPercentage={fillPercentage}
+                    onClick={(event) => event.stopPropagation()}
                 />
             </span>
         </Tooltip>

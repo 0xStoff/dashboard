@@ -46,6 +46,14 @@ export const useApiResource = <T>({
         });
     }, [reload, ...deps]);
 
+    useEffect(() => {
+        const handleDashboardRefresh = () => {
+            reload().catch((requestError) => console.error(requestError));
+        };
+        window.addEventListener("dashboard-data-refreshed", handleDashboardRefresh);
+        return () => window.removeEventListener("dashboard-data-refreshed", handleDashboardRefresh);
+    }, [reload]);
+
     return {
         data,
         error,
