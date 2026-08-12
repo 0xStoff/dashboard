@@ -209,8 +209,10 @@ export const seedRobinhoodIndexFromLedgers = async ({ userId, addresses, ledgers
         FROM robinhood_index_states
         WHERE user_id = :userId
           AND wallet_address IN (:addresses)
-          AND backfill_complete = TRUE
     `, { replacements: { userId, addresses: addresses.map(lower) }, type: QueryTypes.SELECT });
+    // Seeding creates the complete stream set once. After all states exist,
+    // their progress belongs exclusively to the resumable indexer; reopening
+    // the dashboard must never reset a completed cursor to pending.
     if (Number(initialized[0]?.count || 0) >= addresses.length * RESOURCES.length) return false;
 
     for (let index = 0; index < addresses.length; index += 1) {
