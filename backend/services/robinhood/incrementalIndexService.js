@@ -196,10 +196,14 @@ const storeAccountSnapshot = async ({ userId, address, account, tokenBalances })
 
 export const seedRobinhoodIndexFromLedgers = async ({ userId, addresses, ledgers }) => {
     if (!Array.isArray(ledgers) || ledgers.length !== addresses.length) return false;
-    const existing = await sequelize.query(`
-        SELECT COUNT(*)::int AS count FROM robinhood_index_events WHERE user_id = :userId
-    `, { replacements: { userId }, type: QueryTypes.SELECT });
-    if (Number(existing[0]?.count || 0) > 0) return false;
+    const initialized = await sequelize.query(`
+        SELECT COUNT(*)::int AS count
+        FROM robinhood_index_states
+        WHERE user_id = :userId
+          AND wallet_address IN (:addresses)
+          AND backfill_complete = TRUE
+    `, { replacements: { userId, addresses: addresses.map(lower) }, type: QueryTypes.SELECT });
+    if (Number(initialized[0]?.count || 0) >= addresses.length * RESOURCES.length) return false;
 
     for (let index = 0; index < addresses.length; index += 1) {
         const address = lower(addresses[index]);
