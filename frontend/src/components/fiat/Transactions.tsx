@@ -1,154 +1,202 @@
 import React, { useMemo, useState } from "react";
+import axios from "axios";
 import {
+    Alert,
     Box,
     Button,
-    Chip,
     CircularProgress,
     Container,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
     TextField,
-    Typography,
-    useMediaQuery,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
 import TransactionsTable from "./TransactionsTable";
 import TransactionCards from "./TransactionCards";
 import useFetchTransactions from "../../hooks/useFetchTransactions";
 import { useWallets } from "../../context/WalletsContext";
-import { ActivityTableRow, TableColumn } from "../../interfaces";
-import { toFixedString } from "../../utils/number-utils";
+import {
+    FormattedGnosisTransaction,
+    GnosisTransactionRecord,
+    TableColumn,
+    TransactionRecord,
+} from "../../interfaces";
+import {
+    calculateTransactionTotals,
+    gnosisAmountChf,
+    isApprovedGnosisTransaction,
+    isIncluded,
+    isSuccessful,
+} from "../../utils/transaction-calculations";
+import { useUsdToChfRate } from "../../hooks/useUsdToChfRate";
 
-const activityColumns: TableColumn<ActivityTableRow>[] = [
+const binanceTransactionColumns: TableColumn<TransactionRecord>[] = [
     { label: "Date", key: "date" },
-    { label: "Source", key: "exchange" },
+    { label: "Exchange", key: "exchange" },
     { label: "Type", key: "type" },
-    { label: "Merchant", key: "merchantFormatted" },
-    { label: "Asset", key: "asset" },
     { label: "Amount", key: "amount" },
-    { label: "Billing", key: "billingAmountFormatted" },
-    { label: "Fee", key: "feeFormatted" },
+    { label: "CHF Value", key: "transactionAmount" },
+    { label: "Fee", key: "fee" },
+    { label: "Asset", key: "asset" },
+    { label: "Reference", key: "merchant" },
     { label: "Status", key: "status" },
 ];
 
-const isSameDayOrAfter = (itemDate: Date, startDate: Date) => itemDate >= startDate;
-const isSameDayOrBefore = (itemDate: Date, endDate: Date) => itemDate <= endDate;
+const gnosisColumns: TableColumn<FormattedGnosisTransaction>[] = [
+    { label: "Created At", key: "createdAt" },
+    { label: "Transaction Amount", key: "transactionAmountFormatted" },
+    { label: "Billing Amount", key: "billingAmountFormatted" },
+    { label: "Merchant", key: "merchantFormatted" },
+    { label: "Status", key: "status" },
+];
 
-const toDateInputValue = (value: Date) => value.toISOString().split("T")[0];
-const toCurrencyString = (value: number, suffix: string) => `${toFixedString(value)} ${suffix}`;
+const filterByDateRange = <T extends object>(
+    items: T[],
+    dateKey: keyof T,
+    startDate: string,
+    endDate: string
+) => {
+    const rangeStart = new Date(`${startDate}T00:00:00`);
+    const rangeEnd = new Date(`${endDate}T23:59:59.999`);
+    if (Number.isNaN(rangeStart.getTime()) || Number.isNaN(rangeEnd.getTime()) || rangeStart > rangeEnd) {
+        return [];
+    }
 
-const normalizeQueryValue = (value: string | null | undefined) => (value || "").toLowerCase();
+    return items.filter((item) => {
+        const itemDate = new Date(String(item[dateKey]));
+        return !Number.isNaN(itemDate.getTime()) && itemDate >= rangeStart && itemDate <= rangeEnd;
+    });
+};
+
+const formatGnosisAmount = (amount: number | string | null, currency: string) =>
+    `${(Number(amount) || 0) / 100} ${currency}`;
 
 const Transactions = () => {
-    const { transactions, loading, rubicXmrSum, rubicLoading, refetch } = useFetchTransactions();
-    const [startDate, setStartDate] = useState(new Date("2020-01-01"));
-    const [endDate, setEndDate] = useState(new Date());
-    const [selectedExchange, setSelectedExchange] = useState<string>("all");
-    const [selectedStatus, setSelectedStatus] = useState<string>("all");
-    const [query, setQuery] = useState("");
+    const {
+        transactions,
+        loading,
+        gnosisTransactions,
+        refetch,
+        updateTransactionExclusion,
+    } = useFetchTransactions();
+    const today = new Date().toLocaleDateString("en-CA");
+    const [startDate, setStartDate] = useState("2020-01-01");
+    const [endDate, setEndDate] = useState(today);
+    const [refetchDialogOpen, setRefetchDialogOpen] = useState(false);
+    const [gnosisPayToken, setGnosisPayToken] = useState("");
+    const [refetching, setRefetching] = useState(false);
+    const [refetchError, setRefetchError] = useState("");
+    const [transactionError, setTransactionError] = useState("");
 
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
     const { wallets } = useWallets();
+    const { eurRate: eurToChfRate } = useUsdToChfRate();
+
+    const closeRefetchDialog = () => {
+        if (refetching) return;
+        setGnosisPayToken("");
+        setRefetchError("");
+        setRefetchDialogOpen(false);
+    };
+
+    const handleRefetch = async () => {
+        const token = gnosisPayToken.trim().replace(/^Bearer\s+/i, "");
+        if (!token) {
+            setRefetchError("Enter your Gnosis Pay bearer token.");
+            return;
+        }
+
+        setRefetching(true);
+        setRefetchError("");
+        try {
+            await refetch(evmAddresses, token);
+            setGnosisPayToken("");
+            setRefetchDialogOpen(false);
+        } catch (error) {
+            const responseData = axios.isAxiosError(error) ? error.response?.data : null;
+            const message =
+                responseData?.details ||
+                responseData?.error ||
+                (error instanceof Error ? error.message : null) ||
+                "Transaction refetch failed";
+            setRefetchError(typeof message === "string" ? message : JSON.stringify(message));
+        } finally {
+            setRefetching(false);
+        }
+    };
 
     const evmAddresses = useMemo(
         () => wallets.filter((wallet) => wallet.chain === "evm").map((wallet) => wallet.wallet),
         [wallets]
     );
 
-    const exchanges = useMemo(
-        () => ["all", ...new Set(transactions.map((transaction) => transaction.exchange).filter(Boolean))],
-        [transactions]
+    const filteredTransactionsByDate = useMemo(
+        () => filterByDateRange(transactions, "date", startDate, endDate),
+        [endDate, startDate, transactions]
     );
 
-    const statuses = useMemo(
-        () => ["all", ...new Set(transactions.map((transaction) => transaction.status).filter(Boolean))],
-        [transactions]
+    const filteredGnosisTransactionsByDate = useMemo(
+        () => filterByDateRange(gnosisTransactions, "date", startDate, endDate),
+        [endDate, gnosisTransactions, startDate]
     );
 
-    const filteredTransactions = useMemo(() => {
-        const normalizedQuery = query.trim().toLowerCase();
-
-        return transactions.filter((transaction) => {
-            const transactionDate = new Date(transaction.date);
-            const withinDateRange =
-                isSameDayOrAfter(transactionDate, startDate) && isSameDayOrBefore(transactionDate, endDate);
-            const matchesExchange = selectedExchange === "all" || transaction.exchange === selectedExchange;
-            const matchesStatus = selectedStatus === "all" || transaction.status === selectedStatus;
-            const haystack = [
-                transaction.exchange,
-                transaction.type,
-                transaction.asset,
-                transaction.merchant,
-                transaction.reference,
-                transaction.status,
-            ]
-                .map(normalizeQueryValue)
-                .join(" ");
-            const matchesQuery = !normalizedQuery || haystack.includes(normalizedQuery);
-
-            return withinDateRange && matchesExchange && matchesStatus && matchesQuery;
-        });
-    }, [endDate, query, selectedExchange, selectedStatus, startDate, transactions]);
-
-    const activityRows = useMemo<ActivityTableRow[]>(
+    const formattedGnosisTransactions = useMemo<FormattedGnosisTransaction[]>(
         () =>
-            filteredTransactions.map((transaction) => ({
-                date: transaction.date,
-                exchange: transaction.exchange,
-                type: transaction.type,
-                merchantFormatted: transaction.merchant || "-",
-                asset: transaction.asset || "-",
-                amount:
-                    transaction.exchange === "Gnosis Pay"
-                        ? toCurrencyString(Number(transaction.chf_value || transaction.amount) / 100, "CHF")
-                        : transaction.asset
-                          ? `${toFixedString(transaction.amount)} ${transaction.asset}`
-                          : toFixedString(transaction.amount),
-                billingAmountFormatted:
-                    transaction.billingAmount != null
-                        ? toCurrencyString(Number(transaction.billingAmount) / 100, "EUR")
-                        : "-",
-                feeFormatted:
-                    transaction.fee > 0
-                        ? transaction.asset
-                            ? `${toFixedString(transaction.fee)} ${transaction.asset}`
-                            : toFixedString(transaction.fee)
-                        : "-",
+            filteredGnosisTransactionsByDate.map((transaction: GnosisTransactionRecord) => ({
+                orderNo: transaction.orderNo,
+                createdAt: transaction.date,
+                transactionAmountFormatted: formatGnosisAmount(transaction.transactionAmount, "CHF"),
+                billingAmountFormatted: formatGnosisAmount(transaction.billingAmount, "EUR"),
+                merchantFormatted: transaction.merchant || "Unknown",
                 status: transaction.status,
+                excludedFromTotals: transaction.excludedFromTotals,
             })),
-        [filteredTransactions]
+        [filteredGnosisTransactionsByDate]
     );
 
-    const gnosisApprovedSum = useMemo(
-        () =>
-            filteredTransactions
-                .filter((transaction) => transaction.exchange === "Gnosis Pay" && transaction.status === "Approved")
-                .reduce((sum, transaction) => sum + (Number(transaction.chf_value) || 0), 0) / 100,
-        [filteredTransactions]
+    const approvedGnosisTransactions = useMemo(
+        () => filteredGnosisTransactionsByDate.filter(isApprovedGnosisTransaction),
+        [filteredGnosisTransactionsByDate]
     );
 
-    const cashFlowTransactions = useMemo(
-        () => filteredTransactions.filter((transaction) => transaction.exchange !== "Gnosis Pay"),
-        [filteredTransactions]
+    const gnosisSpending = useMemo(
+        () => approvedGnosisTransactions.reduce(
+            (total, transaction) => total + gnosisAmountChf(transaction),
+            0
+        ),
+        [approvedGnosisTransactions]
     );
 
-    const totalFees = useMemo(
-        () => cashFlowTransactions.reduce((sum, transaction) => sum + (Number(transaction.fee) || 0), 0),
-        [cashFlowTransactions]
+    const totals = useMemo(
+        () => calculateTransactionTotals(filteredTransactionsByDate, eurToChfRate || 0),
+        [eurToChfRate, filteredTransactionsByDate]
     );
 
-    const sourceSummary = useMemo(() => {
-        const totals = filteredTransactions.reduce<Record<string, { count: number }>>((acc, transaction) => {
-            const source = transaction.exchange;
-            if (!acc[source]) {
-                acc[source] = { count: 0 };
-            }
+    const activityStats = useMemo(() => ({
+        includedTransactions:
+            filteredTransactionsByDate.filter((transaction) => isIncluded(transaction) && isSuccessful(transaction)).length +
+            approvedGnosisTransactions.length,
+        cardPayments: approvedGnosisTransactions.length,
+        excludedTransactions:
+            filteredTransactionsByDate.filter((transaction) => !isIncluded(transaction)).length +
+            filteredGnosisTransactionsByDate.filter((transaction) => !isIncluded(transaction)).length,
+    }), [approvedGnosisTransactions, filteredGnosisTransactionsByDate, filteredTransactionsByDate]);
 
-            acc[source].count += 1;
-            return acc;
-        }, {});
+    const invalidDateRange = startDate > endDate;
 
-        return Object.entries(totals).sort((left, right) => right[1].count - left[1].count);
-    }, [filteredTransactions]);
+    const handleExclusionChange = async (orderNo: string, excluded: boolean) => {
+        setTransactionError("");
+        try {
+            await updateTransactionExclusion(orderNo, excluded);
+        } catch (error) {
+            const responseData = axios.isAxiosError(error) ? error.response?.data : null;
+            setTransactionError(
+                responseData?.error ||
+                (error instanceof Error ? error.message : "Failed to update transaction")
+            );
+        }
+    };
 
     if (loading) {
         return (
@@ -160,14 +208,50 @@ const Transactions = () => {
 
     return (
         <Container sx={{ marginTop: 10 }}>
-            <Button onClick={() => refetch(evmAddresses)}>Refetch Activity</Button>
+            <Button onClick={() => setRefetchDialogOpen(true)}>Refetch</Button>
+            {transactionError && (
+                <Alert severity="error" sx={{mt: 2}} onClose={() => setTransactionError("")}>
+                    {transactionError}
+                </Alert>
+            )}
+
+            <Dialog open={refetchDialogOpen} onClose={closeRefetchDialog} fullWidth maxWidth="xs">
+                <DialogTitle>Refetch transactions</DialogTitle>
+                <DialogContent>
+                    <DialogContentText sx={{mb: 2}}>
+                        Enter your Gnosis Pay bearer token. It is used for this refetch only and is not stored.
+                    </DialogContentText>
+                    {refetchError && <Alert severity="error" sx={{mb: 2}}>{refetchError}</Alert>}
+                    <TextField
+                        autoFocus
+                        fullWidth
+                        label="Gnosis Pay bearer token"
+                        type="password"
+                        value={gnosisPayToken}
+                        disabled={refetching}
+                        onChange={(event) => setGnosisPayToken(event.target.value)}
+                        onKeyDown={(event) => {
+                            if (event.key === "Enter") handleRefetch();
+                        }}
+                        autoComplete="off"
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={closeRefetchDialog} disabled={refetching}>Cancel</Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleRefetch}
+                        disabled={refetching || !gnosisPayToken.trim()}
+                    >
+                        {refetching ? "Refetching…" : "Refetch"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             <TransactionCards
-                transactions={cashFlowTransactions}
-                approvedSum={gnosisApprovedSum}
-                totalFees={totalFees}
-                rubicXmrSum={rubicXmrSum}
-                rubicLoading={rubicLoading}
+                totals={totals}
+                gnosisSpending={gnosisSpending}
+                activityStats={activityStats}
             />
 
             <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap" }}>
@@ -175,110 +259,35 @@ const Transactions = () => {
                     label="Start Date"
                     type="date"
                     InputLabelProps={{ shrink: true }}
-                    value={toDateInputValue(startDate)}
-                    onChange={(event) => setStartDate(new Date(event.target.value))}
+                    value={startDate}
+                    inputProps={{ max: endDate }}
+                    onChange={(event) => setStartDate(event.target.value)}
                 />
                 <TextField
                     label="End Date"
                     type="date"
                     InputLabelProps={{ shrink: true }}
-                    value={toDateInputValue(endDate)}
-                    onChange={(event) => setEndDate(new Date(event.target.value))}
-                />
-                <TextField
-                    label="Search Activity"
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    sx={{ minWidth: { xs: "100%", md: 260 } }}
+                    value={endDate}
+                    inputProps={{ min: startDate, max: today }}
+                    onChange={(event) => setEndDate(event.target.value)}
                 />
             </Box>
 
-            <Box sx={{ mb: 2 }}>
-                <Typography variant="h6" gutterBottom>
-                    Source Filter
-                </Typography>
-                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                    {exchanges.map((exchange) => (
-                        <Chip
-                            key={exchange}
-                            label={exchange}
-                            clickable
-                            color={selectedExchange === exchange ? "primary" : "default"}
-                            variant={selectedExchange === exchange ? "filled" : "outlined"}
-                            onClick={() => setSelectedExchange(exchange)}
-                        />
-                    ))}
-                </Box>
-            </Box>
+            {invalidDateRange && <Alert severity="warning" sx={{ mb: 2 }}>Start date must be before the end date.</Alert>}
 
-            <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                    Status Filter
-                </Typography>
-                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                    {statuses.map((status) => (
-                        <Chip
-                            key={status}
-                            label={status}
-                            clickable
-                            color={selectedStatus === status ? "primary" : "default"}
-                            variant={selectedStatus === status ? "filled" : "outlined"}
-                            onClick={() => setSelectedStatus(status)}
-                        />
-                    ))}
-                </Box>
-            </Box>
+            <TransactionsTable
+                title="Gnosis Pay Transactions"
+                transactions={formattedGnosisTransactions}
+                columns={gnosisColumns}
+                onToggleExcluded={handleExclusionChange}
+            />
 
-            <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                    Activity Sources
-                </Typography>
-                <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
-                    {sourceSummary.map(([source, summary]) => (
-                        <Chip
-                            key={source}
-                            label={`${source}: ${summary.count}`}
-                            variant="outlined"
-                            onClick={() => setSelectedExchange(source)}
-                        />
-                    ))}
-                </Box>
-            </Box>
-
-            {!isMobile ? (
-                <TransactionsTable
-                    title={`All Activity (${activityRows.length})`}
-                    transactions={activityRows}
-                    columns={activityColumns}
-                />
-            ) : (
-                <Box sx={{ display: "grid", gap: 2 }}>
-                    <Typography variant="h5">All Activity ({activityRows.length})</Typography>
-                    {activityRows.map((row, index) => (
-                        <Box
-                            key={`${row.date}-${row.exchange}-${index}`}
-                            sx={{
-                                border: "1px solid rgba(255,255,255,0.12)",
-                                borderRadius: 3,
-                                padding: 2,
-                            }}
-                        >
-                            <Typography fontWeight="bold">{row.exchange}</Typography>
-                            <Typography variant="body2">{new Date(row.date).toLocaleString("de-CH")}</Typography>
-                            <Typography variant="body2">{row.type}</Typography>
-                            <Typography variant="body2">{row.merchantFormatted}</Typography>
-                            <Typography variant="body2">{row.amount}</Typography>
-                            <Typography variant="body2">Status: {row.status}</Typography>
-                        </Box>
-                    ))}
-                </Box>
-            )}
-
-            {!activityRows.length && (
-                <Typography sx={{ mt: 3 }} color="text.secondary">
-                    No activity matches the current filters.
-                </Typography>
-            )}
+            <TransactionsTable
+                title="Binance, Kraken & Rubic Transactions"
+                transactions={filteredTransactionsByDate}
+                columns={binanceTransactionColumns}
+                onToggleExcluded={handleExclusionChange}
+            />
         </Container>
     );
 };

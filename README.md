@@ -9,7 +9,6 @@ Multi-chain portfolio dashboard for tracking wallets, token balances, protocol p
 - Supports wallet tagging, filtering, search, and hide-small-balance controls
 - Syncs optional CEX and payment-provider transaction history
 - Keeps private/manual static data outside of committed source
-- Includes a separate ETH/USDG Pool Radar for timestamped Uniswap v2/v3/v4 LP fee and estimated APY tracking on Robinhood Chain
 
 ## Project Structure
 
@@ -42,8 +41,6 @@ COINGECKO_API_KEY=your_coingecko_api_key
 JWT_SECRET=replace_me
 ```
 
-Pool Radar defaults to Robinhood Chain's public RPC and verified Uniswap deployment addresses. Override the `ROBINHOOD_*` and `POOL_RADAR_*` values shown in `.env.example` when using a dedicated RPC. Its background indexer stores pool keys and timestamped aggregate swap values in PostgreSQL; it does not store trader wallet addresses.
-
 Optional transaction integrations:
 
 ```env
@@ -74,13 +71,16 @@ If the file is missing, the app still runs and simply skips the optional static 
 
 ## Database
 
-Before initializing the database, update any local bootstrap SQL or seed data to match the wallets you want to track.
+PostgreSQL is created by Docker Compose and the application applies versioned migrations during backend startup. Copy `.env.example` to `.env`, replace the database password, then start the stack:
 
-Example database creation:
-
-```sh
-psql -U stoff -d template1 -c "CREATE DATABASE crypto_dashboard;"
+```bash
+cp .env.example .env
+docker compose up -d --build
 ```
+
+Portfolio history uses one user-scoped snapshot per day plus compact asset points. Refreshing a wallet updates the current day's snapshot instead of appending a full JSON copy of the portfolio.
+
+See `docs/deployment.md` for backup, migration, and compaction procedures.
 
 ## Running Locally
 

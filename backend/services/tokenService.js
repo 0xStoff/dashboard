@@ -4,7 +4,6 @@ import WalletTokenModel from "../models/WalletTokenModel.js";
 import WalletModel from "../models/WalletModel.js";
 import ProtocolModel from "../models/ProtocolModel.js";
 import WalletProtocolModel from "../models/WalletProtocolModel.js";
-import { getHideSmallBalances } from "./settingsService.js";
 import { SUPPORTED_TRACKED_WALLET_CHAINS } from "../config/supportedChains.js";
 
 const TOKEN_ATTRIBUTES = [
@@ -62,7 +61,6 @@ export const fetchWalletTokenData = async ({ chain, minimumUsdValue, walletId, u
 
 export const aggregateTokens = async (wallets) => {
     const tokenMap = new Map();
-    const hideSmallBalances = await getHideSmallBalances();
 
     wallets.forEach(({ id: walletId, wallet: walletAddress, tag, tokens }) => {
         tokens.forEach((token) => {
@@ -78,7 +76,7 @@ export const aggregateTokens = async (wallets) => {
                 wallets_tokens: { amount },
             } = token;
 
-            const tokenKey = `${name}-${chain_id}`;
+            const tokenKey = `${chain_id}-${contract_address || symbol || name}`;
             const normalizedAmount = Number(amount || 0);
 
             if (!tokenMap.has(tokenKey)) {
@@ -129,7 +127,10 @@ export const aggregateTokens = async (wallets) => {
             wallets: [...token.wallets.values()],
             total_usd_value: token.amount * token.price,
         }))
-        .filter((token) => token.total_usd_value > hideSmallBalances)
+        // Creator-held FUEL is a tracked position even before a trustworthy
+        // market quote is available. Do not confuse an unavailable quote with
+        // a zero balance or a realised loss.
+        .filter((token) => token.total_usd_value > 0 || (token.chain_id === "hood" && token.symbol === "FUEL"))
         .sort((a, b) => b.total_usd_value - a.total_usd_value);
 };
 

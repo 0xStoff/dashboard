@@ -99,3 +99,63 @@ test("marks user-confirmed Robinhood exits as closed despite incomplete transfer
     assert.equal(result.tokenPnl[0].walletBalance, 100);
     assert.equal(result.tokenPnl[0].manuallyClosed, true);
 });
+
+test("treats external token transfers as capital returned instead of realized trading loss", () => {
+    const externalWallet = "0x5555555555555555555555555555555555555555";
+    const result = calculateRobinhoodPerformance({
+        address: wallet,
+        account: { coin_balance: "0", exchange_rate: "2000" },
+        transactions: [
+            {
+                hash: "buy",
+                timestamp: "2026-01-01T00:00:00Z",
+                from: party(wallet),
+                to: party(router),
+                value: eth(0.05),
+                fee: { value: "0" },
+                status: "ok",
+            },
+            {
+                hash: "bridgeout",
+                timestamp: "2026-01-02T00:00:00Z",
+                from: party(wallet),
+                to: { ...party(externalWallet), is_contract: false },
+                value: "0",
+                fee: { value: "0" },
+                status: "ok",
+            },
+        ],
+        internalTransactions: [],
+        tokenTransfers: [
+            transfer({ hash: "buy", from: router, to: wallet, quantity: 100, timestamp: "2026-01-01T00:00:00Z" }),
+            transfer({ hash: "bridgeout", from: wallet, to: externalWallet, quantity: 100, timestamp: "2026-01-02T00:00:00Z" }),
+        ],
+        tokenBalances: [],
+    });
+
+    assert.equal(result.externalTokenOutflows.length, 1);
+    assert.ok(Math.abs(result.funding.externalWithdrawals - 0.1) < 1e-12);
+    assert.ok(Math.abs(result.tokenPnl[0].realizedPnlEth - 0) < 1e-12);
+    assert.ok(Math.abs(result.tokenPnl[0].remainingCostBasis - 0) < 1e-12);
+});
+
+test("keeps MM-to-Rabby moves internal and records contract deployment as an external outflow", () => {
+    const rabby = "0x6666666666666666666666666666666666666666";
+    const result = calculateRobinhoodPerformance({
+        address: wallet,
+        addresses: [wallet, rabby],
+        account: { coin_balance: eth(0.077), exchange_rate: "2000" },
+        transactions: [
+            { hash: "fund", timestamp: "2026-01-01T00:00:00Z", from: party(router), to: party(wallet), value: eth(0.1), status: "ok" },
+            { hash: "internal", timestamp: "2026-01-02T00:00:00Z", from: party(wallet), to: party(rabby), value: eth(0.04), fee: { value: eth(0.001) }, status: "ok" },
+            { hash: "deploy", timestamp: "2026-01-03T00:00:00Z", from: party(rabby), to: null, value: eth(0.02), fee: { value: eth(0.002) }, status: "ok" },
+        ],
+        internalTransactions: [],
+        tokenTransfers: [],
+        tokenBalances: [],
+    });
+
+    assert.equal(result.funding.directFunding, 0.1);
+    assert.equal(result.funding.externalWithdrawals, 0.02);
+    assert.equal(result.reconciliation.status, "OK");
+});

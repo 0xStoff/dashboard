@@ -11,14 +11,14 @@ interface AppProvidersProps {
 
 const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
     return (
-        <DashboardSettingsProvider>
-            <WalletsProvider>
+        <WalletsProvider>
+            <DashboardSettingsProvider>
                 <ThemeProvider theme={appTheme}>
                     <CssBaseline />
                     {children}
                 </ThemeProvider>
-            </WalletsProvider>
-        </DashboardSettingsProvider>
+            </DashboardSettingsProvider>
+        </WalletsProvider>
     );
 };
 

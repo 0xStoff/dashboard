@@ -13,20 +13,17 @@ import netWorthRoutes from "./api/netWorth.js";
 import tokensRoutes from "./api/tokens.js";
 import transactionsRoutes from "./api/transactions.js";
 import authRoutes from "./api/auth.js";
-import poolRadarRoutes from "./api/poolRadar.js";
-import robinhoodPerformanceRoutes from "./api/robinhoodPerformance.js";
 import authenticateToken from "./api/authMiddleware.js";
-import { startPoolRadarIndexer } from "./services/poolRadarService.js";
 
 import sequelize from "./sequelize.js";
-import WalletModel from "./models/WalletModel.js";
-import TokenModel from "./models/TokenModel.js";
-import WalletTokenModel from "./models/WalletTokenModel.js";
-import ProtocolModel from "./models/ProtocolModel.js";
-import WalletProtocolModel from "./models/WalletProtocolModel.js";
-import UserModel from "./models/UserModel.js";
 import { appConfig } from "./config/appConfig.js";
 import robinhoodPerformanceRoutes from "./api/robinhoodPerformance.js";
+import dashboardSnapshotRoutes from "./api/dashboardSnapshot.js";
+import poolRadarRoutes from "./api/poolRadar.js";
+import { startPoolRadarIndexer } from "./services/poolRadarService.js";
+import { runMigrations } from "./db/migrate.js";
+import { setupAssociations } from "./models/associations.js";
+import { markInterruptedRefreshJobs } from "./services/refreshJobService.js";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -54,27 +51,16 @@ app.use("/api", authenticateToken, protocolsRoutes);
 app.use("/api", authenticateToken, transactionsRoutes);
 app.use("/api", authenticateToken, netWorthRoutes);
 app.use("/api", authenticateToken, robinhoodPerformanceRoutes);
-app.use("/api/settings", authenticateToken, settingsRoutes);
+app.use("/api", authenticateToken, dashboardSnapshotRoutes);
 app.use("/api", authenticateToken, poolRadarRoutes);
-app.use("/api", authenticateToken, robinhoodPerformanceRoutes);
+app.use("/api/settings", authenticateToken, settingsRoutes);
 app.use("/logos", express.static(path.join(__dirname, "logos")));
-
-const setupAssociations = () => {
-    UserModel.hasMany(WalletModel, { foreignKey: "user_id" });
-    WalletModel.belongsTo(UserModel, { foreignKey: "user_id" });
-    WalletModel.belongsToMany(TokenModel, { through: WalletTokenModel, foreignKey: "wallet_id" });
-    TokenModel.belongsToMany(WalletModel, { through: WalletTokenModel, foreignKey: "token_id" });
-    WalletModel.belongsToMany(ProtocolModel, { through: WalletProtocolModel, foreignKey: "wallet_id" });
-    ProtocolModel.belongsToMany(WalletModel, { through: WalletProtocolModel, foreignKey: "protocol_id" });
-    UserModel.hasMany(WalletTokenModel, { foreignKey: "user_id" });
-    WalletTokenModel.belongsTo(UserModel, { foreignKey: "user_id" });
-    UserModel.hasMany(WalletProtocolModel, { foreignKey: "user_id" });
-    WalletProtocolModel.belongsTo(UserModel, { foreignKey: "user_id" });
-};
 
 const initDb = async () => {
     setupAssociations();
     await sequelize.sync();
+    await runMigrations();
+    await markInterruptedRefreshJobs();
 };
 
 initDb()

@@ -1,5 +1,6 @@
 import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
+import { SuiGraphQLClient } from "@mysten/sui/graphql";
 import WalletModel from "../models/WalletModel.js";
 import WalletTokenModel from "../models/WalletTokenModel.js";
 import TokenModel from "../models/TokenModel.js";
@@ -9,6 +10,7 @@ import { downloadLogo } from "../utils/download_logo.js";
 
 const SUI_CHAIN_ID = "sui";
 const ENABLE_STATIC_CHAIN_SYNC = process.env.ENABLE_STATIC_CHAIN_SYNC === "true";
+const SUI_GRAPHQL_URL = "https://sui-mainnet.mystenlabs.com/graphql";
 
 const SUI_TOKEN_CONFIGS = [
     {
@@ -68,6 +70,40 @@ const removeMissingWalletRows = async (walletId, chainId, retainedTokenIds) => {
             token_id: staleTokenIds,
         },
     });
+};
+
+const fetchSuiStakingBalance = async (graphqlClient, owner) => {
+    try {
+        const result = await graphqlClient.query({
+            query: `
+                query GetStakes($owner: SuiAddress!) {
+                    address(address: $owner) {
+                        stakedSuis {
+                            nodes {
+                                principal
+                            }
+                        }
+                    }
+                }
+            `,
+            variables: { owner },
+        });
+
+        const nodes = result?.data?.address?.stakedSuis?.nodes || [];
+        return {
+            amount: nodes.reduce(
+                (sum, node) => sum + Number(node?.principal || 0) / 10 ** SUI_TOKEN_CONFIGS[0].decimals,
+                0
+            ),
+            usedFallback: false,
+        };
+    } catch (error) {
+        console.warn(`Sui staking lookup failed for ${owner}: ${error.message}`);
+        return {
+            amount: 0,
+            usedFallback: true,
+        };
+    }
 };
 
 const persistWalletTokens = async ({ chainId, walletId, userId, tokens }) => {
@@ -165,6 +201,7 @@ export const writeStaticDataToDB = async () => {
 };
 
 export const writeSuiDataToDB = async (userId) => {
+    try {
         const wallets = await WalletModel.findAll({
             order: [["id", "ASC"]],
             where: { chain: SUI_CHAIN_ID, ...(userId ? { user_id: userId } : {}) },
@@ -176,16 +213,23 @@ export const writeSuiDataToDB = async (userId) => {
         }
 
         const client = new SuiClient({ url: getFullnodeUrl("mainnet") });
+        const graphqlClient = new SuiGraphQLClient({
+            url: SUI_GRAPHQL_URL,
+            network: "mainnet",
+        });
         const prices = await Promise.all(
             SUI_TOKEN_CONFIGS.map((token) => fetchTokenPriceCoingecko(token.priceKey))
         );
         if (prices.some((price) => !price?.usd)) throw new Error("One or more Sui token prices are unavailable");
 
+        let usedStakingFallback = false;
+
         for (const wallet of wallets) {
-            const [balances, stakes] = await Promise.all([
+            const [balances, stakingResult] = await Promise.all([
                 client.getAllBalances({ owner: wallet.wallet }),
-                client.getStakes({ owner: wallet.wallet }),
+                fetchSuiStakingBalance(graphqlClient, wallet.wallet),
             ]);
+            usedStakingFallback = usedStakingFallback || stakingResult.usedFallback;
 
             const balancesByType = (balances || []).reduce((accumulator, balance) => {
                 const matchingConfig = SUI_TOKEN_CONFIGS.find((token) => token.matchCoinType(balance.coinType));
@@ -199,17 +243,8 @@ export const writeSuiDataToDB = async (userId) => {
                 return accumulator;
             }, {});
 
-            const stakingBalance = (stakes || []).reduce(
-                (sum, stake) =>
-                    sum +
-                    (stake.stakes || []).reduce(
-                        (stakeSum, entry) => stakeSum + Number(entry.principal || 0) / 10 ** SUI_TOKEN_CONFIGS[0].decimals,
-                        0
-                    ),
-                0
-            );
-
             const liquidBalance = balancesByType.SUI || 0;
+            const stakingBalance = stakingResult.amount;
             const tokens = SUI_TOKEN_CONFIGS.map((token, index) =>
                 createTokenRecord({
                     token,
@@ -228,7 +263,18 @@ export const writeSuiDataToDB = async (userId) => {
         }
 
         console.log("Sui token data successfully saved/updated");
-        return { walletsUpdated: wallets.length, trackedTokens: SUI_TOKEN_CONFIGS.length };
+        return {
+            walletsUpdated: wallets.length,
+            trackedTokens: SUI_TOKEN_CONFIGS.length,
+            includesDelegatedStake: !usedStakingFallback,
+        };
+    } catch (error) {
+        console.warn(`Skipping Sui sync: ${error.message}`);
+        return {
+            skipped: true,
+            reason: error.message,
+        };
+    }
 };
 
 export const fetchAptosData = async () => {

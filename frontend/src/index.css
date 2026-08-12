@@ -5,7 +5,16 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+body, #root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',

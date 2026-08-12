@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../sequelize.js";
+import { normalizeContractAddress } from "../utils/tokenAddress.js";
 
 const TokenModel = sequelize.define("tokens", {
   id: {
@@ -21,7 +22,10 @@ const TokenModel = sequelize.define("tokens", {
   },
   contract_address: {
     type: DataTypes.STRING,
-    allowNull: true
+    allowNull: true,
+    set(value) {
+      this.setDataValue("contract_address", normalizeContractAddress(this.getDataValue("chain_id"), value));
+    },
   },
   decimals: {
     type: DataTypes.INTEGER,

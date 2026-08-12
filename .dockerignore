@@ -1,0 +1,11 @@
+.git
+.idea
+**/.DS_Store
+**/._*
+**/node_modules
+**/.env
+backend/db_data
+backend/config/static-data.private.json
+hetzner_db.dump
+*.dump
+*.bak-*

@@ -6,8 +6,8 @@ import TokenModel from "../models/TokenModel.js";
 import WalletTokenModel from "../models/WalletTokenModel.js";
 import ProtocolModel from "../models/ProtocolModel.js";
 import WalletProtocolModel from "../models/WalletProtocolModel.js";
-import { getHideSmallBalances } from "./settingsService.js";
 import { SUPPORTED_TRACKED_WALLET_CHAINS } from "../config/supportedChains.js";
+import { getProtocolPositionUsdValue, getWalletTokenUsdValue } from "./valuationService.js";
 
 const createChainSummary = (chainId) => ({
     chain_id: chainId,
@@ -75,7 +75,7 @@ export const getWalletChainSummary = async ({ walletId, searchQuery, userId }) =
     wallets.forEach((wallet) => {
         const tokens = wallet.tokens.map((token) => ({
             ...token.get(),
-            usd_value: Number(token.wallets_tokens.usd_value || 0),
+            usd_value: getWalletTokenUsdValue(token),
         }));
 
         const filteredTokens = normalizedQuery
@@ -95,7 +95,7 @@ export const getWalletChainSummary = async ({ walletId, searchQuery, userId }) =
             );
 
             const protocolUsdValue = filteredItems.reduce(
-                (sum, item) => sum + Number(item?.stats?.asset_usd_value || 0),
+                (sum, item) => sum + getProtocolPositionUsdValue(item),
                 0
             );
 
@@ -113,10 +113,9 @@ export const getWalletChainSummary = async ({ walletId, searchQuery, userId }) =
 };
 
 export const getEnrichedChains = async ({ walletId, searchQuery, userId }) => {
-    const [chains, summaryByChain, hideSmallBalances] = await Promise.all([
+    const [chains, summaryByChain] = await Promise.all([
         getAvailableChains(),
         getWalletChainSummary({ walletId, searchQuery, userId }),
-        getHideSmallBalances(),
     ]);
 
     return chains
@@ -136,6 +135,6 @@ export const getEnrichedChains = async ({ walletId, searchQuery, userId }) => {
                 protocol_usd_value: Number(summary.total_protocol_usd_value.toFixed(2)),
             };
         })
-        .filter((chain) => chain.usd_value > hideSmallBalances)
+        .filter((chain) => chain.usd_value > 0)
         .sort((a, b) => b.usd_value - a.usd_value);
 };

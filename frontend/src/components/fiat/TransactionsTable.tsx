@@ -28,12 +28,7 @@ interface TransactionsTableProps<T extends ExcludableTransaction> {
     onToggleExcluded?: (orderNo: string, excluded: boolean) => Promise<void>;
 }
 
-const AMOUNT_COLUMNS = new Set([
-    "amount",
-    "transactionAmountFormatted",
-    "billingAmountFormatted",
-    "feeFormatted",
-]);
+const AMOUNT_COLUMNS = new Set(["amount", "transactionAmountFormatted", "billingAmountFormatted"]);
 const COMPLETED_STATUSES = new Set(["Approved", "Completed"]);
 
 const formatDateTime = (value: unknown) =>

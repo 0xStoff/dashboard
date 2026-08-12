@@ -12,7 +12,8 @@ interface UseFetchProtocolsReturn {
 export const useFetchProtocolsTable = (
   chain: string | null = "all",
   walletId: string | null = "all",
-  searchQuery: string | null
+  searchQuery: string | null,
+  enabled = true
 ): UseFetchProtocolsReturn => {
   const loadProtocolsTable = useCallback(async () => {
     const url = `/protocols-table?chain=${chain}&wallet_id=${walletId}&query=${searchQuery ?? ""}`;
@@ -21,6 +22,7 @@ export const useFetchProtocolsTable = (
   }, [searchQuery, chain, walletId]);
 
   const resource = useApiResource<Protocol[]>({
+    enabled,
     initialData: [],
     load: loadProtocolsTable,
     deps: [searchQuery, chain, walletId],

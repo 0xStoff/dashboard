@@ -37,8 +37,7 @@ const SearchInput: React.FC<SearchInputProps> = ({ searchQuery, setSearchQuery }
       sx={{
         background: "rgba(255, 255, 255, 0.045)",
         borderRadius: "12px",
-        width: {xs: "140px", sm: "220px"},
-        marginRight: "10px",
+        width: {xs: "100%", sm: "200px", lg: "250px"},
         input: { color: "white" },
         "& .MuiOutlinedInput-root": {
           "& fieldset": { borderColor: "rgba(255,255,255,.08)" },

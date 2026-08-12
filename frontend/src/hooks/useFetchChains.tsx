@@ -3,7 +3,7 @@ import { Chain } from "../interfaces";
 import apiClient from "../utils/api-client";
 import { useApiResource } from "./useApiResource";
 
-export const useFetchChains = (walletId: string | null = "all", searchQuery: string) => {
+export const useFetchChains = (walletId: string | null = "all", searchQuery: string, enabled = true) => {
   const loadChains = useCallback(async () => {
     const url = `/chains?wallet_id=${walletId}&query=${searchQuery}`;
     const response = await apiClient.get<Chain[]>(url);
@@ -11,6 +11,7 @@ export const useFetchChains = (walletId: string | null = "all", searchQuery: str
   }, [walletId, searchQuery]);
 
   const resource = useApiResource<Chain[]>({
+    enabled,
     initialData: [],
     load: loadChains,
     deps: [walletId, searchQuery],

@@ -7,6 +7,7 @@ interface UseFetchTokensParams {
     searchQuery: string;
     chain?: string | null;
     walletId?: string | null;
+    enabled?: boolean;
 }
 
 interface UseFetchTokensReturn {
@@ -19,6 +20,7 @@ export const useFetchTokens = ({
     chain = "all",
     walletId = "all",
     searchQuery,
+    enabled = true,
 }: UseFetchTokensParams): UseFetchTokensReturn => {
     const loadTokens = useCallback(async () => {
         const url = `/tokens?chain=${chain}&wallet_id=${walletId}&query=${searchQuery}`;
@@ -27,6 +29,7 @@ export const useFetchTokens = ({
     }, [searchQuery, chain, walletId]);
 
     const resource = useApiResource<Token[]>({
+        enabled,
         initialData: [],
         load: loadTokens,
         deps: [searchQuery, chain, walletId],

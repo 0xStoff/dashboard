@@ -2,9 +2,9 @@ import { Sequelize } from "sequelize";
 
 const {
   DATABASE_URL,
-  DB_NAME = "crypto_dashboard",
-  DB_USER = "stoff",
-  DB_PASSWORD = "abc123",
+  DB_NAME,
+  DB_USER,
+  DB_PASSWORD,
   DB_HOST = "postgres",
   DB_PORT = "5432",
 } = process.env;
@@ -14,6 +14,10 @@ const logging = (msg) => {
     console.error(msg);
   }
 };
+
+if (!DATABASE_URL && (!DB_NAME || !DB_USER || !DB_PASSWORD)) {
+  throw new Error("Database configuration is required: set DATABASE_URL or DB_NAME, DB_USER, and DB_PASSWORD.");
+}
 
 const sequelize = DATABASE_URL
   ? new Sequelize(DATABASE_URL, { dialect: "postgres", logging })

@@ -6,12 +6,79 @@ import WalletProtocolModel from "../models/WalletProtocolModel.js";
 import WalletTokenModel from "../models/WalletTokenModel.js";
 import TokenModel from "../models/TokenModel.js";
 import { getCanonicalTokenLogo } from "../utils/token_logo.js";
+import { fetchRobinhoodTokenBalance } from "../services/robinhood/blockscoutClient.js";
 
 const TOKEN_CACHE_MS = 2 * 60 * 1000;
 const PROTOCOL_CACHE_MS = 6 * 60 * 60 * 1000;
 // Hyperliquid spot balances are stored separately because DeBank does not
 // expose them. A DeBank refresh must not delete rows owned by that importer.
 const EXTERNALLY_MANAGED_TOKEN_CHAINS = ["hyperliquid"];
+const IGNORED_EVM_TOKEN_IDS = new Set([
+    "0x000000c396558ffbab5ea628f39658bdf61345b3",
+]);
+const FUEL_CONTRACT = "0x6d2758428530b055e06856deff8ffd5d6fd2d5cc";
+const FUEL_WALLETS = new Set(String(process.env.ROBINHOOD_FUEL_WALLETS || "")
+    .split(",")
+    .map((address) => address.trim().toLowerCase())
+    .filter(Boolean));
+
+const deriveFuelPriceFromLp = async ({ walletId, userId }) => {
+    const positions = await WalletProtocolModel.findAll({
+        where: { wallet_id: walletId, user_id: userId },
+        attributes: ["portfolio_item_list"],
+    });
+    let pricedCashcatUsd = 0;
+    let fuelAmount = 0;
+
+    for (const protocol of positions) {
+        for (const position of protocol.portfolio_item_list || []) {
+            const assets = position?.detail?.supply_token_list || [];
+            const fuel = assets.find((asset) => String(asset?.id || "").toLowerCase() === FUEL_CONTRACT);
+            const cashcat = assets.find((asset) => String(asset?.symbol || "").toUpperCase() === "CASHCAT" && Number(asset?.price) > 0);
+            if (!fuel || !cashcat || Number(fuel.amount) <= 0 || Number(cashcat.amount) <= 0) continue;
+            // The residual full-range position supplies the relative reserves.
+            // This is an LP-implied spot estimate, deliberately not a market feed.
+            fuelAmount += Number(fuel.amount);
+            pricedCashcatUsd += Number(cashcat.amount) * Number(cashcat.price);
+        }
+    }
+
+    return fuelAmount > 0 && pricedCashcatUsd > 0 ? pricedCashcatUsd / fuelAmount : 0;
+};
+
+const syncFuelHolding = async ({ walletId, walletAddress, userId }) => {
+    if (!FUEL_WALLETS.has(String(walletAddress || "").toLowerCase())) return null;
+
+    const balance = await fetchRobinhoodTokenBalance(walletAddress, FUEL_CONTRACT);
+    if (!balance?.value) return null;
+
+    const decimals = Number(balance.token?.decimals || 18);
+    const rawAmount = String(balance.value);
+    const amount = Number(rawAmount) / 10 ** decimals;
+    const lpEstimatedPrice = await deriveFuelPriceFromLp({ walletId, userId });
+    const [token] = await TokenModel.upsert({
+        chain_id: "hood",
+        name: "CashCat Fuel",
+        symbol: "FUEL",
+        contract_address: FUEL_CONTRACT,
+        decimals,
+        // This is an LP-reserve-ratio estimate, not a quoted executable price.
+        price: lpEstimatedPrice,
+        price_24h_change: null,
+        logo_path: null,
+    }, { conflictFields: ["chain_id", "symbol"] });
+
+    await WalletTokenModel.upsert({
+        user_id: userId,
+        wallet_id: walletId,
+        token_id: token.id,
+        amount,
+        raw_amount: rawAmount,
+        usd_value: amount * lpEstimatedPrice,
+    }, { conflictFields: ["wallet_id", "token_id"] });
+
+    return token.id;
+};
 
 const deleteMissingWalletRows = async ({ model, walletId, userId, key, retainedIds }) => {
     const rows = await model.findAll({ where: { wallet_id: walletId, user_id: userId } });
@@ -71,15 +138,29 @@ export const fetchAndSaveEvmProtocolData = async (
 
 export const fetchAndSaveEvmTokenData = async (walletId, walletAddress, req, options = {}) => {
         const userId = req.user.user.id;
-        const tokens = await fetchDebankData("/user/all_token_list", {
-            id: walletAddress,
-            is_all: false,
-        }, { ttlMs: TOKEN_CACHE_MS, force: options.forceTokens === true });
+        let tokens = [];
+        let receivedDebankTokens = false;
+        try {
+            tokens = await fetchDebankData("/user/all_token_list", {
+                id: walletAddress,
+                is_all: false,
+            }, { ttlMs: TOKEN_CACHE_MS, force: options.forceTokens === true });
+            receivedDebankTokens = true;
+        } catch (error) {
+            // Keep existing holdings intact when the third-party provider is
+            // temporarily unavailable; direct Robinhood tracking can still run.
+            console.warn("DeBank token refresh unavailable:", error.message);
+        }
 
         const retainedTokenIds = [];
 
         for (const token of tokens) {
             const { id, chain, name, symbol, decimals, logo_url, amount, raw_amount, price, price_24h_change } = token;
+            const normalizedTokenId = String(id || "").toLowerCase();
+
+            if (IGNORED_EVM_TOKEN_IDS.has(normalizedTokenId)) {
+                continue;
+            }
 
             const existingToken = await TokenModel.findOne({
                 where: { chain_id: chain, symbol },
@@ -121,25 +202,38 @@ export const fetchAndSaveEvmTokenData = async (walletId, walletAddress, req, opt
             );
         }
 
-        await fetchAndSaveEvmProtocolData(walletId, walletAddress, userId, {
-            force: options.forceTokens === true,
-        });
+        try {
+            const fuelTokenId = await syncFuelHolding({ walletId, walletAddress, userId });
+            if (fuelTokenId) retainedTokenIds.push(fuelTokenId);
+        } catch (error) {
+            console.warn("FUEL holding refresh unavailable:", error.message);
+        }
+
+        try {
+            await fetchAndSaveEvmProtocolData(walletId, walletAddress, userId, {
+                force: options.forceTokens === true,
+            });
+        } catch (error) {
+            console.warn("DeBank protocol refresh unavailable:", error.message);
+        }
 
         const externallyManagedTokens = await TokenModel.findAll({
             where: { chain_id: EXTERNALLY_MANAGED_TOKEN_CHAINS },
             attributes: ["id"],
         });
 
-        await deleteMissingWalletRows({
-            model: WalletTokenModel,
-            walletId,
-            userId,
-            key: "token_id",
-            retainedIds: [
-                ...retainedTokenIds,
-                ...externallyManagedTokens.map((token) => token.id),
-            ],
-        });
+        if (receivedDebankTokens) {
+            await deleteMissingWalletRows({
+                model: WalletTokenModel,
+                walletId,
+                userId,
+                key: "token_id",
+                retainedIds: [
+                    ...retainedTokenIds,
+                    ...externallyManagedTokens.map((token) => token.id),
+                ],
+            });
+        }
 
         console.log('Token and protocol data successfully saved/updated for an EVM wallet');
 };

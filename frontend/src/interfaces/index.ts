@@ -5,6 +5,14 @@ export interface TokenWallet {
   tag: string;
   wallet: string;
   amount: number;
+  usd_value?: number;
+}
+
+export interface ValuationMeta {
+  amountUsd: number;
+  pricingMethod: "direct" | "pool-implied" | "unavailable";
+  confidence: "direct" | "estimated" | "unavailable";
+  source: string;
 }
 
 export interface Wallet {
@@ -13,6 +21,18 @@ export interface Wallet {
   tag: string;
   chain: string;
   show_chip?: boolean;
+  approximate_usd_value?: number;
+  group_name?: string | null;
+  refresh_policy?: "auto" | "manual" | "audit-only";
+  valuation?: {
+    source: string;
+    captured_at: string;
+    token_usd_value: number;
+    protocol_usd_value: number;
+    estimated_usd_value: number;
+    unpriced_asset_count: number;
+    pricing_methods: string[];
+  };
 }
 
 export interface WalletFormValues {
@@ -20,6 +40,8 @@ export interface WalletFormValues {
   wallet: string;
   chain: string;
   show_chip: boolean;
+  group_name: string;
+  refresh_policy?: "auto" | "manual" | "audit-only";
 }
 
 export interface Token {
@@ -27,6 +49,7 @@ export interface Token {
   name: string;
   symbol: string;
   contract_address?: string | null;
+  contract_addresses?: string[];
   decimals: number;
   logo_path: string;
   price: number;
@@ -34,21 +57,42 @@ export interface Token {
   amount: number;
   wallets: TokenWallet[];
   total_usd_value: number;
+  valuation?: ValuationMeta;
 }
 
 export interface ProtocolWallet {
+  id: number | null;
   tag: string;
   amount: number;
+  usdValue: number;
 }
 
 export interface Position {
   type: string;
   chain: string;
   tokenNames: string;
+  tokenSymbols?: string;
+  contractAddresses?: string[];
+  assetAmounts?: Array<{
+    contract?: string | null;
+    symbol: string;
+    name: string;
+    amount: number;
+    price?: number;
+    usdValue?: number;
+    pricingMethod?: string;
+  }>;
   logoUrls: string[];
   price: number;
   amount: number;
   usdValue: number;
+  tokenCount?: number;
+  valuation?: {
+    method: string;
+    confidence: string;
+    source: string;
+    inferredAssetPrices?: Array<{ contract: string; priceUsd: number; amount: number }>;
+  };
   wallets: ProtocolWallet[];
 }
 
@@ -71,20 +115,65 @@ export interface Chain {
   protocol_usd_value: number;
 }
 
+export interface PortfolioSnapshot {
+  schemaVersion: number;
+  snapshotId: string;
+  capturedAt: string;
+  filters: { chain: string; walletId: string; searchQuery: string };
+  totals: { tokenUsd: number; protocolUsd: number; totalUsd: number };
+  chains: Chain[];
+  assets: Token[];
+  protocols: Protocol[];
+  walletSummaries: Array<{
+    walletId: number;
+    tokenUsd: number;
+    protocolUsd: number;
+    totalUsd: number;
+    estimatedUsd: number;
+    unpricedAssetCount: number;
+    pricingMethods: string[];
+  }>;
+  dataHealth: {
+    source: string;
+    totalMatchesChainSummary: boolean;
+    estimatedAssetCount: number;
+    fuelPrice: { priceUsd: number; source: string; confidence: string } | null;
+    warnings: string[];
+  };
+}
+
 export interface NetWorthData {
   date: string;
   totalNetWorth: number;
-  tokenHistory: Token[];
-  protocolHistory: Protocol[];
+  totalTokenUSD: number;
+  totalProtocolUSD: number;
 }
 
-export interface HistoryData {
-  wallets: Wallet[];
-  chains: Chain[];
-  tokens: Token[];
-  protocolsTable: Protocol[];
-  totalProtocolUSD: number;
-  totalTokenUSD: number;
+export interface AssetHistoryData {
+  date: string;
+  balance: number | null;
+  usdValue: number;
+}
+
+export interface AssetMarketHistoryPoint {
+  date: string;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  price: number | null;
+  volumeUsd: number | null;
+}
+
+export interface AssetMarketHistoryResponse {
+  supported: boolean;
+  reason?: string | null;
+  currentPrice: number | null;
+  priceChange24h?: number | null;
+  pairAddress: string | null;
+  pairName: string | null;
+  provider: string;
+  marketTokenAddress: string | null;
+  points: AssetMarketHistoryPoint[];
 }
 
 export interface DashboardSelection {
@@ -111,14 +200,14 @@ export interface TransactionRecord {
   type: string;
   amount: number;
   fee: number;
-  asset: string | null;
+  asset: string;
   status: string;
   date: string;
+  merchant?: string | null;
+  transactionAmount?: number | string | null;
   timestamp: string | number;
   chf_value: number;
-  merchant?: string | null;
-  billingAmount?: number | string | null;
-  reference?: string | null;
+  excludedFromTotals: boolean;
 }
 
 export interface GnosisTransactionRecord {
@@ -133,29 +222,20 @@ export interface GnosisTransactionRecord {
   merchant: string | null;
   transactionAmount: number | string | null;
   billingAmount: number | string | null;
+  excludedFromTotals: boolean;
 }
 
 export interface FormattedGnosisTransaction {
+  orderNo: string | null;
   createdAt: string;
   transactionAmountFormatted: string;
   billingAmountFormatted: string;
   merchantFormatted: string;
   status: string;
+  excludedFromTotals: boolean;
 }
 
 export interface TableColumn<T> {
   label: string;
   key: keyof T;
-}
-
-export interface ActivityTableRow {
-  date: string;
-  exchange: string;
-  type: string;
-  merchantFormatted: string;
-  asset: string;
-  amount: string;
-  billingAmountFormatted: string;
-  feeFormatted: string;
-  status: string;
 }

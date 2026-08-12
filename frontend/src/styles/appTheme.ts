@@ -16,9 +16,10 @@ export const appTheme = createTheme({
             styleOverrides: {
                 body: {
                     backgroundImage:
-                        "radial-gradient(circle at 15% -10%, rgba(139,124,255,.16), transparent 32%), radial-gradient(circle at 90% 5%, rgba(93,228,199,.08), transparent 26%)",
+                        "radial-gradient(circle at 12% -8%, rgba(139,124,255,.14), transparent 30%), radial-gradient(circle at 92% 2%, rgba(93,228,199,.075), transparent 25%), linear-gradient(180deg, #090b12 0%, #0b0e16 100%)",
                     backgroundAttachment: "fixed",
                     minHeight: "100vh",
+                    fontVariantNumeric: "tabular-nums",
                 },
                 "*": {
                     scrollbarWidth: "thin",
@@ -30,9 +31,10 @@ export const appTheme = createTheme({
         MuiCard: {
             styleOverrides: {
                 root: {
-                    backgroundImage: "linear-gradient(145deg, rgba(255,255,255,.035), transparent 55%)",
+                    backgroundColor: "rgba(18,21,31,.88)",
+                    backgroundImage: "linear-gradient(145deg, rgba(255,255,255,.032), transparent 58%)",
                     border: "1px solid rgba(255,255,255,.07)",
-                    boxShadow: "0 18px 50px rgba(0,0,0,.22)",
+                    boxShadow: "0 14px 42px rgba(0,0,0,.18)",
                 },
             },
         },
@@ -63,7 +65,16 @@ export const appTheme = createTheme({
         MuiTableCell: {
             styleOverrides: {
                 root: { borderColor: "rgba(255,255,255,.055)" },
-                head: { color: "#969cad", fontWeight: 700 },
+                head: { color: "#969cad", fontWeight: 720, backgroundColor: "rgba(18,21,31,.96)" },
+            },
+        },
+        MuiTableRow: {
+            styleOverrides: {
+                root: {
+                    "&.Mui-selected, &.Mui-selected:hover": {
+                        backgroundColor: "rgba(139,124,255,.09)",
+                    },
+                },
             },
         },
         MuiDialog: {

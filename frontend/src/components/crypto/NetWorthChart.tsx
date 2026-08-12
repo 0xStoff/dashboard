@@ -9,6 +9,8 @@ interface NetWorthChartProps {
     data: NetWorthData[];
     currentNetWorth: number;
     setShowChart: React.Dispatch<React.SetStateAction<boolean>>;
+    conversionRate: number;
+    currencyLabel: string;
 }
 
 const processDailyData = (data: NetWorthData[], currentNetWorth: number) => {
@@ -44,11 +46,11 @@ const RANGE_MONTHS: Partial<Record<RangeKey, number>> = {
     "1Y": 12,
 };
 
-export const NetWorthChart = ({currentNetWorth, data, setShowChart}: NetWorthChartProps) => {
-    const [range, setRange] = useState<RangeKey>("ALL");
+export const NetWorthChart = ({currentNetWorth, data, setShowChart, conversionRate, currencyLabel}: NetWorthChartProps) => {
+    const [range, setRange] = useState<RangeKey>("1Y");
     const processedData = useMemo(
-        () => processDailyData(data, currentNetWorth),
-        [currentNetWorth, data]
+        () => processDailyData(data, currentNetWorth).map((entry) => ({...entry, totalNetWorth: entry.totalNetWorth * conversionRate})),
+        [conversionRate, currentNetWorth, data]
     );
     const visibleData = useMemo(() => {
         const months = RANGE_MONTHS[range];
@@ -63,12 +65,12 @@ export const NetWorthChart = ({currentNetWorth, data, setShowChart}: NetWorthCha
     const latestValue = visibleData[visibleData.length - 1]?.totalNetWorth || 0;
     const valueChange = latestValue - firstValue;
     const percentageChange = firstValue ? (valueChange / firstValue) * 100 : 0;
-    return (<Card sx={{borderRadius: 4, p: {xs: 2, sm: 3}, mt: 2.5}}>
-        <Box sx={{display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, mb: 2}}>
+    return (<Card sx={{borderRadius: 4, p: {xs: 2, sm: 2.5}, mt: 2}}>
+        <Box sx={{display: 'flex', alignItems: {xs: 'flex-start', md: 'center'}, justifyContent: 'space-between', gap: 2, mb: 1, flexDirection: {xs: 'column', md: 'row'}}}>
           <Box>
-            <Typography variant="h5">Net worth history</Typography>
+            <Typography variant="h5">Portfolio performance</Typography>
             <Box sx={{display: "flex", alignItems: "baseline", gap: 1.25, flexWrap: "wrap", mt: 0.5}}>
-                <Typography variant="h4">$ {toFixedString(latestValue, 0)}</Typography>
+                <Typography variant="h6">{currencyLabel} {toFixedString(latestValue, 0)}</Typography>
                 <Typography
                     variant="body2"
                     sx={{color: valueChange >= 0 ? "success.main" : "error.main", fontWeight: 700}}
@@ -79,25 +81,16 @@ export const NetWorthChart = ({currentNetWorth, data, setShowChart}: NetWorthCha
                 </Typography>
             </Box>
           </Box>
-          <IconButton
-              aria-label="Close net worth history"
-              onClick={() => setShowChart(false)}
-              size="small"
-              sx={{color: 'text.secondary'}}
-          >
-              <CloseIcon fontSize="small" />
-          </IconButton>
-        </Box>
-
-        <ToggleButtonGroup
+          <Box sx={{display: 'flex', alignItems: 'center', gap: .5, alignSelf: {xs: 'stretch', md: 'center'}}}>
+          <ToggleButtonGroup
             exclusive
             size="small"
             value={range}
             onChange={(_event, nextRange: RangeKey | null) => nextRange && setRange(nextRange)}
             aria-label="Net worth history range"
             sx={{
-                mb: 1.5,
                 gap: 0.5,
+                flex: 1,
                 "& .MuiToggleButton-root": {
                     border: 0,
                     borderRadius: "10px !important",
@@ -115,14 +108,25 @@ export const NetWorthChart = ({currentNetWorth, data, setShowChart}: NetWorthCha
             {(Object.keys(RANGE_MONTHS) as RangeKey[]).concat("ALL").map((option) => (
                 <ToggleButton key={option} value={option}>{option}</ToggleButton>
             ))}
-        </ToggleButtonGroup>
+          </ToggleButtonGroup>
+          <IconButton
+              aria-label="Close portfolio performance"
+              onClick={() => setShowChart(false)}
+              size="small"
+              sx={{color: 'text.secondary'}}
+          >
+              <CloseIcon fontSize="small" />
+          </IconButton>
+          </Box>
+        </Box>
 
         <Chart
             data={visibleData}
-            lines={[{dataKey: "totalNetWorth", stroke: "#8884d8", yAxisId: "right"}]}
+            lines={[{dataKey: "totalNetWorth", stroke: "#8b7cff", yAxisId: "right"}]}
             xAxisFormatter={(date: string) => new Date(date).toLocaleDateString("de-CH", {month: "short", day: "2-digit"})}
-            leftYAxisFormatter={(value: number) => `$ ${toFixedString(value / 1000, 0)}k`}
-            rightYAxisFormatter={(value: number) => `$ ${toFixedString(value, 0)}`}
-            showBrush={visibleData.length > 14}
+            leftYAxisFormatter={(value: number) => `${currencyLabel} ${toFixedString(value / 1000, 0)}k`}
+            rightYAxisFormatter={(value: number) => `${currencyLabel} ${toFixedString(value, 0)}`}
+            compact
+            currencyLabel={currencyLabel}
         /></Card>);
 };

@@ -25,6 +25,15 @@ const WalletModel = sequelize.define('wallets', {
         allowNull: false,
         defaultValue: true
     },
+    group_name: {
+        type: DataTypes.STRING(80),
+        allowNull: true,
+    },
+    refresh_policy: {
+        type: DataTypes.STRING(24),
+        allowNull: false,
+        defaultValue: 'auto',
+    },
     user_id: {
         type: DataTypes.INTEGER,
         allowNull: false,

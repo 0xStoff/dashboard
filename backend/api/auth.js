@@ -7,6 +7,11 @@ import UserModel from "../models/UserModel.js";
 const router = express.Router();
 const SESSION_COOKIE_NAME = "sessionToken";
 
+const isAuthorizedWallet = (address) => {
+    const authorizedWallet = process.env.AUTHORIZED_WALLET?.trim();
+    return !authorizedWallet || authorizedWallet.toLowerCase() === address.toLowerCase();
+};
+
 router.use(cookieParser());
 
 const createSessionPayload = (user) => ({
@@ -44,6 +49,10 @@ router.get("/message", async (req, res) => {
         return res.status(400).json({ error: "Wallet address is required" });
     }
 
+    if (!isAuthorizedWallet(wallet)) {
+        return res.status(403).json({ error: "This wallet is not authorized" });
+    }
+
     const nonce = ethers.id(Date.now().toString());
     const [user] = await UserModel.findOrCreate({
         where: { main_wallet: wallet },
@@ -63,6 +72,10 @@ router.post("/login", async (req, res) => {
 
     if (!address || !signature) {
         return res.status(400).json({ error: "Missing address or signature" });
+    }
+
+    if (!isAuthorizedWallet(address)) {
+        return res.status(403).json({ error: "This wallet is not authorized" });
     }
 
     const user = await UserModel.findOne({ where: { main_wallet: address } });
@@ -87,7 +100,10 @@ router.post("/login", async (req, res) => {
         res.cookie(SESSION_COOKIE_NAME, token, {
             httpOnly: true,
             secure: isHttps,
-            sameSite: isHttps ? "None" : "Lax",
+            // The dashboard and API are sibling subdomains and therefore
+            // same-site. Lax is more reliable in Safari's privacy modes than
+            // SameSite=None while still protecting cross-site requests.
+            sameSite: "Lax",
             path: "/",
             maxAge: 24 * 60 * 60 * 1000,
         });
@@ -99,8 +115,14 @@ router.post("/login", async (req, res) => {
     }
 });
 
-router.post("/logout", (_req, res) => {
-    res.clearCookie(SESSION_COOKIE_NAME);
+router.post("/logout", (req, res) => {
+    const isHttps = req.secure || req.headers["x-forwarded-proto"] === "https";
+    res.clearCookie(SESSION_COOKIE_NAME, {
+        httpOnly: true,
+        secure: isHttps,
+        sameSite: "Lax",
+        path: "/",
+    });
     return res.json({ success: true, message: "Logged out" });
 });
 

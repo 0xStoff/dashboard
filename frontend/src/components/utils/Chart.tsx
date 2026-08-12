@@ -17,6 +17,9 @@ interface ChartDatum {
     balance?: number | null;
     totalNetWorth?: number;
     usdValue?: number;
+    convertedValue?: number;
+    price?: number | null;
+    volumeUsd?: number | null;
 }
 
 interface ChartLine {
@@ -32,6 +35,8 @@ interface ChartProps {
     leftYAxisFormatter: (value: number) => string;
     rightYAxisFormatter: (value: number) => string;
     showBrush?: boolean;
+    compact?: boolean;
+    currencyLabel?: string;
 }
 
 const Chart = ({
@@ -41,12 +46,19 @@ const Chart = ({
     leftYAxisFormatter,
     rightYAxisFormatter,
     showBrush = false,
+    compact = false,
+    currencyLabel = "$",
 }: ChartProps) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
     if (!data || data.length === 0) return null;
+    const hasLeftAxis = lines.some((line) => line.yAxisId === "left");
+    const hasRightAxis = lines.some((line) => line.yAxisId === "right");
 
-    return (<Box sx={{width: '100%', height: {xs: showBrush ? 330 : 280, sm: showBrush ? 410 : 360}}}>
+    return (<Box sx={{width: '100%', height: {
+        xs: compact ? 230 : showBrush ? 300 : 270,
+        sm: compact ? 270 : showBrush ? 350 : 320,
+    }}}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{top: 12, right: isMobile ? 4 : 18, bottom: 4, left: isMobile ? -20 : 4}}>
             <CartesianGrid stroke="rgba(255,255,255,.07)" vertical={false}/>
@@ -54,32 +66,32 @@ const Chart = ({
             <XAxis
                 dataKey="date"
                 tickFormatter={xAxisFormatter}
-                interval={Math.ceil(data.length / 5)}
+                interval={Math.max(0, Math.ceil(data.length / 5) - 1)}
                 tick={{fill: theme.palette.text.secondary, fontSize: 12}}
                 axisLine={{stroke: 'rgba(255,255,255,.1)'}}
                 tickLine={false}
             />
 
-            <YAxis
+            {hasLeftAxis && <YAxis
                 yAxisId="left"
                 tickFormatter={leftYAxisFormatter}
-                domain={[0, "auto"]}
+                domain={["auto", "auto"]}
                 width={isMobile ? 42 : 64}
                 tick={{fill: theme.palette.text.secondary, fontSize: 12}}
                 axisLine={false}
                 tickLine={false}
-            />
+            />}
 
-            <YAxis
+            {hasRightAxis && <YAxis
                 yAxisId="right"
                 orientation="right"
                 tickFormatter={rightYAxisFormatter}
-                domain={[0, "auto"]}
+                domain={["auto", "auto"]}
                 width={isMobile ? 48 : 72}
                 tick={{fill: theme.palette.text.secondary, fontSize: 12}}
                 axisLine={false}
                 tickLine={false}
-            />
+            />}
 
             <Tooltip
                 cursor={{stroke: "rgba(184,175,255,.45)", strokeWidth: 1}}
@@ -87,8 +99,9 @@ const Chart = ({
                     if (active && payload && payload.length) {
                         const index = data.findIndex((datum) => datum.date === label);
                         const currentData = data[index] || {};
-                        const currentValue = currentData.totalNetWorth ?? currentData.usdValue ?? 0;
+                        const currentValue = currentData.totalNetWorth ?? currentData.convertedValue ?? currentData.usdValue ?? currentData.price ?? 0;
                         const balance = currentData.balance ?? 0;
+                        const volumeUsd = currentData.volumeUsd ?? 0;
 
 
                         return (<Card sx={{
@@ -98,8 +111,9 @@ const Chart = ({
                             backdropFilter: "blur(14px)",
                             boxShadow: "0 14px 40px rgba(0,0,0,.38)",
                         }}>
-                            <Typography fontWeight="bold">{`$ ${toFixedString(currentValue, 2)}`}</Typography>
+                            <Typography fontWeight="bold">{`${currencyLabel} ${toFixedString(currentValue, 2)}`}</Typography>
                             {balance ? <Typography>{`Balance: ${formatNumber(balance, "amount")}`}</Typography> : null}
+                            {volumeUsd ? <Typography>{`Volume: ${currencyLabel} ${formatNumber(volumeUsd, "axis")}`}</Typography> : null}
                             <Typography variant="caption">{label}</Typography>
                         </Card>);
                     }
